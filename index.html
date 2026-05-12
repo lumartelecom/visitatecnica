@@ -335,34 +335,6 @@ tbody tr:last-child td{border-bottom:0}
 <!-- DASHBOARD -->
 <section id="dashboard" class="tab-panel active">
 
-  <div class="filters">
-    <div class="filter-card">
-      <select id="filtroTecnico" aria-label="Técnico"><option value="">Todos os técnicos</option></select>
-    </div>
-    <div class="filter-card">
-      <select id="filtroNode" aria-label="Node"><option value="">Todos os nodes</option></select>
-    </div>
-    <div class="filter-card">
-      <select id="filtroStatus" aria-label="Situação">
-        <option value="">Todas as situações</option>
-        <option value="revisita">Com revisita</option>
-        <option value="acompanhamento">Em acompanhamento</option>
-        <option value="tec1baixo">TEC1 30d abaixo de 96%</option>
-        <option value="ok">Dentro da meta</option>
-      </select>
-    </div>
-    <div class="filter-card">
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button id="btnAplicarFiltros" class="primary" type="button">Aplicar</button>
-        <button id="btnLimparFiltros" class="secondary" type="button">Limpar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="export-row">
-    <button id="btnSalvarHistorico" class="secondary" type="button">Salvar</button>
-  </div>
-
   <!-- KPIs -->
   <section class="kpis">
     <div class="kpi-card">
@@ -537,6 +509,8 @@ let currentSummary=null;
 let currentFileName="";
 let lastRenderRows=[];
 let modalTecnicosLista=[];
+let exportOverride=null;
+let tecnicoAtivoLogin="";
 
 const STORAGE_LAST="lumar_dashboard_last_dataset_v1";
 const STORAGE_HISTORY="lumar_dashboard_history_v1";
@@ -994,10 +968,16 @@ function abrirModalTecnicos(atualizarLista=true){
   const modal=$("modalTecnicos");
   const conteudo=$("modalTecnicosConteudo");
   if(!modal||!conteudo) return;
+  if(atualizarLista) modalTecnicosLista=[...(processedRows.length?processarResumo(processedRows).arr:(currentSummary?.arr||[]))];
+  if(tecnicoAtivoLogin&&atualizarLista){
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden","false");
+    abrirIndicadoresTecnico(tecnicoAtivoLogin,false);
+    return;
+  }
   $("modalTecnicosTitulo").textContent="Técnicos";
   $("modalTecnicosSub").textContent="Selecione um técnico para ver os indicadores individuais.";
   conteudo.className="tech-list-modal";
-  if(atualizarLista) modalTecnicosLista=[...(currentSummary?.arr||[])];
   const arr=modalTecnicosLista;
   if(!arr.length){
     conteudo.innerHTML='<div class="empty">Carregue uma base para listar os técnicos.</div>';
@@ -1017,14 +997,21 @@ function fecharModalTecnicos(){
   modal.setAttribute("aria-hidden","true");
 }
 function aplicarTecnicoNoDashboard(login){
-  if($("filtroTecnico")) $("filtroTecnico").value=login||"";
-  const filtrado=aplicarFiltros(processedRows);
+  if(!processedRows.length) return;
+  tecnicoAtivoLogin=loginKey(login);
+  const filtrado=processedRows.filter(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))===loginKey(login));
   lastRenderRows=filtrado;
   renderDashboard(processarResumo(filtrado));
 }
-function abrirIndicadoresTecnico(login){
-  aplicarTecnicoNoDashboard(login);
-  const t=currentSummary?.arr?.find(item=>item.login===login);
+function limparFiltroTecnicoAtivo(){
+  tecnicoAtivoLogin="";
+  lastRenderRows=[...processedRows];
+  renderDashboard(processarResumo(processedRows));
+  abrirModalTecnicos(false);
+}
+function abrirIndicadoresTecnico(login,aplicarFiltro=true){
+  if(aplicarFiltro) aplicarTecnicoNoDashboard(login);
+  const t=modalTecnicosLista.find(item=>item.login===login)||(currentSummary?.arr||[]).find(item=>item.login===login);
   if(!t) return;
   $("modalTecnicosTitulo").textContent=t.nome;
   $("modalTecnicosSub").textContent=`Indicadores individuais ${TECNICOS_NOMES[loginKey(login)]?`· ${loginKey(login)}`:""}`;
@@ -1044,9 +1031,28 @@ function abrirIndicadoresTecnico(login){
     <button class="success" type="button" id="btnModalPdf">PDF</button>
     <button class="success" type="button" id="btnModalImagem">Imagem</button>
   </div>`;
-  $("btnModalVoltar").addEventListener("click",()=>abrirModalTecnicos(false));
-  $("btnModalPdf").addEventListener("click",exportarPDF);
-  $("btnModalImagem").addEventListener("click",exportarImagem);
+  $("btnModalVoltar").addEventListener("click",limparFiltroTecnicoAtivo);
+  $("btnModalPdf").addEventListener("click",()=>exportarTecnico(login,"pdf"));
+  $("btnModalImagem").addEventListener("click",()=>exportarTecnico(login,"imagem"));
+}
+
+async function exportarTecnico(login,tipo){
+  if(!processedRows.length) return;
+  const rowsRestaurar=[...lastRenderRows];
+  const summaryRestaurar=currentSummary;
+  const tecnicoRows=processedRows.filter(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))===login);
+  exportOverride={tecnico:rotuloTecnico(login),node:"Todos os nodes",status:"Indicadores individuais",login};
+  try{
+    lastRenderRows=tecnicoRows;
+    renderDashboard(processarResumo(tecnicoRows));
+    if(tipo==="pdf") await exportarPDF();
+    else await exportarImagem();
+  }finally{
+    exportOverride=null;
+    lastRenderRows=rowsRestaurar.length?rowsRestaurar:[...processedRows];
+    if(summaryRestaurar) renderDashboard(summaryRestaurar);
+    else renderDashboard(processarResumo(lastRenderRows));
+  }
 }
 
 function filtrarBasePrincipal(rows){
@@ -1064,7 +1070,7 @@ function carregarUltimaBase(){
   const raw=localStorage.getItem(STORAGE_LAST);
   if(!raw){setStatus("⚠️ Nenhuma última base salva neste navegador.");return}
   const saved=JSON.parse(raw);
-  rawRows=saved.rows||[];currentFileName=saved.fileName||"Base salva";
+  rawRows=saved.rows||[];currentFileName=saved.fileName||"Base salva";tecnicoAtivoLogin="";
   const validation=validarBase(rawRows);
   processedRows=filtrarBasePrincipal(rawRows);
   preencherFiltros(processedRows);
@@ -1102,7 +1108,7 @@ async function carregarBase(){
     setStatus("⏳ Lendo arquivo <strong>"+file.name+"</strong>...");
     const {rows,origem}=await obterRows(file);
     if(!rows.length){setStatus("❌ Arquivo lido, mas sem linhas.");return}
-    rawRows=rows;currentFileName=origem||file.name;
+    rawRows=rows;currentFileName=origem||file.name;tecnicoAtivoLogin="";
     const validation=validarBase(rows);
     processedRows=filtrarBasePrincipal(rows);
     renderValidacao(validation,processedRows.length);
@@ -1129,7 +1135,7 @@ function limparFiltros(){
   reaplicarFiltros();
 }
 function limparTudo(){
-  arquivoSelecionado=null;$("fileInput").value="";rawRows=[];processedRows=[];currentSummary=null;currentFileName="";
+  arquivoSelecionado=null;$("fileInput").value="";rawRows=[];processedRows=[];currentSummary=null;currentFileName="";tecnicoAtivoLogin="";modalTecnicosLista=[];
   setStatus("Nenhuma base carregada.");
   ["kpiBase","kpiTecnicos"].forEach(id=>{if($(id)) $(id).textContent="0";});
   if($("kpiRev")) $("kpiRev").textContent="0%";
@@ -1150,6 +1156,9 @@ function limparTudo(){
 }
 
 function textoFiltroExportacao(){
+  if(exportOverride){
+    return {...exportOverride,data:new Date().toLocaleString("pt-BR")};
+  }
   const filtroTecnico=$("filtroTecnico");
   const tecnico=filtroTecnico?.value?filtroTecnico.options[filtroTecnico.selectedIndex].text:"Todos os técnicos";
   const node=$("filtroNode")?.value||"Todos os nodes";
@@ -1158,6 +1167,10 @@ function textoFiltroExportacao(){
   return {tecnico,node,status,data};
 }
 function nomeArquivoExportacao(ext){
+  if(exportOverride?.login){
+    const limpo=String(nomeTecnico(exportOverride.login)).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9_-]+/gi,"_");
+    return `relatorio_manutencao_${limpo}.${ext}`;
+  }
   const filtroTecnico=$("filtroTecnico");
   const tecnico=filtroTecnico?.value?nomeTecnico(filtroTecnico.value):"todos";
   const limpo=String(tecnico).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9_-]+/gi,"_");
@@ -1223,9 +1236,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("btnCarregar").addEventListener("click",carregarBase);
   $("btnLimpar").addEventListener("click",limparTudo);
   $("fileInput").addEventListener("change",e=>{arquivoSelecionado=e.target.files[0]||null;if(arquivoSelecionado)setStatus("📁 Arquivo selecionado: <strong>"+arquivoSelecionado.name+"</strong>. Clique em <strong>Carregar Base</strong>.");});
-  $("btnAplicarFiltros").addEventListener("click",reaplicarFiltros);
-  $("btnLimparFiltros").addEventListener("click",limparFiltros);
-  $("btnSalvarHistorico").addEventListener("click",salvarHistorico);
   $("btnCarregarUltima").addEventListener("click",carregarUltimaBase);
   $("btnLimparHistorico").addEventListener("click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("🗑️ Histórico local limpo.");});
   $("cardTecnicos").addEventListener("click",abrirModalTecnicos);
