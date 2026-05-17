@@ -1892,6 +1892,13 @@ function abrirModalBaseTotal(){
 }
 
 
+
+function nomeCodigoIndicador(v){
+  const valor=String(v??"").trim();
+  if(valor==="-3") return "Cancelado";
+  return valor || "-";
+}
+
 function tsParaDataBR(ts){
   if(!ts) return "-";
   const d=new Date(ts);
@@ -1923,7 +1930,7 @@ function obterRevisitasLogOfensor30d(summary){
 function agruparLogOfensor(itens){
   const grupos={};
   itens.forEach(r=>{
-    const codigo=norm(r.codigoPrimeira||r.codigoRevisita||"SEM CÓDIGO")||"SEM CÓDIGO";
+    const codigo=nomeCodigoIndicador(norm(r.codigoPrimeira||r.codigoRevisita||"SEM CÓDIGO")||"SEM CÓDIGO");
     if(!grupos[codigo]) grupos[codigo]={codigo,qtd:0,contratos:new Set(),itens:[]};
     grupos[codigo].qtd++;
     grupos[codigo].contratos.add(String(r.contrato||""));
@@ -1975,9 +1982,9 @@ function montarHTMLLogOfensor(summary){
       return `<tr data-contrato="${contratoBusca}" data-contrato-label="${escapeHTML(r.contrato||"-")}" data-date="${dataBusca}">
         <td>${escapeHTML(r.contrato||"-")}</td>
         <td>${escapeHTML(r.nome||nomeTecnico(r.login)||"-")}</td>
-        <td>${escapeHTML(r.codigoPrimeira||g.codigo||"-")}</td>
+        <td>${escapeHTML(nomeCodigoIndicador(r.codigoPrimeira||g.codigo||"-"))}</td>
         <td>${escapeHTML(r.dataPrimeira||"-")}</td>
-        <td>${escapeHTML(r.codigoRevisita||"-")}</td>
+        <td>${escapeHTML(nomeCodigoIndicador(r.codigoRevisita||"-"))}</td>
         <td>${escapeHTML(r.dataRevisita||"-")}</td>
         <td>${escapeHTML(r.qt||"-")}</td>
         <td>${escapeHTML(r.tipo||"-")}</td>
