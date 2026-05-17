@@ -694,6 +694,832 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 }
 /* === FIM AJUSTE COMPACTO === */
 
+
+/* ─── ABA TÉCNICO CERTIFICADO ─── */
+.certificado-hero{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+.certificado-head{
+  background:linear-gradient(135deg,#10213a,#155fc4);
+  color:#fff;
+  border-radius:14px;
+  padding:20px 22px;
+  box-shadow:var(--shadow-sm);
+}
+.certificado-head h2{
+  color:#fff;
+  border:0;
+  padding:0;
+  margin:0 0 6px;
+  font-size:18px;
+  letter-spacing:.06em;
+}
+.certificado-head p{
+  color:rgba(255,255,255,.78);
+  font-size:13px;
+  font-weight:600;
+  margin:0;
+}
+.certificado-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.certificado-bloco{
+  background:rgba(255,255,255,.94);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px;
+  box-shadow:var(--shadow-sm);
+}
+.certificado-bloco h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:var(--navy);
+  margin:0 0 14px;
+  letter-spacing:.08em;
+}
+.certificado-bloco h3::before{
+  content:"";
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background:var(--green);
+}
+.certificado-bloco.sistemicos h3::before{
+  background:var(--blue);
+}
+.certificado-lista{
+  display:grid;
+  gap:10px;
+}
+.certificado-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border:1px solid var(--border);
+  border-left:4px solid var(--green);
+  background:linear-gradient(180deg,#fff,#f8fbff);
+  border-radius:10px;
+  padding:12px 14px;
+}
+.certificado-bloco.sistemicos .certificado-item{
+  border-left-color:var(--blue);
+}
+.certificado-item strong{
+  display:block;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.2;
+}
+.certificado-item span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:34px;
+  height:28px;
+  border-radius:999px;
+  background:var(--green-light);
+  color:#065f46;
+  border:1px solid #a7f3d0;
+  font-weight:900;
+  font-size:13px;
+}
+.certificado-bloco.sistemicos .certificado-item span{
+  background:var(--blue-light);
+  color:var(--navy2);
+  border-color:#bfdbfe;
+}
+.certificado-note{
+  margin-top:14px;
+  padding:12px 14px;
+  border:1px solid #cfe0ff;
+  border-left:4px solid var(--blue);
+  border-radius:10px;
+  background:#f5f8ff;
+  color:#24426c;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.5;
+}
+@media(max-width:900px){
+  .certificado-grid{grid-template-columns:1fr}
+}
+
+
+/* === TÉCNICO CERTIFICADO DINÂMICO === */
+.certificado-card{overflow:hidden}
+.certificado-legenda,.certificado-metas{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 12px;
+}
+.certificado-legenda span,.certificado-metas span{
+  display:inline-flex;
+  align-items:center;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:#fff;
+  color:var(--text-muted);
+  padding:6px 10px;
+  font-size:11px;
+  font-weight:800;
+}
+.certificado-metas span{
+  background:#f5f8ff;
+  color:#24426c;
+  border-color:#cfe0ff;
+}
+.certificado-table{min-width:1120px;table-layout:fixed}
+.certificado-table th,.certificado-table td{text-align:center;vertical-align:middle}
+.certificado-table td:first-child{text-align:left}
+.cert-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:54px;
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.04em;
+  border:1px solid transparent;
+}
+.cert-sim{background:var(--green-light);color:#065f46;border-color:#a7f3d0}
+.cert-nao{background:var(--red-light);color:#9c2634;border-color:#f2b7b7}
+.cert-input-wrap{
+  display:grid;
+  grid-template-columns:82px auto;
+  gap:6px;
+  align-items:center;
+  justify-content:center;
+}
+.cert-input{
+  width:82px!important;
+  min-height:32px;
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  padding:6px 8px;
+  text-align:center;
+  font-weight:800;
+  font-family:'IBM Plex Mono',monospace;
+  background:#fff;
+  color:var(--text);
+}
+.cert-input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px rgba(21,95,196,.11);
+  outline:none;
+}
+.certificado-final{font-size:12px;min-width:76px}
+.base-filtro-aviso{
+  margin-top:8px;
+  font-size:12px;
+  color:#7c2d12;
+  font-weight:700;
+}
+@media(max-width:900px){
+  .certificado-legenda,.certificado-metas{display:grid;grid-template-columns:1fr}
+}
+
+
+/* === EXPORTAÇÃO TÉCNICO CERTIFICADO === */
+.certificado-toolbar{align-items:center}
+.certificado-toolbar h2{margin:0;border:0;padding:0}
+.certificado-toolbar .section-caption{display:none}
+.nao-exportar-certificado{justify-content:center;text-align:center}
+#btnImagemCertificado::before{content:"+";font-weight:800}
+.certificado-head,.certificado-legenda,.certificado-metas,.certificado-note{display:none!important}
+
+
+/* === AJUSTES PERCENTUAL TÉCNICO CERTIFICADO === */
+.certificado-table th{
+  white-space:normal;
+  line-height:1.18;
+}
+.certificado-table th:nth-child(6),
+.certificado-table td:nth-child(6){
+  min-width:180px;
+}
+.cert-percent-field{
+  display:inline-grid;
+  grid-template-columns:minmax(54px,74px) auto;
+  align-items:center;
+  gap:4px;
+}
+.cert-percent-symbol{
+  font-weight:900;
+  color:var(--text-muted);
+  font-family:'IBM Plex Mono',monospace;
+}
+.cert-export-clean .cert-input,
+.cert-export-clean .cert-percent-symbol{
+  display:none!important;
+}
+.cert-export-clean .cert-percent-field{
+  display:inline-flex;
+}
+.cert-export-clean .cert-percent-field::before{
+  content:attr(data-percent);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:62px;
+  border-radius:999px;
+  padding:5px 10px;
+  background:#fff;
+  border:1px solid var(--border);
+  color:var(--navy);
+  font-weight:900;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+}
+
+
+/* === T1 REALIZADO / PENDENTE === */
+.cert-select{
+  width:116px;
+  min-height:32px;
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  padding:6px 8px;
+  text-align:center;
+  font-weight:800;
+  font-family:'IBM Plex Sans',sans-serif;
+  background:#fff;
+  color:var(--text);
+}
+.cert-select:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px rgba(21,95,196,.11);
+  outline:none;
+}
+.cert-export-clean .cert-select{
+  display:none!important;
+}
+.cert-export-clean .cert-status-field::before{
+  content:attr(data-status-export);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:92px;
+  border-radius:999px;
+  padding:5px 10px;
+  background:#fff;
+  border:1px solid var(--border);
+  color:var(--navy);
+  font-weight:900;
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:12px;
+}
+
+
+/* === AJUSTE FINAL DE DISTRIBUIÇÃO - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-card{
+  padding:18px 16px;
+  max-width:100%;
+  overflow:hidden;
+}
+#tecnicoCertificado .section-title-line.certificado-toolbar{
+  margin-bottom:14px;
+  align-items:center;
+  gap:10px;
+}
+#tecnicoCertificado .certificado-toolbar h2{
+  font-size:15px;
+  letter-spacing:.07em;
+  line-height:1.2;
+}
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:auto;
+  border-radius:12px;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%;
+  min-width:1200px;
+  table-layout:fixed;
+  font-size:11px;
+}
+#tecnicoCertificado .certificado-table thead th{
+  font-size:8.8px;
+  line-height:1.18;
+  padding:9px 6px;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:normal;
+  vertical-align:middle;
+}
+#tecnicoCertificado .certificado-table tbody td{
+  font-size:11px;
+  line-height:1.2;
+  padding:8px 6px;
+  text-align:center;
+  vertical-align:middle;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  text-align:left;
+  overflow-wrap:anywhere;
+}
+#tecnicoCertificado .tech-name{
+  font-size:11px;
+  line-height:1.15;
+}
+#tecnicoCertificado .tech-code{
+  font-size:8.5px;
+}
+#tecnicoCertificado .cert-input-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  flex-wrap:nowrap;
+  min-width:0;
+}
+#tecnicoCertificado .cert-badge{
+  min-width:42px;
+  padding:4px 7px;
+  font-size:9.5px;
+  line-height:1;
+}
+#tecnicoCertificado .certificado-final{
+  min-width:54px;
+  font-size:10px;
+}
+#tecnicoCertificado .cert-percent-field{
+  display:inline-grid;
+  grid-template-columns:58px auto;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  min-width:0;
+}
+#tecnicoCertificado .cert-input{
+  width:58px!important;
+  min-height:30px;
+  padding:5px 4px;
+  font-size:11px;
+}
+#tecnicoCertificado .cert-percent-symbol{
+  font-size:11px;
+}
+#tecnicoCertificado .cert-select{
+  width:104px;
+  min-height:30px;
+  padding:5px 6px;
+  font-size:10.5px;
+}
+#tecnicoCertificado #btnImagemCertificado{
+  min-width:92px;
+  justify-content:center;
+  text-align:center;
+  padding:7px 12px;
+}
+#tecnicoCertificado .cert-export-clean{
+  box-shadow:none;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table{
+  min-width:1200px;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table thead th{
+  font-size:9px;
+  padding:9px 6px;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td{
+  font-size:11px;
+  padding:8px 6px;
+}
+#tecnicoCertificado .cert-export-clean .cert-percent-field::before{
+  min-width:56px;
+  padding:4px 8px;
+  font-size:10.5px;
+}
+#tecnicoCertificado .cert-export-clean .cert-status-field::before{
+  min-width:82px;
+  padding:4px 8px;
+  font-size:10.5px;
+}
+@media(max-width:900px){
+  #tecnicoCertificado .certificado-toolbar{
+    align-items:flex-start;
+  }
+  #tecnicoCertificado .certificado-toolbar h2{
+    font-size:13px;
+  }
+  #tecnicoCertificado #btnImagemCertificado{
+    width:100%;
+  }
+}
+
+
+/* === COMPACTAÇÃO FINAL - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-card{
+  padding:14px 14px 16px!important;
+}
+#tecnicoCertificado .certificado-toolbar{
+  margin-bottom:10px!important;
+}
+#tecnicoCertificado .certificado-toolbar h2{
+  font-size:14px!important;
+  letter-spacing:.06em!important;
+}
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:hidden!important;
+  width:100%;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  table-layout:fixed!important;
+  font-size:10px!important;
+}
+#tecnicoCertificado .certificado-table thead th{
+  font-size:7.8px!important;
+  line-height:1.12!important;
+  padding:7px 4px!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  text-align:center!important;
+}
+#tecnicoCertificado .certificado-table tbody td{
+  font-size:9.6px!important;
+  line-height:1.1!important;
+  padding:6px 4px!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  text-align:center!important;
+}
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  text-align:left!important;
+}
+#tecnicoCertificado .tech-name{
+  font-size:10px!important;
+  line-height:1.05!important;
+}
+#tecnicoCertificado .tech-code{
+  font-size:7.8px!important;
+  margin-top:1px!important;
+}
+#tecnicoCertificado .cert-input-wrap{
+  gap:3px!important;
+  flex-wrap:nowrap!important;
+}
+#tecnicoCertificado .cert-badge{
+  min-width:36px!important;
+  padding:3px 5px!important;
+  font-size:8.5px!important;
+  line-height:1!important;
+}
+#tecnicoCertificado .certificado-final{
+  min-width:42px!important;
+  font-size:8.5px!important;
+}
+#tecnicoCertificado .cert-select{
+  width:86px!important;
+  min-height:26px!important;
+  padding:3px 4px!important;
+  font-size:9px!important;
+  border-radius:7px!important;
+}
+#tecnicoCertificado .cert-percent-field{
+  grid-template-columns:45px auto!important;
+  gap:2px!important;
+}
+#tecnicoCertificado .cert-input{
+  width:45px!important;
+  min-height:26px!important;
+  padding:3px 3px!important;
+  font-size:9.5px!important;
+  border-radius:7px!important;
+}
+#tecnicoCertificado .cert-percent-symbol{
+  font-size:9px!important;
+}
+#tecnicoCertificado #btnImagemCertificado{
+  min-width:82px!important;
+  min-height:34px!important;
+  padding:6px 10px!important;
+  font-size:11px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table thead th{
+  font-size:8px!important;
+  padding:7px 4px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td{
+  font-size:9.8px!important;
+  padding:6px 4px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-percent-field::before{
+  min-width:42px!important;
+  padding:3px 6px!important;
+  font-size:9px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-status-field::before{
+  min-width:70px!important;
+  padding:3px 6px!important;
+  font-size:9px!important;
+}
+@media(max-width:1050px){
+  #tecnicoCertificado .certificado-table-wrap{
+    overflow-x:auto!important;
+  }
+  #tecnicoCertificado .certificado-table{
+    min-width:900px!important;
+  }
+}
+
+
+/* === REAJUSTE LEITURA - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:hidden!important;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+  font-size:11.2px!important;
+}
+#tecnicoCertificado .certificado-table thead th{
+  font-size:8.9px!important;
+  line-height:1.18!important;
+  padding:8px 4px!important;
+  letter-spacing:.045em!important;
+}
+#tecnicoCertificado .certificado-table tbody td{
+  font-size:11px!important;
+  line-height:1.15!important;
+  padding:7px 4px!important;
+}
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  width:135px!important;
+  max-width:135px!important;
+}
+#tecnicoCertificado .tech-name{
+  font-size:11px!important;
+  line-height:1.08!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#tecnicoCertificado .tech-code{
+  font-size:8.4px!important;
+}
+#tecnicoCertificado .cert-badge{
+  min-width:40px!important;
+  padding:4px 6px!important;
+  font-size:9.4px!important;
+}
+#tecnicoCertificado .certificado-final{
+  min-width:48px!important;
+  font-size:9.4px!important;
+}
+
+/* Colunas sistêmicas mais estreitas e organizadas em duas linhas */
+#tecnicoCertificado .certificado-table tbody td:nth-child(5) .cert-input-wrap,
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-input-wrap,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-input-wrap{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  justify-items:center!important;
+  gap:4px!important;
+}
+#tecnicoCertificado .cert-select{
+  width:86px!important;
+  min-height:29px!important;
+  font-size:9.8px!important;
+  padding:4px 5px!important;
+}
+#tecnicoCertificado .cert-percent-field{
+  grid-template-columns:52px auto!important;
+  gap:3px!important;
+}
+#tecnicoCertificado .cert-input{
+  width:52px!important;
+  min-height:29px!important;
+  font-size:10.4px!important;
+  padding:4px 4px!important;
+}
+#tecnicoCertificado .cert-percent-symbol{
+  font-size:10px!important;
+}
+
+/* Imagem exportada com leitura melhor e sem sobreposição */
+#tecnicoCertificado .cert-export-clean .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  font-size:11.2px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table thead th{
+  font-size:9px!important;
+  padding:8px 4px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td{
+  font-size:11px!important;
+  padding:7px 4px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-percent-field::before{
+  min-width:46px!important;
+  padding:4px 7px!important;
+  font-size:10px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-status-field::before{
+  min-width:72px!important;
+  padding:4px 7px!important;
+  font-size:10px!important;
+}
+
+@media(max-width:1050px){
+  #tecnicoCertificado .certificado-table-wrap{
+    overflow-x:auto!important;
+  }
+  #tecnicoCertificado .certificado-table{
+    min-width:880px!important;
+  }
+}
+
+
+/* === ENQUADRAMENTO DEFINITIVO - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-card{
+  padding:16px!important;
+  overflow:hidden!important;
+}
+#tecnicoCertificado .certificado-toolbar{
+  margin-bottom:12px!important;
+  align-items:center!important;
+}
+#tecnicoCertificado .certificado-toolbar h2{
+  font-size:15px!important;
+  line-height:1.2!important;
+  letter-spacing:.07em!important;
+}
+#tecnicoCertificado .certificado-table-wrap{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  border-radius:12px!important;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+  font-size:11.5px!important;
+}
+#tecnicoCertificado .certificado-table thead th{
+  font-size:8.9px!important;
+  line-height:1.18!important;
+  padding:8px 4px!important;
+  letter-spacing:.045em!important;
+  text-align:center!important;
+  vertical-align:middle!important;
+  white-space:normal!important;
+  overflow-wrap:break-word!important;
+}
+#tecnicoCertificado .certificado-table tbody td{
+  font-size:11.3px!important;
+  line-height:1.18!important;
+  padding:8px 4px!important;
+  text-align:center!important;
+  vertical-align:middle!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#tecnicoCertificado .certificado-table tbody tr{
+  min-height:48px!important;
+}
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  text-align:left!important;
+  padding-left:7px!important;
+}
+#tecnicoCertificado .tech-name{
+  font-size:11.2px!important;
+  line-height:1.08!important;
+  font-weight:800!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#tecnicoCertificado .tech-code{
+  font-size:8.5px!important;
+  line-height:1.1!important;
+  margin-top:2px!important;
+}
+
+/* Campo e status ficam na mesma linha para reduzir altura */
+#tecnicoCertificado .cert-input-wrap{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  flex-wrap:nowrap!important;
+  width:100%!important;
+  min-width:0!important;
+}
+#tecnicoCertificado .cert-badge{
+  min-width:42px!important;
+  padding:4px 7px!important;
+  font-size:9.4px!important;
+  line-height:1!important;
+  letter-spacing:.04em!important;
+  flex-shrink:0!important;
+}
+#tecnicoCertificado .certificado-final{
+  min-width:50px!important;
+  font-size:9.5px!important;
+}
+#tecnicoCertificado .cert-select{
+  width:82px!important;
+  min-width:82px!important;
+  min-height:30px!important;
+  padding:4px 5px!important;
+  font-size:9.5px!important;
+  border-radius:8px!important;
+}
+#tecnicoCertificado .cert-percent-field{
+  display:inline-grid!important;
+  grid-template-columns:46px auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:2px!important;
+  flex-shrink:0!important;
+}
+#tecnicoCertificado .cert-input{
+  width:46px!important;
+  min-width:46px!important;
+  min-height:30px!important;
+  padding:4px 3px!important;
+  font-size:10.2px!important;
+  border-radius:8px!important;
+}
+#tecnicoCertificado .cert-percent-symbol{
+  font-size:9.3px!important;
+  font-weight:900!important;
+}
+#tecnicoCertificado #btnImagemCertificado{
+  min-width:90px!important;
+  min-height:36px!important;
+  justify-content:center!important;
+  text-align:center!important;
+  padding:7px 12px!important;
+  font-size:11.5px!important;
+}
+
+/* Exportação da imagem segue o mesmo enquadramento */
+#tecnicoCertificado .cert-export-clean{
+  width:100%!important;
+  box-shadow:none!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table thead th{
+  font-size:9px!important;
+  padding:8px 4px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td{
+  font-size:11.3px!important;
+  padding:8px 4px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-input-wrap{
+  display:inline-flex!important;
+  flex-wrap:nowrap!important;
+  gap:5px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-percent-field::before{
+  min-width:44px!important;
+  padding:4px 7px!important;
+  font-size:10px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-status-field::before{
+  min-width:70px!important;
+  padding:4px 7px!important;
+  font-size:10px!important;
+}
+
+/* Em telas menores, permite rolagem sem quebrar o layout */
+@media(max-width:1150px){
+  #tecnicoCertificado .certificado-table-wrap{
+    overflow-x:auto!important;
+  }
+  #tecnicoCertificado .certificado-table{
+    min-width:980px!important;
+  }
+}
+
 </style>
 
 <style>
@@ -803,6 +1629,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   <button class="tab-btn" data-tab="dias">Dias Trabalhados</button>
   <button class="tab-btn" data-tab="plantoes">Plantões</button>
   <button class="tab-btn" data-tab="historico">Histórico Local</button>
+  <button class="tab-btn" data-tab="tecnicoCertificado">Técnico Certificado</button>
 </div>
 
 <!-- DASHBOARD -->
@@ -1088,6 +1915,54 @@ button:hover,.btn:hover{transform:translateY(-1px)}
         </thead>
         <tbody id="tabelaHistorico"><tr><td colspan="8"><div class="empty">Sem histórico salvo.</div></td></tr></tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<!-- TÉCNICO CERTIFICADO -->
+<section id="tecnicoCertificado" class="tab-panel">
+  <div class="certificado-hero">
+    <div class="card certificado-card" id="certificadoExportArea">
+      <div class="section-title-line certificado-toolbar">
+        <h2>Técnico Certificado</h2>
+        <button id="btnImagemCertificado" class="success nao-exportar-certificado" type="button">Imagem</button>
+      </div>
+
+      <div class="table-wrap certificado-table-wrap">
+        <table class="certificado-table">
+          <colgroup>
+            <col style="width:12%">
+            <col style="width:8%">
+            <col style="width:8%">
+            <col style="width:10%">
+            <col style="width:14%">
+            <col style="width:14%">
+            <col style="width:15%">
+            <col style="width:9%">
+            <col style="width:10%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2">Técnico</th>
+              <th colspan="3" class="cert-nowrap-head">Indicadores de Campo</th>
+              <th colspan="3">Indicadores Sistêmicos</th>
+              <th rowspan="2">Certificado</th>
+              <th rowspan="2">Valor</th>
+            </tr>
+            <tr>
+              <th>Revisitas</th>
+              <th>TEC1</th>
+              <th>Produtividade</th>
+              <th class="cert-nowrap-head">T1 dentro do prazo</th>
+              <th class="cert-nowrap-head">Alfa Gestor atualizado</th>
+              <th class="cert-nowrap-head">Certidão de Atendimento</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaTecnicoCertificado">
+            <tr><td colspan="9"><div class="empty">Carregue a base para visualizar os técnicos.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </section>
@@ -1534,6 +2409,7 @@ function renderDashboard(summary){
   if($("kpiRev")) $("kpiRev").textContent=`${pct(mediaRev)} / ${totalRev}`;
   if($("kpiTec1")) $("kpiTec1").textContent=`${pct(totalTecBase?totalOk/totalTecBase*100:0)} / ${(tec1ForaPadrao||[]).length}`;
   atualizarKpiLogOfensor(summary);
+  renderTecnicoCertificado(summary);
   if($("balaoRevValor")) $("balaoRevValor").textContent=totalRev;
   if($("balaoTec1Valor")) $("balaoTec1Valor").textContent=(tec1ForaPadrao||[]).length;
 
@@ -2244,6 +3120,264 @@ function filtrarBasePrincipal(rows){
   });
 }
 
+
+const STORAGE_CERTIFICADO_SISTEMICO="lumar_tecnico_certificado_sistemicos_v1";
+const METAS_CERTIFICADO={t1:95,alfa:90,certidao:90};
+const VALORES_CERTIFICADO={revisitas:200,tec1:165,produtividade:135,certidao:100,t1:65,alfa:35};
+
+function moedaCertificado(v){
+  return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
+}
+function valorLinhaCertificado(flags){
+  return (flags.revisitas?VALORES_CERTIFICADO.revisitas:0)
+    +(flags.tec1?VALORES_CERTIFICADO.tec1:0)
+    +(flags.produtividade?VALORES_CERTIFICADO.produtividade:0)
+    +(flags.certidao?VALORES_CERTIFICADO.certidao:0)
+    +(flags.t1?VALORES_CERTIFICADO.t1:0)
+    +(flags.alfa?VALORES_CERTIFICADO.alfa:0);
+}
+function pillValorCertificado(v){
+  return `<span class="cert-valor-pill">${moedaCertificado(v)}</span>`;
+}
+
+function carregarSistemicosCertificado(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_CERTIFICADO_SISTEMICO)||"{}")||{};}
+  catch(e){return {};}
+}
+function salvarSistemicosCertificado(dados){
+  try{localStorage.setItem(STORAGE_CERTIFICADO_SISTEMICO,JSON.stringify(dados||{}));}
+  catch(e){console.warn("Não foi possível salvar indicadores sistêmicos",e);}
+}
+function certBadge(ok,extraClass=""){
+  return `<span class="cert-badge ${ok?"cert-sim":"cert-nao"} ${extraClass}">${ok?"SIM":"NÃO"}</span>`;
+}
+function normalizarPercentualCertificado(valor){
+  const n=parseNumber(String(valor??"").replace("%",""));
+  if(!Number.isFinite(n)) return 0;
+  return Math.max(0,Math.min(100,n));
+}
+function valorSistemaCertificado(dados,login,campo){
+  const key=loginKey(login);
+  const valor=dados?.[key]?.[campo];
+  return valor===0||valor?String(valor):"";
+}
+function inputSistemicoCertificado(login,campo,meta,dados){
+  const valor=valorSistemaCertificado(dados,login,campo);
+
+  if(campo==="t1"){
+    const status=String(valor||"").trim().toLowerCase();
+    const ok=status==="realizado";
+    const selecionado=ok?"Realizado":(status==="pendente"?"Pendente":"");
+    return `<div class="cert-input-wrap">
+      <div class="cert-status-field" data-status-export="${escapeHTML(selecionado||"-")}">
+        <select class="cert-select" data-login="${escapeHTML(loginKey(login))}" data-campo="${escapeHTML(campo)}" data-meta="status" data-export-status="${escapeHTML(selecionado||"-")}" aria-label="T1 dentro do prazo ${escapeHTML(nomeTecnico(login))}">
+          <option value="">Selecione</option>
+          <option value="Realizado" ${selecionado==="Realizado"?"selected":""}>Realizado</option>
+          <option value="Pendente" ${selecionado==="Pendente"?"selected":""}>Pendente</option>
+        </select>
+      </div>
+      ${certBadge(ok,"cert-status")}
+    </div>`;
+  }
+
+  const numero=normalizarPercentualCertificado(valor);
+  const ok=valor!=="" && numero>=meta;
+  const valorExportacao=valor!=="" ? `${String(valor).replace(".",",")}%` : "-";
+  return `<div class="cert-input-wrap">
+    <div class="cert-percent-field">
+      <input class="cert-input" type="number" min="0" max="100" step="0.1" value="${escapeHTML(valor)}" data-login="${escapeHTML(loginKey(login))}" data-campo="${escapeHTML(campo)}" data-meta="${meta}" data-export-percent="${escapeHTML(valorExportacao)}" aria-label="${escapeHTML(campo)} ${escapeHTML(nomeTecnico(login))}">
+      <span class="cert-percent-symbol">%</span>
+    </div>
+    ${certBadge(ok,"cert-status")}
+  </div>`;
+}
+function atualizarLinhaCertificado(tr){
+  if(!tr) return;
+  const lerOk=(idx)=>tr.children[idx]?.querySelector(".cert-badge")?.textContent.trim()==="SIM";
+  const flags={
+    revisitas:lerOk(1),
+    tec1:lerOk(2),
+    produtividade:lerOk(3),
+    t1:lerOk(4),
+    alfa:lerOk(5),
+    certidao:lerOk(6)
+  };
+  const final=tr.querySelector(".certificado-final");
+  const valorEl=tr.querySelector(".cert-valor-final");
+  const ok=Object.values(flags).every(Boolean);
+  if(final){
+    final.textContent=ok?"SIM":"NÃO";
+    final.classList.toggle("cert-sim",ok);
+    final.classList.toggle("cert-nao",!ok);
+  }
+  if(valorEl){
+    valorEl.textContent=moedaCertificado(valorLinhaCertificado(flags));
+  }
+}
+function ativarInputsCertificado(){
+  const dados=carregarSistemicosCertificado();
+
+  document.querySelectorAll(".cert-input").forEach(input=>{
+    const atualizar=()=>{
+      const login=input.dataset.login;
+      const campo=input.dataset.campo;
+      const meta=Number(input.dataset.meta)||0;
+      if(!dados[login]) dados[login]={};
+      dados[login][campo]=input.value;
+      salvarSistemicosCertificado(dados);
+
+      const numero=normalizarPercentualCertificado(input.value);
+      const ok=input.value!=="" && numero>=meta;
+      input.dataset.exportPercent=input.value!==""?`${String(input.value).replace(".",",")}%`:"-";
+      const badge=input.closest(".cert-input-wrap")?.querySelector(".cert-status");
+      if(badge){
+        badge.textContent=ok?"SIM":"NÃO";
+        badge.classList.toggle("cert-sim",ok);
+        badge.classList.toggle("cert-nao",!ok);
+      }
+      atualizarLinhaCertificado(input.closest("tr"));
+    };
+    input.addEventListener("input",atualizar);
+    input.addEventListener("change",atualizar);
+  });
+
+  document.querySelectorAll(".cert-select").forEach(select=>{
+    const atualizar=()=>{
+      const login=select.dataset.login;
+      const campo=select.dataset.campo;
+      if(!dados[login]) dados[login]={};
+      dados[login][campo]=select.value;
+      salvarSistemicosCertificado(dados);
+
+      const ok=select.value==="Realizado";
+      select.dataset.exportStatus=select.value||"-";
+      const wrap=select.closest(".cert-status-field");
+      if(wrap) wrap.setAttribute("data-status-export",select.value||"-");
+
+      const badge=select.closest(".cert-input-wrap")?.querySelector(".cert-status");
+      if(badge){
+        badge.textContent=ok?"SIM":"NÃO";
+        badge.classList.toggle("cert-sim",ok);
+        badge.classList.toggle("cert-nao",!ok);
+      }
+      atualizarLinhaCertificado(select.closest("tr"));
+    };
+    select.addEventListener("change",atualizar);
+  });
+}
+
+async function exportarImagemTecnicoCertificado(){
+  const area=$("certificadoExportArea");
+  if(!area) return;
+  let shell=null;
+  try{
+    if(!window.html2canvas){
+      setStatus("❌ Biblioteca de imagem não carregada.");
+      return;
+    }
+
+    const clone=area.cloneNode(true);
+    clone.classList.add("cert-export-clean");
+    clone.style.width="100%";
+    clone.style.maxWidth="none";
+    clone.style.overflow="visible";
+    clone.querySelectorAll(".nao-exportar-certificado").forEach(el=>el.remove());
+    clone.querySelectorAll(".cert-percent-field").forEach(wrap=>{
+      const input=wrap.querySelector(".cert-input");
+      const valor=input?.dataset?.exportPercent || (input?.value ? `${String(input.value).replace(".",",")}%` : "-");
+      wrap.setAttribute("data-percent",valor);
+    });
+    clone.querySelectorAll(".cert-status-field").forEach(wrap=>{
+      const select=wrap.querySelector(".cert-select");
+      const valor=select?.dataset?.exportStatus || select?.value || "-";
+      wrap.setAttribute("data-status-export",valor);
+    });
+    clone.querySelectorAll(".certificado-table-wrap").forEach(el=>{
+      el.style.overflow="visible";
+      el.style.maxWidth="none";
+      el.style.width="100%";
+    });
+    clone.querySelectorAll(".certificado-table").forEach(el=>{
+      el.style.width="100%";
+      el.style.minWidth="0";
+      el.style.tableLayout="fixed";
+    });
+
+    shell=document.createElement("div");
+    shell.style.position="fixed";
+    shell.style.left="-9999px";
+    shell.style.top="0";
+    shell.style.width="1340px";
+    shell.style.background="#f7f9fc";
+    shell.style.padding="20px";
+    shell.style.overflow="visible";
+    shell.appendChild(clone);
+    document.body.appendChild(shell);
+
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const canvas=await html2canvas(shell,{
+      scale:2,
+      backgroundColor:"#f7f9fc",
+      useCORS:true,
+      scrollX:0,
+      scrollY:0
+    });
+    const a=document.createElement("a");
+    a.href=canvas.toDataURL("image/png");
+    a.download="tecnico_certificado.png";
+    a.click();
+  }catch(e){
+    console.error(e);
+    if(typeof setStatus==="function") setStatus("❌ Erro ao gerar imagem do Técnico Certificado: <strong>"+e.message+"</strong>");
+  }finally{
+    if(shell) shell.remove();
+  }
+}
+
+function renderTecnicoCertificado(summary){
+  const tbody=$("tabelaTecnicoCertificado");
+  if(!tbody) return;
+
+  if(!summary||!Array.isArray(summary.arr)||!summary.arr.length){
+    tbody.innerHTML='<tr><td colspan="9"><div class="empty">Carregue a base para visualizar os técnicos.</div></td></tr>';
+    return;
+  }
+
+  const dados=carregarSistemicosCertificado();
+  tbody.innerHTML=summary.arr.map(t=>{
+    const revOk=(Number(t.revPct)||0)<=LIMITE_ACOMP_REVISITA;
+    const tec1Ok=(Number(t.tec1Pct)||0)>=LIMITE_ACOMP_TEC1 && (Number(t.tecBase)||0)>0;
+    const prodOk=(Number(t.producao)||0)>0 || (Number(t.contratosExecutados)||0)>0;
+
+    const t1Html=inputSistemicoCertificado(t.login,"t1",METAS_CERTIFICADO.t1,dados);
+    const alfaHtml=inputSistemicoCertificado(t.login,"alfa",METAS_CERTIFICADO.alfa,dados);
+    const certidaoHtml=inputSistemicoCertificado(t.login,"certidao",METAS_CERTIFICADO.certidao,dados);
+    const flagsIniciais={
+      revisitas:revOk,
+      tec1:tec1Ok,
+      produtividade:prodOk,
+      t1:String(valorSistemaCertificado(dados,t.login,"t1")||"").trim().toLowerCase()==="realizado",
+      alfa:normalizarPercentualCertificado(valorSistemaCertificado(dados,t.login,"alfa"))>=METAS_CERTIFICADO.alfa,
+      certidao:normalizarPercentualCertificado(valorSistemaCertificado(dados,t.login,"certidao"))>=METAS_CERTIFICADO.certidao
+    };
+
+    return `<tr data-cert-login="${escapeHTML(loginKey(t.login))}">
+      <td>${celulaTecnico(t.login)}</td>
+      <td>${certBadge(revOk)}</td>
+      <td>${certBadge(tec1Ok)}</td>
+      <td>${certBadge(prodOk)}</td>
+      <td>${t1Html}</td>
+      <td>${alfaHtml}</td>
+      <td>${certidaoHtml}</td>
+      <td>${certBadge(false,"certificado-final")}</td>
+      <td>${pillValorCertificado(valorLinhaCertificado(flagsIniciais)).replace('cert-valor-pill','cert-valor-pill cert-valor-final')}</td>
+    </tr>`;
+  }).join("");
+
+  tbody.querySelectorAll("tr").forEach(atualizarLinhaCertificado);
+  ativarInputsCertificado();
+}
+
 function assinaturaPlanilha(rows){
   try{
     const arr=Array.isArray(rows)?rows:[];
@@ -2493,6 +3627,7 @@ function limparTudo(){
   if($("kpiRev")) $("kpiRev").textContent="0% / 0";
   if($("kpiTec1")) $("kpiTec1").textContent="0% / 0";
   if($("kpiLogOfensor")) $("kpiLogOfensor").textContent="0";
+  if($("tabelaTecnicoCertificado")) $("tabelaTecnicoCertificado").innerHTML='<tr><td colspan="9"><div class="empty">Carregue a base para visualizar os técnicos.</div></td></tr>';
   $("tabelaTecnicos").innerHTML='<tr><td colspan="10"><div class="empty">Carregue a base para visualizar.</div></td></tr>';
   if($("secRankingNode")) $("secRankingNode").style.display="none";
   if($("rankingNode")) $("rankingNode").innerHTML='<div class="empty">Aguardando base.</div>';
@@ -2606,6 +3741,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if($("cardRevisitas")) $("cardRevisitas").addEventListener("click",()=>abrirModalIndicador("revisita"));
   if($("cardTec1")) $("cardTec1").addEventListener("click",()=>abrirModalIndicador("tec1"));
   if($("cardLogOfensor")) $("cardLogOfensor").addEventListener("click",abrirModalLogOfensor);
+  if($("btnImagemCertificado")) $("btnImagemCertificado").addEventListener("click",exportarImagemTecnicoCertificado);
   $("modalTecnicosFechar").addEventListener("click",fecharModalTecnicos);
   $("modalTecnicos").addEventListener("click",e=>{if(e.target===$("modalTecnicos")) fecharModalTecnicos();});
   $("modalIndicadorFechar").addEventListener("click",fecharModalIndicador);
@@ -3308,6 +4444,348 @@ document.addEventListener("DOMContentLoaded",()=>{
   else initPlantoes();
 })();
 </script>
+
+
+<style>
+/* === AJUSTE FINAL LADO A LADO - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:hidden!important;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+#tecnicoCertificado .certificado-table thead th{
+  font-size:9.2px!important;
+  line-height:1.16!important;
+  padding:8px 4px!important;
+}
+#tecnicoCertificado .certificado-table tbody td{
+  font-size:11.4px!important;
+  line-height:1.15!important;
+  padding:8px 4px!important;
+}
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  padding-left:8px!important;
+}
+#tecnicoCertificado .tech-name{
+  font-size:11.3px!important;
+}
+#tecnicoCertificado .tech-code{
+  font-size:8.7px!important;
+}
+#tecnicoCertificado .cert-badge,
+#tecnicoCertificado .certificado-final{
+  min-width:40px!important;
+  padding:4px 7px!important;
+  font-size:9.3px!important;
+  line-height:1!important;
+  flex:0 0 auto!important;
+}
+#tecnicoCertificado .certificado-final{min-width:48px!important;}
+
+/* força T1, Alfa e Certidão a ficarem lado a lado */
+#tecnicoCertificado .certificado-table tbody td:nth-child(5) .cert-input-wrap,
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-input-wrap,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-input-wrap,
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(5) .cert-input-wrap,
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(6) .cert-input-wrap,
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(7) .cert-input-wrap{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  gap:6px!important;
+  width:100%!important;
+  min-width:0!important;
+}
+#tecnicoCertificado .cert-select{
+  width:78px!important;
+  min-width:78px!important;
+  min-height:30px!important;
+  padding:4px 5px!important;
+  font-size:9.6px!important;
+}
+#tecnicoCertificado .cert-percent-field{
+  display:inline-grid!important;
+  grid-template-columns:44px auto!important;
+  gap:3px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 auto!important;
+}
+#tecnicoCertificado .cert-input{
+  width:44px!important;
+  min-width:44px!important;
+  min-height:30px!important;
+  padding:4px 3px!important;
+  font-size:10.1px!important;
+}
+#tecnicoCertificado .cert-percent-symbol{
+  font-size:9.4px!important;
+  line-height:1!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-percent-field::before{
+  min-width:42px!important;
+  padding:4px 6px!important;
+  font-size:9.8px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-status-field::before{
+  min-width:68px!important;
+  padding:4px 6px!important;
+  font-size:9.8px!important;
+}
+@media(max-width:1200px){
+  #tecnicoCertificado .certificado-table-wrap{overflow-x:auto!important;}
+  #tecnicoCertificado .certificado-table{min-width:980px!important;}
+}
+</style>
+
+
+<style>
+/* Garantir coluna Certificado na imagem exportada */
+#tecnicoCertificado .cert-export-clean .certificado-table-wrap{overflow:visible!important;}
+#tecnicoCertificado .cert-export-clean .certificado-table{width:100%!important;min-width:0!important;}
+#tecnicoCertificado .cert-export-clean .certificado-table th:last-child,
+#tecnicoCertificado .cert-export-clean .certificado-table td:last-child{min-width:72px!important;width:auto!important;}
+</style>
+
+
+<style>
+/* === CABEÇALHOS SEM QUEBRA - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:hidden!important;
+}
+#tecnicoCertificado .cert-nowrap-head{
+  white-space:nowrap!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+  font-size:8.2px!important;
+  letter-spacing:.035em!important;
+  line-height:1!important;
+}
+#tecnicoCertificado .certificado-table thead th{
+  padding-left:3px!important;
+  padding-right:3px!important;
+}
+#tecnicoCertificado .certificado-table tbody td{
+  padding-left:3px!important;
+  padding-right:3px!important;
+}
+#tecnicoCertificado .cert-input-wrap{
+  gap:4px!important;
+}
+#tecnicoCertificado .cert-select{
+  width:76px!important;
+  min-width:76px!important;
+  font-size:9.2px!important;
+}
+#tecnicoCertificado .cert-percent-field{
+  grid-template-columns:42px auto!important;
+}
+#tecnicoCertificado .cert-input{
+  width:42px!important;
+  min-width:42px!important;
+}
+#tecnicoCertificado .cert-badge,
+#tecnicoCertificado .certificado-final{
+  min-width:38px!important;
+  padding:4px 6px!important;
+  font-size:9px!important;
+}
+#tecnicoCertificado .tech-name{
+  font-size:10.8px!important;
+}
+#tecnicoCertificado .tech-code{
+  font-size:8.2px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-nowrap-head{
+  white-space:nowrap!important;
+  font-size:8.2px!important;
+}
+@media(max-width:1150px){
+  #tecnicoCertificado .certificado-table-wrap{
+    overflow-x:auto!important;
+  }
+  #tecnicoCertificado .certificado-table{
+    min-width:1040px!important;
+  }
+}
+</style>
+
+
+<style>
+/* === AJUSTE T1 SEM QUEBRA E CERTIFICADO MENOR === */
+#tecnicoCertificado .certificado-table thead th{
+  white-space:normal!important;
+}
+#tecnicoCertificado .cert-nowrap-head{
+  white-space:nowrap!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+}
+#tecnicoCertificado .certificado-table thead th:nth-child(5){
+  white-space:nowrap!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+  font-size:7.9px!important;
+}
+#tecnicoCertificado .certificado-table thead th:last-child,
+#tecnicoCertificado .certificado-table tbody td:last-child{
+  width:14%!important;
+  min-width:72px!important;
+  max-width:110px!important;
+}
+#tecnicoCertificado .certificado-final{
+  min-width:42px!important;
+  padding:4px 6px!important;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:hidden!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table thead th:nth-child(5){
+  white-space:nowrap!important;
+  font-size:7.9px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table th:last-child,
+#tecnicoCertificado .cert-export-clean .certificado-table td:last-child{
+  width:14%!important;
+  min-width:72px!important;
+  max-width:110px!important;
+}
+@media(max-width:1150px){
+  #tecnicoCertificado .certificado-table-wrap{overflow-x:auto!important;}
+  #tecnicoCertificado .certificado-table{min-width:1040px!important;}
+}
+</style>
+
+
+<style>
+/* === AUMENTAR NOME DOS TÉCNICOS SEM ESTOURAR === */
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  width:13%!important;
+  min-width:120px!important;
+  max-width:160px!important;
+  padding-left:8px!important;
+  padding-right:4px!important;
+  overflow:hidden!important;
+}
+#tecnicoCertificado .tech-name{
+  display:block!important;
+  width:100%!important;
+  font-size:11.8px!important;
+  line-height:1.08!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#tecnicoCertificado .tech-code{
+  display:block!important;
+  font-size:8.1px!important;
+  line-height:1.05!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#tecnicoCertificado .cert-export-clean .tech-name{
+  font-size:11.8px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#tecnicoCertificado .cert-export-clean .tech-code{
+  font-size:8.1px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+</style>
+
+
+<style>
+/* === CORRIGIR SOBREPOSIÇÃO T1 NA IMAGEM EXPORTADA === */
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(5){
+  padding-left:2px!important;
+  padding-right:2px!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(5) .cert-input-wrap{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex-wrap:nowrap!important;
+  gap:4px!important;
+  width:100%!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(5) .cert-status-field::before{
+  min-width:54px!important;
+  max-width:62px!important;
+  padding:4px 5px!important;
+  font-size:8.8px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table tbody td:nth-child(5) .cert-badge{
+  min-width:34px!important;
+  padding:4px 5px!important;
+  font-size:8.6px!important;
+  line-height:1!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table thead th:nth-child(5){
+  font-size:7.7px!important;
+  white-space:nowrap!important;
+}
+#tecnicoCertificado .cert-export-clean .certificado-table th:last-child,
+#tecnicoCertificado .cert-export-clean .certificado-table td:last-child{
+  width:12%!important;
+  min-width:64px!important;
+  max-width:92px!important;
+}
+</style>
+
+
+<style>
+/* === VALOR DA CERTIFICAÇÃO === */
+#tecnicoCertificado .cert-valor-pill{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:78px!important;
+  padding:5px 8px!important;
+  border-radius:999px!important;
+  background:#eef5ff!important;
+  border:1px solid #cfe0ff!important;
+  color:#17375f!important;
+  font-size:9.4px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+#tecnicoCertificado .certificado-table thead th:last-child,
+#tecnicoCertificado .certificado-table tbody td:last-child{
+  min-width:86px!important;
+}
+#tecnicoCertificado .cert-export-clean .cert-valor-pill{
+  min-width:78px!important;
+  font-size:9.4px!important;
+  padding:5px 8px!important;
+}
+</style>
 
 </body>
 </html>
