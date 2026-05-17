@@ -1999,7 +1999,6 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 <!-- Firebase - última base em nuvem -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 
 <script>
 let arquivoSelecionado=null;
@@ -2015,40 +2014,38 @@ let tecnicoAtivoLogin="";
 const STORAGE_LAST="lumar_dashboard_last_dataset_v1";
 const STORAGE_HISTORY="lumar_dashboard_history_v1";
 /*
-  FIREBASE - ÚLTIMA BASE NA NUVEM
+  FIREBASE - ÚLTIMA BASE NA NUVEM / SOMENTE CLOUD FIRESTORE
 
-  Cole abaixo o firebaseConfig do seu projeto Firebase.
-  Caminho:
-  Firebase Console > Configurações do projeto > Geral > Seus apps > App Web.
+  Esta versão NÃO usa Firebase Storage.
+  A base fica salva no Cloud Firestore em partes/chunks.
 */
 const FIREBASE_CONFIG_INDICADORES_VT={
-  apiKey:"COLE_AQUI",
-  authDomain:"COLE_AQUI",
-  projectId:"COLE_AQUI",
-  storageBucket:"COLE_AQUI",
-  messagingSenderId:"COLE_AQUI",
-  appId:"COLE_AQUI"
+  apiKey:"AIzaSyDIAneGh89_4bS3AOTmZM5d4v94BJvBfY",
+  authDomain:"indicadores-vt.firebaseapp.com",
+  projectId:"indicadores-vt",
+  storageBucket:"indicadores-vt.firebasestorage.app",
+  messagingSenderId:"511392597059",
+  appId:"1:511392597059:web:d898f6555a24dcbed8c0f6"
 };
 
 const FIREBASE_DOC_ULTIMA_BASE={
   collection:"indicadores_vt",
   doc:"ultima_base"
 };
-const FIREBASE_STORAGE_ULTIMA_BASE="indicadores-vt/ultima_base.json";
+const FIREBASE_CHUNK_SIZE=350000;
 
 let firebaseIndicadoresApp=null;
 let firebaseIndicadoresDb=null;
-let firebaseIndicadoresStorage=null;
 
 function firebaseIndicadoresConfigurado(){
   const cfg=FIREBASE_CONFIG_INDICADORES_VT||{};
   return !!(
     cfg.apiKey &&
     cfg.projectId &&
-    cfg.storageBucket &&
+    cfg.appId &&
     !String(cfg.apiKey).includes("COLE_AQUI") &&
     !String(cfg.projectId).includes("COLE_AQUI") &&
-    !String(cfg.storageBucket).includes("COLE_AQUI")
+    !String(cfg.appId).includes("COLE_AQUI")
   );
 }
 
@@ -2059,27 +2056,32 @@ function inicializarFirebaseIndicadores(){
     return null;
   }
 
-  if(firebaseIndicadoresApp && firebaseIndicadoresDb && firebaseIndicadoresStorage){
+  if(firebaseIndicadoresApp && firebaseIndicadoresDb){
     return {
       app:firebaseIndicadoresApp,
-      db:firebaseIndicadoresDb,
-      storage:firebaseIndicadoresStorage
+      db:firebaseIndicadoresDb
     };
   }
 
   try{
     firebaseIndicadoresApp=firebase.apps?.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG_INDICADORES_VT);
     firebaseIndicadoresDb=firebase.firestore();
-    firebaseIndicadoresStorage=firebase.storage();
     return {
       app:firebaseIndicadoresApp,
-      db:firebaseIndicadoresDb,
-      storage:firebaseIndicadoresStorage
+      db:firebaseIndicadoresDb
     };
   }catch(e){
     console.warn("Firebase não inicializado.",e);
     return null;
   }
+}
+
+function quebrarTextoFirestore(texto,tamanho=FIREBASE_CHUNK_SIZE){
+  const chunks=[];
+  for(let i=0;i<texto.length;i+=tamanho){
+    chunks.push(texto.slice(i,i+tamanho));
+  }
+  return chunks;
 }
 
 async function salvarUltimaBaseNuvem(rows,fileName,signature){
@@ -2094,21 +2096,48 @@ async function salvarUltimaBaseNuvem(rows,fileName,signature){
       rows:rows||[]
     };
 
-    const blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
-    await fb.storage.ref(FIREBASE_STORAGE_ULTIMA_BASE).put(blob,{contentType:"application/json"});
+    const texto=JSON.stringify(payload);
+    const partes=quebrarTextoFirestore(texto);
+    const version=String(Date.now());
 
-    await fb.db.collection(FIREBASE_DOC_ULTIMA_BASE.collection).doc(FIREBASE_DOC_ULTIMA_BASE.doc).set({
+    const docRef=fb.db.collection(FIREBASE_DOC_ULTIMA_BASE.collection).doc(FIREBASE_DOC_ULTIMA_BASE.doc);
+
+    // Remove chunks antigos quando possível para não acumular lixo.
+    try{
+      const antigo=await docRef.get();
+      const idsAntigos=antigo.exists ? (antigo.data()?.chunkIds||[]) : [];
+      for(const id of idsAntigos){
+        await docRef.collection("chunks").doc(id).delete().catch(()=>{});
+      }
+    }catch(e){
+      console.warn("Não foi possível limpar chunks antigos.",e);
+    }
+
+    const chunkIds=[];
+    for(let i=0;i<partes.length;i++){
+      const id=`${version}_${String(i).padStart(4,"0")}`;
+      chunkIds.push(id);
+      await docRef.collection("chunks").doc(id).set({
+        index:i,
+        part:partes[i],
+        version
+      });
+    }
+
+    await docRef.set({
       fileName:payload.fileName,
       date:payload.date,
       signature:payload.signature,
       rowsCount:Array.isArray(rows)?rows.length:0,
-      storagePath:FIREBASE_STORAGE_ULTIMA_BASE,
+      chunkIds,
+      chunksCount:chunkIds.length,
+      version,
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-    },{merge:true});
+    },{merge:false});
 
     return true;
   }catch(e){
-    console.warn("Não foi possível salvar a última base na nuvem.",e);
+    console.warn("Não foi possível salvar a última base no Firestore.",e);
     return false;
   }
 }
@@ -2118,28 +2147,44 @@ async function encontrarUltimaBaseNuvem(){
   if(!fb) return null;
 
   try{
-    const doc=await fb.db.collection(FIREBASE_DOC_ULTIMA_BASE.collection).doc(FIREBASE_DOC_ULTIMA_BASE.doc).get();
+    const docRef=fb.db.collection(FIREBASE_DOC_ULTIMA_BASE.collection).doc(FIREBASE_DOC_ULTIMA_BASE.doc);
+    const doc=await docRef.get();
     if(!doc.exists) return null;
 
     const meta=doc.data()||{};
-    const storagePath=meta.storagePath||FIREBASE_STORAGE_ULTIMA_BASE;
-    const url=await fb.storage.ref(storagePath).getDownloadURL();
-    const res=await fetch(url,{cache:"no-store"});
-    if(!res.ok) throw new Error("Falha ao baixar última base da nuvem.");
+    let payload=null;
 
-    const payload=await res.json();
+    if(Array.isArray(meta.rows)&&meta.rows.length){
+      payload=meta;
+    }else{
+      const ids=meta.chunkIds||[];
+      if(!ids.length) return null;
+
+      const partes=[];
+      for(const id of ids){
+        const chunk=await docRef.collection("chunks").doc(id).get();
+        if(chunk.exists){
+          partes.push(chunk.data()?.part||"");
+        }
+      }
+
+      const texto=partes.join("");
+      if(!texto) return null;
+      payload=JSON.parse(texto);
+    }
+
     const rows=payload?.rows||payload?.dados||payload?.data||[];
     if(!Array.isArray(rows)||!rows.length) return null;
 
     return {
-      fileName:payload.fileName||meta.fileName||"Base salva na nuvem",
+      fileName:payload.fileName||meta.fileName||"Base salva no Firestore",
       date:payload.date||meta.date||new Date().toISOString(),
       signature:payload.signature||meta.signature||assinaturaPlanilha(rows),
       rows,
       origem:"firebase"
     };
   }catch(e){
-    console.warn("Não foi possível carregar a última base da nuvem.",e);
+    console.warn("Não foi possível carregar a última base do Firestore.",e);
     return null;
   }
 }
@@ -2162,7 +2207,6 @@ async function carregarUltimaBaseFirebaseOuLocal(opcoes={}){
   }
   return false;
 }
-
 
 /*
   ÚLTIMA BASE EMBUTIDA NO HTML
@@ -3891,7 +3935,7 @@ async function carregarBase(){
     const z450=currentSummary.arr.find(t=>t.login==="Z450037");
     const avisoRepetida=historicoResultado.repetida?`<br>⚠️ Planilha repetida: já estava no histórico em <strong>${esc(historicoResultado.item.date)}</strong>. Não criei novo registro.`:"";
     const avisoFirebase=firebaseIndicadoresConfigurado()
-      ? (salvaFirebase?`<br>☁️ Última base salva no Firebase.`:`<br>⚠️ Base carregada, mas não consegui salvar no Firebase. Verifique config/rules.`)
+      ? (salvaFirebase?`<br>☁️ Última base salva no Firebase/Firestore.`:`<br>⚠️ Base carregada, mas não consegui salvar no Firebase. Verifique config/regras do Firestore.`)
       : `<br>ℹ️ Firebase ainda não configurado. Salvando apenas neste navegador.`;
     setStatus(`✅ Base carregada.<br>Base manutenção: <strong>${processedRows.length}</strong> | Revisitas 10d: <strong>${currentSummary.totalRev}</strong>${z450?`<br>Conferência ${z450.nome}: <strong>${z450.producao}</strong> produção e <strong>${z450.revisitas}</strong> revisitas 10d.`:""}${avisoRepetida}${avisoFirebase}`);
   }catch(err){console.error(err);setStatus("❌ Erro ao carregar: <strong>"+err.message+"</strong>");}
