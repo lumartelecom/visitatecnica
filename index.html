@@ -1834,6 +1834,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   <div class="card plantoes-config-ferias">
     <div class="section-title-line">
       <h2>Configuração de Férias</h2>
+      <button id="plantaoEditarFerias" class="secondary" type="button">Editar</button>
     </div>
     <div class="table-wrap">
       <table class="plantoes-config-table">
@@ -3768,6 +3769,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   let plantaoState=null;
   let plantaoTerceiroAberto=false;
   let plantaoMesAtualIndex=0;
+  let plantaoEdicaoGeralAtiva=false;
 
   const $p=id=>document.getElementById(id);
   const clone=obj=>JSON.parse(JSON.stringify(obj));
@@ -3810,6 +3812,11 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
   function tituloPDFPlantaoMes(month){
     return "ESCALA DE PLANTÃO - VISITA TECNICA";
+  }
+  function tituloImagemPlantaoMes(month){
+    const mes=String(month?.key||"").toUpperCase();
+    const ano=anoPlantaoMes(month);
+    return `ESCALA DE PLANTÃO - VISITA TECNICA - ${mes} ${ano}`;
   }
   function ajustarTituloPlantao(month){
     const titulo=tituloPlantaoMes(month)||"PLANTÕES – MAIO 2026 | TERESINA / PIAUÍ";
@@ -4017,39 +4024,92 @@ document.addEventListener("DOMContentLoaded",()=>{
     return pref;
   }
 
+
+  function atualizarEstadoEdicaoPlantoes(){
+    const section=$p("plantoes");
+    const cardFerias=document.querySelector(".plantoes-config-ferias");
+    const btn=$p("plantaoEditarFerias");
+
+    if(section) section.classList.toggle("plantao-editavel",plantaoEdicaoGeralAtiva);
+    if(cardFerias) cardFerias.classList.toggle("ferias-editavel",plantaoEdicaoGeralAtiva);
+
+    if(btn){
+      btn.textContent=plantaoEdicaoGeralAtiva?"Bloquear edição":"Editar";
+      btn.className=plantaoEdicaoGeralAtiva?"success":"secondary";
+      btn.setAttribute("aria-pressed",plantaoEdicaoGeralAtiva?"true":"false");
+    }
+
+    const areas=[
+      $p("plantaoConfigBody"),
+      $p("plantaoFolgaConfig"),
+      $p("plantaoTabelaBody")
+    ].filter(Boolean);
+
+    areas.forEach(area=>{
+      area.querySelectorAll("input,select").forEach(el=>{
+        el.disabled=!plantaoEdicaoGeralAtiva;
+        el.title=plantaoEdicaoGeralAtiva?"Campo liberado para edição":"Clique em Editar para alterar os plantões";
+      });
+    });
+
+    const botoesControlados=[
+      $p("plantaoRedistribuirFolgas"),
+      $p("plantaoRedistribuirPlantoes"),
+      $p("plantaoToggleTerceiro")
+    ].filter(Boolean);
+
+    botoesControlados.forEach(btnCtrl=>{
+      btnCtrl.disabled=!plantaoEdicaoGeralAtiva;
+      btnCtrl.title=plantaoEdicaoGeralAtiva?"Ação liberada":"Clique em Editar para liberar esta ação";
+    });
+  }
+
+  function salvarEdicaoPlantoesAutomaticamente(){
+    const ok=salvarStatePlantoes();
+    const feedback=$p("plantaoSalvarFeedback");
+    if(feedback){
+      feedback.textContent=ok?"Configuração de férias salva automaticamente.":"Não foi possível salvar a configuração de férias.";
+      clearTimeout(salvarEdicaoPlantoesAutomaticamente._timer);
+      salvarEdicaoPlantoesAutomaticamente._timer=setTimeout(()=>{ feedback.textContent=""; },2800);
+    }
+    return ok;
+  }
+
+  /* Estado de edição aplicado também após renderização das folgas. */
   function renderConfigPlantoes(){
     renderFolgaConfig();
     const body=$p("plantaoConfigBody");
     if(!body) return;
+    const bloqueado=plantaoEdicaoGeralAtiva?"":" disabled";
     body.innerHTML=plantaoState.technicians.map((t,i)=>`<tr>
       <td><strong>${t.label||("Técnico "+(i+1))}</strong></td>
-      <td><input data-plantao-tech="${t.id}" data-field="name" value="${String(t.name||"").replace(/"/g,"&quot;")}"></td>
+      <td><input data-plantao-tech="${t.id}" data-field="name" value="${String(t.name||"").replace(/"/g,"&quot;")}"${bloqueado}></td>
       <td>
-        <select data-plantao-tech="${t.id}" data-field="status">
+        <select data-plantao-tech="${t.id}" data-field="status"${bloqueado}>
           <option value="Ativo" ${t.status==="Ativo"?"selected":""}>Ativo</option>
           <option value="Férias" ${t.status==="Férias"?"selected":""}>Férias</option>
           <option value="Técnico noturno" ${t.status==="Técnico noturno"?"selected":""}>Técnico noturno</option>
           <option value="Inativo" ${t.status==="Inativo"?"selected":""}>Inativo</option>
         </select>
       </td>
-      <td><input type="date" data-plantao-tech="${t.id}" data-field="start" value="${t.start||""}"></td>
-      <td><input type="date" data-plantao-tech="${t.id}" data-field="end" value="${t.end||""}"></td>
+      <td><input type="date" data-plantao-tech="${t.id}" data-field="start" value="${t.start||""}"${bloqueado}></td>
+      <td><input type="date" data-plantao-tech="${t.id}" data-field="end" value="${t.end||""}"${bloqueado}></td>
     </tr>`).join("");
 
+    const atualizarCampo=(el)=>{
+      if(!plantaoEdicaoGeralAtiva) return;
+      const tec=tecnicoPorId(el.dataset.plantaoTech);
+      tec[el.dataset.field]=el.value;
+      if(el.dataset.field==="status") recalcularPlantoesPorDisponibilidade();
+      renderTabelaPlantoes();
+      salvarEdicaoPlantoesAutomaticamente();
+    };
+
     body.querySelectorAll("[data-plantao-tech]").forEach(el=>{
-      el.addEventListener("input",()=>{
-        const tec=tecnicoPorId(el.dataset.plantaoTech);
-        tec[el.dataset.field]=el.value;
-        if(el.dataset.field==="status") recalcularPlantoesPorDisponibilidade();
-        renderTabelaPlantoes();
-      });
-      el.addEventListener("change",()=>{
-        const tec=tecnicoPorId(el.dataset.plantaoTech);
-        tec[el.dataset.field]=el.value;
-        if(el.dataset.field==="status") recalcularPlantoesPorDisponibilidade();
-        renderTabelaPlantoes();
-      });
+      el.addEventListener("input",()=>atualizarCampo(el));
+      el.addEventListener("change",()=>atualizarCampo(el));
     });
+    atualizarEstadoEdicaoPlantoes();
   }
 
   function renderMesSelect(){
@@ -4196,7 +4256,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     return `escala_plantoes_${nome}.${ext}`;
   }
 
-  function criarShellPlantaoMes(month){
+  function criarShellPlantaoMes(month,modo="pdf"){
     const mostrarTecnicoC=month.rows.some(row=>!!row.baseC);
     const linhas=month.rows.map(row=>{
       const calc=calcularLinhaPlantao(row);
@@ -4218,16 +4278,18 @@ document.addEventListener("DOMContentLoaded",()=>{
     const totalPlantoes=month.rows.length*2+totalTerceiro;
     const colunasTecnicoC=mostrarTecnicoC?"<th>Téc. C</th>":"";
     const colunasFolgaC=mostrarTecnicoC?"<th>Folga C</th>":"";
-    const shell=document.createElement("div");
-    shell.className="plantao-pdf-shell";
-    shell.innerHTML=`<div class="plantao-pdf-header">
-        <h1>${escapePlantao(tituloPDFPlantaoMes(month))}</h1>
-      </div>
-      <div class="plantao-pdf-kpis">
+    const titulo=modo==="imagem" ? tituloImagemPlantaoMes(month) : tituloPDFPlantaoMes(month);
+    const blocoResumo=modo==="imagem" ? "" : `<div class="plantao-pdf-kpis">
         <div class="plantao-pdf-kpi"><span>Plantões</span><strong>${totalPlantoes}</strong></div>
         <div class="plantao-pdf-kpi"><span>Folgas</span><strong>${totalPlantoes}</strong></div>
         <div class="plantao-pdf-kpi"><span>Mês</span><strong>${escapePlantao(month.key||"")}</strong></div>
+      </div>`;
+    const shell=document.createElement("div");
+    shell.className="plantao-pdf-shell";
+    shell.innerHTML=`<div class="plantao-pdf-header">
+        <h1>${escapePlantao(titulo)}</h1>
       </div>
+      ${blocoResumo}
       <div class="plantao-pdf-table">
         <table>
           <thead><tr><th>Data</th><th>Semana</th><th>Tipo</th><th>Descrição</th><th>Técnico A</th><th>Técnico B</th>${colunasTecnicoC}<th>Folga A</th><th>Folga B</th>${colunasFolgaC}<th>Aviso</th></tr></thead>
@@ -4256,7 +4318,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     let shell=null;
     try{
       if(!window.html2canvas){ alert("Biblioteca de imagem não carregada."); return; }
-      shell=criarShellPlantaoMes(month);
+      shell=criarShellPlantaoMes(month,"imagem");
       await new Promise(resolve=>requestAnimationFrame(resolve));
       const canvas=await html2canvas(shell,{scale:2,backgroundColor:"#f7f9fc",useCORS:true,scrollX:0,scrollY:0});
       const a=document.createElement("a");
@@ -4340,11 +4402,24 @@ document.addEventListener("DOMContentLoaded",()=>{
 
     body.innerHTML=linhas;
     body.querySelectorAll("input,select").forEach(el=>{
-      el.addEventListener("change",()=>{ atualizarMesFromInputs(month); renderTabelaPlantoes(); });
+      el.disabled=!plantaoEdicaoGeralAtiva;
+      el.title=plantaoEdicaoGeralAtiva?"Campo liberado para edição":"Clique em Editar para alterar os plantões";
+      el.addEventListener("change",()=>{
+        if(!plantaoEdicaoGeralAtiva) return;
+        atualizarMesFromInputs(month);
+        renderTabelaPlantoes();
+        salvarEdicaoPlantoesAutomaticamente();
+      });
       if(el.tagName==="INPUT" && el.type!=="date"){
-        el.addEventListener("blur",()=>{ atualizarMesFromInputs(month); renderTabelaPlantoes(); });
+        el.addEventListener("blur",()=>{
+          if(!plantaoEdicaoGeralAtiva) return;
+          atualizarMesFromInputs(month);
+          renderTabelaPlantoes();
+          salvarEdicaoPlantoesAutomaticamente();
+        });
       }
     });
+    atualizarEstadoEdicaoPlantoes();
 
     ajustarTituloPlantao(month);
     $p("plantaoKpiPlantoes").textContent=month.rows.length*2+totalTerceiro;
@@ -4368,18 +4443,35 @@ document.addEventListener("DOMContentLoaded",()=>{
     const salvar=$p("plantaoSalvar");
     const pdfBtn=$p("plantaoPdf");
     const imgBtn=$p("plantaoImagem");
+    const editarFerias=$p("plantaoEditarFerias");
     const restaurar=$p("plantaoRestaurar");
     const redistribuir=$p("plantaoRedistribuirFolgas");
     const redistribuirPlantoes=$p("plantaoRedistribuirPlantoes");
     const toggleTerceiro=$p("plantaoToggleTerceiro");
+    if(editarFerias){
+      editarFerias.addEventListener("click",()=>{
+        plantaoEdicaoGeralAtiva=!plantaoEdicaoGeralAtiva;
+        atualizarEstadoEdicaoPlantoes();
+        if(!plantaoEdicaoGeralAtiva){
+          salvarEdicaoPlantoesAutomaticamente();
+          if(typeof setStatus==="function") setStatus("🔒 Configuração de férias bloqueada e salva.");
+        }else{
+          if(typeof setStatus==="function") setStatus("✏️ Configuração de férias liberada para edição.");
+        }
+      });
+      atualizarEstadoEdicaoPlantoes();
+    }
     if(toggleTerceiro){
       toggleTerceiro.addEventListener("click",()=>{
+        if(!plantaoEdicaoGeralAtiva) return;
         plantaoTerceiroAberto=!plantaoTerceiroAberto;
         atualizarToggleTerceiro();
+        salvarEdicaoPlantoesAutomaticamente();
       });
       atualizarToggleTerceiro();
     }
     if(redistribuir) redistribuir.addEventListener("click",()=>{
+      if(!plantaoEdicaoGeralAtiva) return;
       const sel=$p("plantaoMes");
       const month=plantaoState.months[Number(sel?.value)||0];
       if(!month) return;
@@ -4391,9 +4483,11 @@ document.addEventListener("DOMContentLoaded",()=>{
       renderTabelaPlantoes();
       if(typeof setStatus==="function") setStatus(ok?"Folgas redistribuídas para o mês selecionado. Clique em <strong>Salvar alterações</strong> para manter.":"Não foi possível redistribuir as folgas deste mês.");
       const feedback=$p("plantaoSalvarFeedback");
-      if(feedback) feedback.textContent=ok?"Folgas redistribuídas. Clique em Salvar alterações para manter.":"Não foi possível redistribuir.";
+      if(feedback) feedback.textContent=ok?"Folgas redistribuídas e salvas.":"Não foi possível redistribuir.";
+      if(ok) salvarEdicaoPlantoesAutomaticamente();
     });
     if(redistribuirPlantoes) redistribuirPlantoes.addEventListener("click",()=>{
+      if(!plantaoEdicaoGeralAtiva) return;
       const sel=$p("plantaoMes");
       const month=plantaoState.months[Number(sel?.value)||0];
       if(!month) return;
@@ -4405,7 +4499,8 @@ document.addEventListener("DOMContentLoaded",()=>{
       renderTabelaPlantoes();
       if(typeof setStatus==="function") setStatus(ok?"Plantões redistribuídos para o mês selecionado. Clique em <strong>Salvar alterações</strong> para manter.":"Não foi possível redistribuir os plantões deste mês.");
       const feedback=$p("plantaoSalvarFeedback");
-      if(feedback) feedback.textContent=ok?"Plantões redistribuídos. Clique em Salvar alterações para manter.":"Não foi possível redistribuir plantões.";
+      if(feedback) feedback.textContent=ok?"Plantões redistribuídos e salvos.":"Não foi possível redistribuir plantões.";
+      if(ok) salvarEdicaoPlantoesAutomaticamente();
     });
     if(salvar) salvar.addEventListener("click",()=>{
       const sel=$p("plantaoMes");
@@ -4416,6 +4511,8 @@ document.addEventListener("DOMContentLoaded",()=>{
       const textoOriginal=salvar.dataset.labelOriginal||salvar.textContent;
       salvar.dataset.labelOriginal=textoOriginal;
       const ok=salvarStatePlantoes();
+      plantaoEdicaoGeralAtiva=false;
+      atualizarEstadoEdicaoPlantoes();
       const feedback=$p("plantaoSalvarFeedback");
       salvar.textContent=ok?"Salvo neste navegador":"Erro ao salvar";
       if(feedback) feedback.textContent=ok?"Alterações salvas neste navegador. Ao reabrir esta página no mesmo navegador, a escala continua como você deixou.":"Não foi possível salvar. Verifique se o navegador permite armazenamento local.";
@@ -4784,6 +4881,64 @@ document.addEventListener("DOMContentLoaded",()=>{
   min-width:78px!important;
   font-size:9.4px!important;
   padding:5px 8px!important;
+}
+</style>
+
+
+<style>
+/* Configuração de Férias bloqueada por padrão */
+.plantoes-config-ferias:not(.ferias-editavel) input,
+.plantoes-config-ferias:not(.ferias-editavel) select{
+  background:#f1f5f9!important;
+  color:#64748b!important;
+  cursor:not-allowed!important;
+}
+.plantoes-config-ferias:not(.ferias-editavel) .table-wrap{
+  opacity:.88;
+}
+#plantaoEditarFerias{
+  min-width:88px;
+  justify-content:center;
+  text-align:center;
+}
+#plantaoEditarFerias::before{
+  content:"✎";
+  font-weight:900;
+}
+#plantaoEditarFerias.success::before{
+  content:"✓";
+}
+.plantoes-config-ferias.ferias-editavel{
+  border-left:4px solid var(--green);
+}
+</style>
+
+
+<style>
+/* Modo Editar controla toda a aba Plantões */
+#plantoes:not(.plantao-editavel) #plantaoFolgaConfig input,
+#plantoes:not(.plantao-editavel) #plantaoTabelaBody input,
+#plantoes:not(.plantao-editavel) #plantaoTabelaBody select{
+  background:#f1f5f9!important;
+  color:#64748b!important;
+  cursor:not-allowed!important;
+}
+#plantoes:not(.plantao-editavel) #plantaoRedistribuirFolgas,
+#plantoes:not(.plantao-editavel) #plantaoRedistribuirPlantoes,
+#plantoes:not(.plantao-editavel) #plantaoToggleTerceiro{
+  opacity:.55;
+  cursor:not-allowed!important;
+  filter:grayscale(.25);
+}
+#plantoes:not(.plantao-editavel) .plantoes-table,
+#plantoes:not(.plantao-editavel) #plantaoFolgaConfig{
+  opacity:.9;
+}
+#plantoes.plantao-editavel .plantoes-table,
+#plantoes.plantao-editavel #plantaoFolgaConfig{
+  outline:2px solid rgba(15,148,104,.16);
+  outline-offset:2px;
+  border-radius:10px;
 }
 </style>
 
