@@ -697,6 +697,16 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 </style>
 
 <style>
+/* Esconde a barra do Histórico Local caso os botões tenham sido removidos */
+.historico-actions:empty,
+#historicoActions:empty,
+.status-wrap-historico:empty{
+  display:none!important;
+}
+</style>
+
+
+<style>
 /* Botões PDF e Imagem com o mesmo efeito do Salvar, mantendo o + */
 #plantaoPdf.plantao-btn-plus::before,
 #plantaoImagem.plantao-btn-plus::before{
@@ -1004,8 +1014,6 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 <!-- HISTÓRICO -->
 <section id="historico" class="tab-panel">
   <div class="export-row">
-    <button id="btnCarregarUltima" class="primary" type="button" onclick="carregarUltimaBase()">Carregar última base salva</button>
-    <button id="btnLimparHistorico" class="danger" type="button">Limpar histórico</button>
   </div>
   <!-- STATUS -->
   <div class="status-wrap status-wrap-historico">
@@ -2376,7 +2384,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("btnLimpar").addEventListener("click",limparTudo);
   $("fileInput").addEventListener("change",e=>{arquivoSelecionado=e.target.files[0]||null;if(arquivoSelecionado)setStatus("📁 Arquivo selecionado: <strong>"+arquivoSelecionado.name+"</strong>. Clique em <strong>Carregar Base</strong>.");});
   if($("btnCarregarUltima")) $("btnCarregarUltima").addEventListener("click",carregarUltimaBase);
-  $("btnLimparHistorico").addEventListener("click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("🗑️ Histórico local limpo.");});
+  if($("btnLimparHistorico")) $("btnLimparHistorico").addEventListener("click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("🗑️ Histórico local limpo.");});
   $("cardTecnicos").addEventListener("click",abrirModalTecnicos);
   $("cardTecnicos").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abrirModalTecnicos();}});
   if($("cardBaseTotal")) $("cardBaseTotal").addEventListener("click",abrirModalBaseTotal);
