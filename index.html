@@ -1227,6 +1227,9 @@ let tecnicoAtivoLogin="";
 
 const STORAGE_LAST="lumar_dashboard_last_dataset_v1";
 const STORAGE_HISTORY="lumar_dashboard_history_v1";
+const STORAGE_LAST_DB="lumar_indicadores_vt_db";
+const STORAGE_LAST_STORE="datasets";
+const STORAGE_LAST_KEY="ultima_base";
 
 function $(id){return document.getElementById(id)}
 function setStatus(msg){const el=$("status"); if(el) el.innerHTML=msg}
@@ -2221,14 +2224,57 @@ function historicoMesmoItem(h,item){
   const mesmaTec1=Math.abs(Number(h?.tec1||0)-Number(item?.tec1||0))<0.0001;
   return mesmoArquivo&&mesmaProducao&&mesmasRevisitas&&mesmaRevPct&&mesmaTec1;
 }
-function salvarUltimaBase(rows,fileName){
+function abrirBancoUltimaBase(){
+  return new Promise((resolve,reject)=>{
+    if(!("indexedDB" in window)){reject(new Error("IndexedDB indisponível"));return;}
+    const req=indexedDB.open(STORAGE_LAST_DB,1);
+    req.onupgradeneeded=()=>{req.result.createObjectStore(STORAGE_LAST_STORE,{keyPath:"id"});};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error("Falha ao abrir IndexedDB"));
+  });
+}
+async function salvarUltimaBaseIndexedDB(obj){
+  const db=await abrirBancoUltimaBase();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORAGE_LAST_STORE,"readwrite");
+    tx.objectStore(STORAGE_LAST_STORE).put({...obj,id:STORAGE_LAST_KEY});
+    tx.oncomplete=()=>{db.close();resolve(true);};
+    tx.onerror=()=>{db.close();reject(tx.error||new Error("Falha ao salvar IndexedDB"));};
+  });
+}
+async function lerUltimaBaseIndexedDB(){
   try{
-    const signature=assinaturaPlanilha(rows);
-    const payload=JSON.stringify({fileName,date:new Date().toISOString(),rows,signature});
+    const db=await abrirBancoUltimaBase();
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORAGE_LAST_STORE,"readonly");
+      const req=tx.objectStore(STORAGE_LAST_STORE).get(STORAGE_LAST_KEY);
+      req.onsuccess=()=>{db.close();resolve(req.result||null);};
+      req.onerror=()=>{db.close();reject(req.error||new Error("Falha ao ler IndexedDB"));};
+    });
+  }catch(e){
+    console.warn("Falha ao ler última base no IndexedDB.",e);
+    return null;
+  }
+}
+async function salvarUltimaBase(rows,fileName){
+  const signature=assinaturaPlanilha(rows);
+  const obj={fileName,date:new Date().toISOString(),rows,signature};
+  try{
+    await salvarUltimaBaseIndexedDB(obj);
+  }catch(e){
+    console.warn("Não foi possível salvar a última base no IndexedDB.",e);
+  }
+  try{
+    const payload=JSON.stringify(obj);
     localStorage.setItem(STORAGE_LAST,payload);
     localStorage.setItem("lumar_manutencao_ultima_base_v2",payload);
-    return signature;
-  }catch(e){console.warn("Não foi possível salvar.",e);return "";}
+  }catch(e){
+    console.warn("localStorage sem espaço para a base completa; IndexedDB será usado.",e);
+    try{
+      localStorage.setItem(STORAGE_LAST,JSON.stringify({fileName,date:obj.date,signature,rows:[]}));
+    }catch(_e){}
+  }
+  return signature;
 }
 function encontrarUltimaBaseSalva(){
   const candidatos=[
@@ -2273,6 +2319,15 @@ function encontrarUltimaBaseSalva(){
   return null;
 }
 
+async function encontrarUltimaBaseSalvaAsync(){
+  const idb=await lerUltimaBaseIndexedDB();
+  const rows=idb?.rows||[];
+  if(Array.isArray(rows)&&rows.length){
+    return {key:"indexedDB",fileName:idb.fileName||"Base salva",rows,signature:idb.signature||assinaturaPlanilha(rows)};
+  }
+  return encontrarUltimaBaseSalva();
+}
+
 function abrirAbaDashboard(){
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
@@ -2281,10 +2336,10 @@ function abrirAbaDashboard(){
   if($("dashboard")) $("dashboard").classList.add("active");
 }
 
-function carregarUltimaBase(opcoes={}){
-  const saved=encontrarUltimaBaseSalva();
+async function carregarUltimaBase(opcoes={}){
+  const saved=await encontrarUltimaBaseSalvaAsync();
   if(!saved||!saved.rows?.length){
-    setStatus("⚠️ Nenhuma última base salva neste navegador. Carregue uma planilha primeiro para criar o salvamento automático.");
+    if(!opcoes.silencioso) setStatus("⚠️ Nenhuma última base salva neste navegador. Carregue uma planilha primeiro para criar o salvamento automático.");
     return;
   }
 
@@ -2309,7 +2364,7 @@ function carregarUltimaBase(opcoes={}){
     currentSummary=processarResumo(filtrado);
     renderDashboard(currentSummary);
 
-    salvarUltimaBase(rawRows,currentFileName);
+    await salvarUltimaBase(rawRows,currentFileName);
     abrirAbaDashboard();
 
     const prefixo=opcoes.auto?"🚀 Sistema aberto carregando a última planilha salva":"🔁 Última base carregada";
@@ -2407,7 +2462,7 @@ async function carregarBase(){
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
     renderDashboard(processarResumo(filtrado));
-    const signature=salvarUltimaBase(rows,currentFileName);
+    const signature=await salvarUltimaBase(rows,currentFileName);
     const historicoResultado=salvarHistorico({silencioso:true,signature});
     const z450=currentSummary.arr.find(t=>t.login==="Z450037");
     const avisoRepetida=historicoResultado.repetida?`<br>⚠️ Planilha repetida: já estava no histórico em <strong>${esc(historicoResultado.item.date)}</strong>. Não criei novo registro.`:"";
@@ -2555,7 +2610,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     });
   });
   renderHistorico();
-  if(encontrarUltimaBaseSalva()) carregarUltimaBase({auto:true});
+  carregarUltimaBase({auto:true,silencioso:true});
 });
 </script>
 
