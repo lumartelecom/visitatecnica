@@ -1486,6 +1486,42 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   font-size:11.5px!important;
 }
 
+#tecnicoCertificado .certificado-card.certificado-bloqueado .cert-input,
+#tecnicoCertificado .certificado-card.certificado-bloqueado .cert-select{
+  background:#eef2f7!important;
+  color:#475569!important;
+  border-color:#cbd5e1!important;
+  cursor:not-allowed!important;
+  opacity:.92!important;
+}
+#tecnicoCertificado #btnBloquearCertificado.cert-lock-active{
+  background:#10213a!important;
+  color:#fff!important;
+  border-color:#10213a!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-input-wrap,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-input-wrap{
+  gap:7px!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-percent-field,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-percent-field{
+  grid-template-columns:66px auto!important;
+  gap:4px!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-input,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-input{
+  width:66px!important;
+  min-width:66px!important;
+  padding:4px 6px!important;
+  font-size:12px!important;
+  font-family:'IBM Plex Mono',monospace!important;
+  font-weight:800!important;
+  text-align:center!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-percent-symbol,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-percent-symbol{
+  font-size:11px!important;
+}
 /* Exportação da imagem segue o mesmo enquadramento */
 #tecnicoCertificado .cert-export-clean{
   width:100%!important;
@@ -1851,6 +1887,77 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 }
 </style>
 
+
+<style>
+/* === AJUSTE FINAL: PERCENTUAIS LEGÍVEIS + BLOQUEIO - TÉCNICO CERTIFICADO === */
+#tecnicoCertificado .certificado-table-wrap{
+  overflow-x:hidden!important;
+}
+#tecnicoCertificado .certificado-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+#tecnicoCertificado .certificado-table tbody td:first-child{
+  width:10.5%!important;
+  min-width:0!important;
+  max-width:none!important;
+}
+#tecnicoCertificado .certificado-table thead th:last-child,
+#tecnicoCertificado .certificado-table tbody td:last-child{
+  width:9.5%!important;
+  min-width:0!important;
+  max-width:none!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-input-wrap,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-input-wrap{
+  gap:7px!important;
+  overflow:visible!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-percent-field,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-percent-field{
+  grid-template-columns:72px auto!important;
+  gap:4px!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-input,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-input{
+  width:72px!important;
+  min-width:72px!important;
+  max-width:72px!important;
+  padding:4px 7px!important;
+  font:800 12px/1 'IBM Plex Mono',monospace!important;
+  text-align:center!important;
+}
+#tecnicoCertificado .certificado-table tbody td:nth-child(6) .cert-percent-symbol,
+#tecnicoCertificado .certificado-table tbody td:nth-child(7) .cert-percent-symbol{
+  font-size:11px!important;
+}
+#tecnicoCertificado #btnBloquearCertificado{
+  min-height:36px!important;
+  padding:7px 12px!important;
+  font-size:11.5px!important;
+}
+#tecnicoCertificado #btnBloquearCertificado.cert-lock-active{
+  background:#10213a!important;
+  color:#fff!important;
+  border-color:#10213a!important;
+}
+#tecnicoCertificado .certificado-card.certificado-bloqueado .cert-input,
+#tecnicoCertificado .certificado-card.certificado-bloqueado .cert-select{
+  background:#eef2f7!important;
+  color:#475569!important;
+  border-color:#cbd5e1!important;
+  cursor:not-allowed!important;
+  opacity:.92!important;
+}
+#tecnicoCertificado .certificado-card.certificado-bloqueado .cert-input-wrap{
+  filter:saturate(.9);
+}
+@media(max-width:1150px){
+  #tecnicoCertificado .certificado-table-wrap{overflow-x:auto!important;}
+  #tecnicoCertificado .certificado-table{min-width:1080px!important;}
+}
+</style>
 </head>
 <body>
 
@@ -2209,6 +2316,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
             <select id="certificadoCiclo" aria-label="Selecionar ciclo do Técnico Certificado"></select>
           </label>
           <button id="btnLimparRetencoesCertificado" class="secondary" type="button">Limpar retenções</button>
+          <button id="btnBloquearCertificado" class="secondary" type="button" aria-pressed="false">Bloquear</button>
           <button id="btnImagemCertificado" class="success" type="button">Imagem</button>
         </div>
       </div>
@@ -2219,15 +2327,15 @@ button:hover,.btn:hover{transform:translateY(-1px)}
       <div class="table-wrap certificado-table-wrap">
         <table class="certificado-table">
           <colgroup>
-            <col style="width:12%">
-            <col style="width:8%">
-            <col style="width:8%">
-            <col style="width:10%">
+            <col style="width:10.5%">
+            <col style="width:7.5%">
+            <col style="width:7.5%">
+            <col style="width:8.5%">
             <col style="width:14%">
-            <col style="width:14%">
-            <col style="width:15%">
-            <col style="width:9%">
-            <col style="width:10%">
+            <col style="width:17%">
+            <col style="width:17%">
+            <col style="width:8.5%">
+            <col style="width:9.5%">
           </colgroup>
           <thead>
             <tr>
@@ -3812,6 +3920,7 @@ function filtrarBasePrincipal(rows){
 const STORAGE_CERTIFICADO_SISTEMICO="lumar_tecnico_certificado_sistemicos_v1";
 const STORAGE_CERTIFICADO_RETIDO="lumar_tecnico_certificado_retidos_v1";
 const STORAGE_CERTIFICADO_CICLO="lumar_tecnico_certificado_ciclo_v1";
+const STORAGE_CERTIFICADO_BLOQUEADO="lumar_tecnico_certificado_bloqueado_v1";
 const METAS_CERTIFICADO={t1:95,alfa:90,certidao:90};
 const VALORES_CERTIFICADO={revisitas:200,tec1:165,produtividade:135,certidao:100,t1:65,alfa:35};
 const INDICADORES_CERTIFICADO=[
@@ -3965,6 +4074,28 @@ function carregarSistemicosCertificado(){
 function salvarSistemicosCertificado(dados){
   try{localStorage.setItem(STORAGE_CERTIFICADO_SISTEMICO,JSON.stringify(dados||{}));}
   catch(e){console.warn("Não foi possível salvar indicadores sistêmicos",e);}
+}
+function certificadoBloqueado(){
+  return localStorage.getItem(STORAGE_CERTIFICADO_BLOQUEADO)==="1";
+}
+function aplicarBloqueioCertificado(bloqueado=certificadoBloqueado()){
+  const area=$("certificadoExportArea");
+  const btn=$("btnBloquearCertificado");
+  if(area) area.classList.toggle("certificado-bloqueado",!!bloqueado);
+  document.querySelectorAll("#tecnicoCertificado .cert-input,#tecnicoCertificado .cert-select").forEach(el=>{
+    el.disabled=!!bloqueado;
+  });
+  if(btn){
+    btn.textContent=bloqueado?"Desbloquear":"Bloquear";
+    btn.classList.toggle("cert-lock-active",!!bloqueado);
+    btn.setAttribute("aria-pressed",bloqueado?"true":"false");
+  }
+}
+function alternarBloqueioCertificado(){
+  const novo=!certificadoBloqueado();
+  localStorage.setItem(STORAGE_CERTIFICADO_BLOQUEADO,novo?"1":"0");
+  aplicarBloqueioCertificado(novo);
+  if(typeof setStatus==="function") setStatus(novo?"🔒 Técnico Certificado bloqueado para edição.":"🔓 Técnico Certificado desbloqueado para edição.");
 }
 function certBadge(ok,extraClass=""){
   return `<span class="cert-badge ${ok?"cert-sim":"cert-nao"} ${extraClass}">${ok?"SIM":"NÃO"}</span>`;
@@ -4199,6 +4330,7 @@ function renderTecnicoCertificado(summary){
 
   tbody.querySelectorAll("tr").forEach(atualizarLinhaCertificado);
   ativarInputsCertificado();
+  aplicarBloqueioCertificado();
 }
 
 function assinaturaPlanilha(rows){
@@ -5332,6 +5464,8 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(currentSummary) renderTecnicoCertificado(currentSummary);
     if(typeof setStatus==="function") setStatus(`Ciclo do Técnico Certificado alterado para <strong>${formatarCicloCertificado(ciclo)}</strong>.`);
   });
+  on("btnBloquearCertificado","click",alternarBloqueioCertificado);
+  aplicarBloqueioCertificado();
   on("btnLimparRetencoesCertificado","click",()=>{
     if(!confirm("Deseja limpar todos os valores retidos salvos neste navegador?")) return;
     localStorage.removeItem(STORAGE_CERTIFICADO_RETIDO);
@@ -6637,6 +6771,10 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 </body>
 </html>
+
+
+
+
 
 
 
