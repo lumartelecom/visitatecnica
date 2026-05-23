@@ -140,6 +140,11 @@ h3{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:10px;tex
 #alertasArea .action-card:nth-child(2):after{background:rgba(8,145,178,.08)}
 #alertasArea .action-card:nth-child(3):after{background:rgba(13,153,104,.08)}
 .action-card p{color:var(--text);font-size:13px;line-height:1.6;font-weight:500}
+.positive-highlights{display:grid;gap:7px;margin-top:2px}
+.positive-highlight{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border:1px solid #bbf7d0;border-left:3px solid var(--green);border-radius:8px;background:linear-gradient(180deg,#f7fff9,#eefdf4)}
+.positive-highlight strong{display:block;color:#10213a;font-size:12.5px;line-height:1.15}
+.positive-highlight span{display:block;color:#64748b;font-size:10.5px;font-weight:700;line-height:1.25;margin-top:2px}
+.positive-score{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:900;color:#047857;background:#dcfce7;border:1px solid #86efac;border-radius:999px;padding:4px 7px;white-space:nowrap}
 
 /* ─── TABLES ─── */
 .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
@@ -3134,19 +3139,33 @@ function renderDashboard(summary){
   renderPlanoAcaoDetalhado(summary);
 }
 
+function destaquePositivoHTML(arr){
+  const base=arr.filter(t=>Number(t.producao)>0);
+  if(!base.length) return "Aguardando dados.";
+  const dentroMeta=base.filter(t=>(Number(t.revPct)||0)<=LIMITE_ACOMP_REVISITA&&(Number(t.tec1Pct)||0)>=LIMITE_ACOMP_TEC1);
+  const candidatos=dentroMeta.length?dentroMeta:base;
+  const melhorGeral=[...candidatos].sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct||b.producao-a.producao)[0];
+  const menorRev=[...base].sort((a,b)=>a.revPct-b.revPct||b.producao-a.producao)[0];
+  const maiorProd=[...candidatos].sort((a,b)=>b.producao-a.producao||a.revPct-b.revPct||b.tec1Pct-a.tec1Pct)[0];
+  const destaques=[];
+  if(melhorGeral) destaques.push({titulo:"Melhor equilíbrio",tecnico:melhorGeral.nome,detalhe:`${pct(melhorGeral.revPct)} rev. · ${pct(melhorGeral.tec1Pct)} TEC1`,score:`${melhorGeral.contratosExecutados} OS`});
+  if(menorRev&&menorRev.login!==melhorGeral?.login) destaques.push({titulo:"Menor revisita",tecnico:menorRev.nome,detalhe:`${menorRev.revisitas} revisitas em ${menorRev.contratosExecutados} contratos`,score:pct(menorRev.revPct)});
+  if(maiorProd&&maiorProd.login!==melhorGeral?.login&&maiorProd.login!==menorRev?.login) destaques.push({titulo:"Maior produção na meta",tecnico:maiorProd.nome,detalhe:`Média ${num1(maiorProd.mediaContratos)}/dia · ${pct(maiorProd.revPct)} rev.`,score:`${maiorProd.producao}`});
+  return `<div class="positive-highlights">${destaques.slice(0,3).map(d=>`<div class="positive-highlight"><div><strong>${d.titulo}: ${d.tecnico}</strong><span>${d.detalhe}</span></div><div class="positive-score">${d.score}</div></div>`).join("")}</div>`;
+}
+
 function renderAlertas(summary){
   const {arr,arrNode}=summary;
   const alertas=[];
   const critRev=arr.filter(t=>t.revPct>LIMITE_ACOMP_REVISITA).sort((a,b)=>b.revPct-a.revPct);
   const critTec=arr.filter(t=>t.tec1Pct<LIMITE_ACOMP_TEC1).sort((a,b)=>a.tec1Pct-b.tec1Pct);
-  const melhor=arr.filter(t=>t.producao>0).sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct)[0];
   if(critRev[0]) alertas.push(`<div class="alert redline">🚨 Maior revisita 10d: <strong>${critRev[0].nome}</strong> com <strong>${pct(critRev[0].revPct)}</strong>.</div>`);
   if(critTec[0]) alertas.push(`<div class="alert redline">⚠️ TEC1 30d abaixo do padrão: <strong>${critTec[0].nome}</strong> com <strong>${pct(critTec[0].tec1Pct)}</strong>.</div>`);
   if(arrNode[0]) alertas.push(`<div class="alert orangeline">📍 Node mais recorrente: <strong>${arrNode[0].node}</strong> com <strong>${arrNode[0].qtd}</strong> ocorrências.</div>`);
   if(!alertas.length&&arr.length) alertas.push(`<div class="alert greenline">✅ Nenhum alerta crítico encontrado nos filtros atuais.</div>`);
   $("alertasResumo").innerHTML=alertas.join("")||'<div class="empty">Carregue uma base.</div>';
   $("maiorAtencao").innerHTML=critRev[0]?`Priorizar acompanhamento de <strong>${critRev[0].nome}</strong>, revisita acima de 6% em 10 dias.`:(critTec[0]?`Priorizar melhoria de TEC1 30d com <strong>${critTec[0].nome}</strong>.`:"Sem ponto crítico evidente nos filtros atuais.");
-  $("destaquePositivo").innerHTML=melhor?`<strong>${melhor.nome}</strong> aparece como destaque com ${pct(melhor.revPct)} de revisita 10d e ${pct(melhor.tec1Pct)} de TEC1 30d.`:"Aguardando dados.";
+  $("destaquePositivo").innerHTML=destaquePositivoHTML(arr);
 }
 
 function renderPlanoAcao(summary){
@@ -6618,6 +6637,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 </body>
 </html>
+
 
 
 
