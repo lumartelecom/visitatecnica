@@ -5085,7 +5085,7 @@ function obterMesPlantaoDias(ano,mes){
 }
 function tecnicoFeriasNoDiaDias(tec,iso){
   if(!tec || tec.status!=="Férias") return false;
-  if(!tec.start && !tec.end) return true;
+  if(!tec.start && !tec.end) return false;
   const ini=tec.start||"0000-01-01";
   const fim=tec.end||"9999-12-31";
   return iso>=ini && iso<=fim;
@@ -6193,11 +6193,17 @@ document.addEventListener("DOMContentLoaded",()=>{
     return plantaoState.technicians.find(t=>t.id===id)||plantaoState.technicians[0];
   }
   function emFerias(tec,iso){
-    if(!tec||tec.status!=="Férias"||!tec.start||!tec.end) return false;
-    return iso>=tec.start&&iso<=tec.end;
+    if(!tec||tec.status!=="Férias"||!iso) return false;
+    if(!tec.start&&!tec.end) return false;
+    const ini=tec.start||"0000-01-01";
+    const fim=tec.end||"9999-12-31";
+    return iso>=ini&&iso<=fim;
   }
   function disponivel(tec,iso,excluidos=new Set()){
-    return tec && !["Inativo","Férias","Técnico noturno"].includes(tec.status) && !excluidos.has(tec.id);
+    return tec && !["Inativo","Técnico noturno"].includes(tec.status) && !emFerias(tec,iso) && !excluidos.has(tec.id);
+  }
+  function tecnicoEscalavel(tec){
+    return tec && !["Inativo","Técnico noturno"].includes(tec.status);
   }
   function escolherTecnico(preferidoId,iso,excluidos=new Set()){
     const pref=tecnicoPorId(preferidoId);
@@ -6287,7 +6293,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(!plantaoEdicaoGeralAtiva) return;
       const tec=tecnicoPorId(el.dataset.plantaoTech);
       tec[el.dataset.field]=el.value;
-      if(el.dataset.field==="status") recalcularPlantoesPorDisponibilidade();
+      if(["status","start","end"].includes(el.dataset.field)) recalcularPlantoesPorDisponibilidade();
       renderTabelaPlantoes();
       salvarEdicaoPlantoesAutomaticamente();
     };
@@ -6389,7 +6395,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   function garantirTodosTecnicosNoMes(month){
     if(!month||!Array.isArray(month.rows)) return false;
-    const ativos=(plantaoState.technicians||[]).filter(t=>disponivel(t,"2026-01-01",new Set()));
+    const ativos=(plantaoState.technicians||[]).filter(tecnicoEscalavel);
     const vagas=month.rows.reduce((total,row)=>total+2+(row.baseC?1:0),0);
     const minimo=Math.min(ativos.length,vagas);
     const ativosIds=new Set(ativos.map(t=>t.id));
@@ -6406,7 +6412,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   function redistribuirPlantoesMes(month){
     if(!month||!Array.isArray(month.rows)) return false;
     garantirConfigPlantao(false);
-    const ativos=(plantaoState.technicians||[]).filter(t=>disponivel(t,"2026-01-01",new Set()));
+    const ativos=(plantaoState.technicians||[]).filter(tecnicoEscalavel);
     if(ativos.length<2) return false;
     const mesIndex=(plantaoState.months||[]).indexOf(month);
     const mesAnterior=mesIndex>0?plantaoState.months[mesIndex-1]:null;
