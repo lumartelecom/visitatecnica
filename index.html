@@ -1890,6 +1890,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 .dias-table-card{margin-top:14px}
 .dias-table-wrap table{min-width:520px}
 .dias-table-wrap td:nth-child(2),.dias-table-wrap td:nth-child(3),.dias-table-wrap td:nth-child(4){font-family:'IBM Plex Mono',monospace;font-weight:800;color:var(--navy)}
+.dias-row-off td{background:#fffaf0;color:#7c5b18}
 .dias-loading{opacity:.72}
 @media(max-width:980px){.dias-toolbar{grid-template-columns:1fr}.dias-toolbar-actions{grid-template-columns:1fr 1fr auto}}
 @media(max-width:720px){.dias-toolbar-actions{grid-template-columns:1fr}.dias-toolbar-actions button{width:100%}}
@@ -2124,7 +2125,8 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   <section class="grid" id="secPerformanceTecnico">
     <div class="card plantoes-folga-card">
       <div class="section-title-line">
-        <h2>Performance por Técnico</h2>
+        <h2 id="tituloPerformanceTecnico">Performance por Técnico</h2>
+        <span class="section-caption" id="competenciaPerformanceTecnico">Todas as competências</span>
       </div>
       <div class="table-wrap">
         <table>
@@ -2276,16 +2278,28 @@ button:hover,.btn:hover{transform:translateY(-1px)}
         <span class="section-caption" id="diasFonteLegenda">Planilha online · aguardando carga</span>
       </div>
       <div class="dias-kpis">
-        <div class="dias-kpi dias-kpi-principal dias-kpi-meta"><span>Meta mensal mínima</span><input id="diasMetaMensal" class="dias-meta-input" type="number" min="0" step="1" value="175" aria-label="Meta mensal mínima"></div>
-        <div class="dias-kpi dias-kpi-principal dias-kpi-realizado"><span>Produção acumulada</span><strong id="diasTotalFeito">-</strong></div>
-        <div class="dias-kpi dias-kpi-principal dias-kpi-pendente"><span>Saldo para meta</span><strong id="diasFaltaMeta">-</strong></div>
-        <button class="dias-kpi dias-kpi-operacao dias-kpi-click capacidade-kpi dias-kpi-capacidade" id="cardCapacidadeDias" type="button" aria-label="Ver capacidade disponível da equipe"><span>Capacidade equipe</span><strong id="diasUteisRestantes">-</strong></button>
-        <div class="dias-kpi dias-kpi-operacao dias-kpi-equipe"><span>Equipe ativa</span><strong id="diasMetaDia">7</strong></div>
-        <div class="dias-kpi dias-kpi-contexto dias-kpi-competencia"><span>Competência analisada</span><strong id="diasCompetencia">-</strong><small id="diasCompetenciaSub">Mês selecionado</small></div>
+        <div class="dias-kpi dias-kpi-principal dias-kpi-meta"><span>Meta Mínima do Mês</span><input id="diasMetaMensal" class="dias-meta-input" type="number" min="0" step="1" value="175" aria-label="Meta Mínima do Mês"></div>
+        <div class="dias-kpi dias-kpi-principal dias-kpi-realizado"><span>Produção Realizada</span><strong id="diasTotalFeito">-</strong></div>
+        <div class="dias-kpi dias-kpi-principal dias-kpi-pendente"><span>Faltam para a Meta</span><strong id="diasFaltaMeta">-</strong></div>
+        <button class="dias-kpi dias-kpi-operacao dias-kpi-click capacidade-kpi dias-kpi-capacidade" id="cardCapacidadeDias" type="button" aria-label="Ver capacidade disponível da equipe"><span>Capacidade da Equipe</span><strong id="diasUteisRestantes">-</strong></button>
+        <div class="dias-kpi dias-kpi-operacao dias-kpi-equipe"><span>Técnicos Ativos</span><strong id="diasMetaDia">7</strong></div>
+        <div class="dias-kpi dias-kpi-contexto dias-kpi-competencia"><span>Mês de Referência</span><strong id="diasCompetencia">-</strong><small id="diasCompetenciaSub">Mês selecionado</small></div>
       </div>
       <div class="dias-progress" title="Progresso da meta"><span id="diasProgresso" style="width:0%"></span></div>
     </div>
 
+  </div>
+  <div class="card dias-table-card">
+    <div class="section-title-line">
+      <h2>Produção Mensal por Técnico</h2>
+      <span class="section-caption">A capacidade da equipe é dividida entre os técnicos com DT preenchido. As produções diárias são lidas da coluna DT da planilha de controle.</span>
+    </div>
+    <div class="table-wrap dias-table-wrap">
+      <table>
+        <thead><tr><th>Técnico</th><th>Capacidade estipulada em dias</th><th>Produções diárias (DT)</th></tr></thead>
+        <tbody id="diasTabelaTecnicos"><tr><td colspan="3"><div class="empty">Aguardando leitura da planilha de controle.</div></td></tr></tbody>
+      </table>
+    </div>
   </div>
 </section>
 
@@ -2791,7 +2805,7 @@ async function carregarCompetenciaSelecionada(){
   const local=await encontrarBaseMensalLocal(key);
   const saved=nuvem||(local?{...local,origem:"navegador"}:null);
   if(!saved){setStatus("⚠️ Não encontrei os dados completos desta competência.");return;}
-  aplicarBaseSalvaEmTela(saved);
+  aplicarBaseSalvaEmTela(saved,{competenciaKey:key});
 }
 
 async function encontrarUltimaBaseNuvem(){
@@ -2912,6 +2926,7 @@ function aplicarBaseSalvaEmTela(saved,opcoes={}){
 
     preencherFiltros(processedRows);
     renderValidacao(validation,processedRows.length);
+    if(opcoes.competenciaKey) aplicarCompetenciaPerformance(opcoes.competenciaKey);
 
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
@@ -3150,12 +3165,29 @@ function competenciaFiltroPerformance(){
   if(!ts) return "";
   return mesAnoCompetencia(new Date(ts));
 }
+function aplicarCompetenciaPerformance(key,reaplicar=false){
+  const m=String(key||"").match(/^(\d{4})-(\d{2})$/);
+  if(!m) return false;
+  const ano=Number(m[1]);
+  const mes=Number(m[2])-1;
+  const ciclo=intervaloCompetenciaIndicador(new Date(ano,mes,1));
+  if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value=ciclo.inicio;
+  if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value=ciclo.fim;
+  if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent=`Performance por Técnico - ${ciclo.competencia}`;
+  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent=`Competência selecionada: ${ciclo.competencia}`;
+  if(reaplicar&&processedRows.length) reaplicarFiltros();
+  return true;
+}
+function limparCompetenciaPerformanceTitulo(){
+  if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent="Performance por Técnico";
+  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent="Todas as competências";
+}
 
 const TECNICOS_NOMES={
   "Z132322":"Apolinario",
   "Z132323":"Lailson",
   "Z164141":"Izidoro",
-  "Z247088":"Matheus Henrique",
+  "Z247088":"MATHEUS HENRIQUE",
   "Z367110":"Alex Emidio",
   "Z445950":"Mateus Reis",
   "Z450037":"José Francisco"
@@ -4898,6 +4930,7 @@ function carregarUltimaBase(opcoes={}){
 
     preencherFiltros(processedRows);
     renderValidacao(validation,processedRows.length);
+    if(opcoes.competenciaKey) aplicarCompetenciaPerformance(opcoes.competenciaKey);
 
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
@@ -5040,6 +5073,7 @@ function limparFiltros(){
   if($("filtroStatus")) $("filtroStatus").value="";
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value="";
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value="";
+  limparCompetenciaPerformanceTitulo();
   reaplicarFiltros();
 }
 function aplicarCicloPerformance20(){
@@ -5052,6 +5086,7 @@ function aplicarCicloPerformance20(){
 function limparDataPerformance(){
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value="";
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value="";
+  limparCompetenciaPerformanceTitulo();
   reaplicarFiltros();
 }
 function limparTudo(){
@@ -5177,7 +5212,7 @@ const DIAS_SHEET_CONFIG={
   tecnicosDiasMaio:7,
   metaMaio2026:175,
   minimoDiarioMaio:5,
-  excluirTecnicosDias:["MAZZINI"],
+  excluirTecnicosDias:["MAZZINI","MAGDIEL","META","ENTREGUE"],
   meses:[
     {num:0,nome:"Janeiro",label:"JANEIRO",tabs:["VT Janeiro 2026","VT JANEIRO 2026","VT, Janeiro 2026","VT, JANEIRO 2026"]},
     {num:1,nome:"Fevereiro",label:"FEVEREIRO",tabs:["VT Fevereiro 2026","VT FEVEREIRO 2026"]},
@@ -5234,6 +5269,7 @@ function ehFeriadoTeresinaData(d){
   return DIAS_FERIADOS_TERESINA_2026.some(f=>f.date===iso);
 }
 const STORAGE_PLANTOES_DIAS="lumar_escala_plantoes_2026_editavel_v3";
+const STORAGE_META_MANUAL_DIAS="lumar_dias_meta_manual_por_mes_v1";
 let diasPlantaoCache=null;
 function lerEstadoPlantoesDias(){
   // Prioridade 1: estado vivo da aba Plantões, para o cálculo refletir a tela atual.
@@ -5337,10 +5373,10 @@ function folgasPlantaoMesDias(ano,mes){
   return folgas;
 }
 function qtdFolgasPlantaoDiaDias(ano,mes,dia){
-  const month=obterMesPlantaoDias(ano,mes);
+  const estado=lerEstadoPlantoesDias();
   const alvo=dataISO(ano,mes,dia);
   const tecnicosEmFolga=new Set();
-  (month?.rows||[]).forEach(row=>{
+  (estado?.months||[]).flatMap(month=>month.rows||[]).forEach(row=>{
     const pares=[
       [row.baseA,row.folgaAWeekday],
       [row.baseB,row.folgaBWeekday],
@@ -5352,6 +5388,45 @@ function qtdFolgasPlantaoDiaDias(ano,mes,dia){
     });
   });
   return tecnicosEmFolga.size;
+}
+function tecnicoPlantaoPorNomeDias(nome,ano,mes){
+  const estado=lerEstadoPlantoesDias();
+  const month=obterMesPlantaoDias(ano,mes);
+  const tecnicos=month?.technicians||estado?.technicians||[];
+  const alvo=head(nome);
+  return tecnicos.find(t=>head(t?.name)===alvo || head(t?.label)===alvo)||null;
+}
+function idsTecnicosFolgaPlantaoDiaDias(ano,mes,dia){
+  const estado=lerEstadoPlantoesDias();
+  const alvo=dataISO(ano,mes,dia);
+  const ids=new Set();
+  (estado?.months||[]).flatMap(month=>month.rows||[]).forEach(row=>{
+    [[row.baseA,row.folgaAWeekday],[row.baseB,row.folgaBWeekday],[row.baseC,row.folgaCWeekday]].forEach(([tecnico,weekday])=>{
+      if(tecnico && folgaISOPlantaoDias(row.date,weekday)===alvo) ids.add(tecnico);
+    });
+  });
+  return ids;
+}
+function contarDiasPrevistosTecnicoDias(nome,mesInfo){
+  const ano=DIAS_SHEET_CONFIG.anoPadrao;
+  const mes=Number(mesInfo?.num);
+  const tecnico=tecnicoPlantaoPorNomeDias(nome,ano,mes);
+  const ultimo=new Date(ano,mes+1,0).getDate();
+  let total=0;
+  for(let dia=1;dia<=ultimo;dia++){
+    const d=new Date(ano,mes,dia);
+    const iso=dataISO(ano,mes,dia);
+    const plantaoIds=new Set(idsTecnicosPlantaoLinhaDias(rowPlantaoPorDataDias(ano,mes,dia)));
+    const folgaIds=idsTecnicosFolgaPlantaoDiaDias(ano,mes,dia);
+    const feriado=ehFeriadoTeresinaData(d);
+    if(d.getDay()===0 || feriado){
+      if(tecnico?.id && plantaoIds.has(tecnico.id)) total++;
+      continue;
+    }
+    if(tecnico && (tecnico.status==="Inativo" || tecnicoFeriasNoDiaDias(tecnico,iso) || folgaIds.has(tecnico.id))) continue;
+    total++;
+  }
+  return total;
 }
 function ehFolgaPlantaoDias(ano,mes,dia){
   return qtdFolgasPlantaoDiaDias(ano,mes,dia)>0;
@@ -5433,6 +5508,10 @@ function tecnicoExcluidoDias(nome){
   const chave=head(nome);
   return (DIAS_SHEET_CONFIG.excluirTecnicosDias||[]).some(t=>chave.includes(head(t)));
 }
+function nomeExibicaoTecnicoDias(nome){
+  const aliases={"GEOVANIO":"MATHEUS HENRIQUE"};
+  return aliases[head(nome)]||nome;
+}
 function regraCalendarioDias(mesInfo){
   return {
     capacidadePorDia:(ano,mes,dia)=>capacidadeDiaDias(ano,mes,dia,mesInfo),
@@ -5490,6 +5569,7 @@ function contarDiasValidosEquipe(linhas,idx,header,mesInfo){
       const nome=norm(row[idx.tecnico]);
       const h=head(nome);
       if(!nome || h.includes("TOTAL_DO_DIA") || h.includes("TOTAL_GERAL") || tecnicoExcluidoDias(nome)) return;
+      if(parseNumeroDias(row[idx.dt])<=0) return;
       const valor=parseNumeroDias(row[i]);
       if(valor>0) ultimoDiaComValor=Math.max(ultimoDiaComValor,dia);
       if(valor>=minimo) validos++;
@@ -5516,25 +5596,29 @@ function indicesCabecalhoDias(header){
     dayIndices
   };
 }
-function extrairMetaMinimaDias(matriz,totalJaFeito,mesInfo){
-  if(Number(mesInfo?.num)===4) return {valor:DIAS_SHEET_CONFIG.metaMaio2026,origem:"Meta fixa de maio/2026"};
-  const candidatos=[];
-  matriz.forEach(row=>{
-    row.forEach((cell,i)=>{
-      const h=head(cell);
-      if(h==="LUMAR" || h.includes("META")){
-        for(let j=i+1;j<Math.min(row.length,i+6);j++){
-          const n=parseNumeroDias(row[j]);
-          if(n>0 && n<1000) candidatos.push(n);
-        }
-      }
-    });
-  });
-  const inteiro=candidatos.find(n=>Number.isInteger(n)&&n>=50);
-  if(inteiro) return {valor:inteiro,origem:"Encontrada próxima ao marcador LUMAR/META"};
-  const maior=candidatos.sort((a,b)=>b-a)[0];
-  if(maior) return {valor:maior,origem:"Encontrada na planilha"};
-  return {valor:Math.max(DIAS_SHEET_CONFIG.metaFallback,totalJaFeito||0),origem:"Meta padrão usada como fallback"};
+function chaveMetaManualDias(mesInfo){
+  return `${DIAS_SHEET_CONFIG.anoPadrao}-${String(Number(mesInfo?.num)+1).padStart(2,"0")}`;
+}
+function lerMetasManuaisDias(){
+  try{
+    const metas=JSON.parse(localStorage.getItem(STORAGE_META_MANUAL_DIAS)||"{}");
+    return metas&&typeof metas==="object"&&!Array.isArray(metas)?metas:{};
+  }catch(e){
+    console.warn("Dias: não foi possível ler metas manuais",e);
+    return {};
+  }
+}
+function salvarMetaManualDias(mesInfo,valor){
+  try{
+    const metas=lerMetasManuaisDias();
+    metas[chaveMetaManualDias(mesInfo)]=valor;
+    localStorage.setItem(STORAGE_META_MANUAL_DIAS,JSON.stringify(metas));
+  }catch(e){console.warn("Dias: não foi possível salvar a meta manual",e);}
+}
+function resolverMetaMinimaDias(capacidadeEquipeMes,mesInfo){
+  const manual=lerMetasManuaisDias()[chaveMetaManualDias(mesInfo)];
+  if(Number(manual)>0) return {valor:Number(manual),origem:"Meta editada manualmente"};
+  return {valor:Number(capacidadeEquipeMes)||0,origem:"Capacidade mensal da equipe"};
 }
 function extrairDadosDias(matriz,mesInfo){
   const idxHeader=encontrarLinhaCabecalhoDias(matriz);
@@ -5544,6 +5628,7 @@ function extrairDadosDias(matriz,mesInfo){
   const linhas=matriz.slice(idxHeader+1).filter(row=>row.some(Boolean));
   const totalRow=linhas.find(row=>head(row[idx.tecnico]).includes("TOTAL_DO_DIA"));
   const tecnicoRows=[];
+  const tecnicoRowsControle=[];
   let ultimoDiaTecnicos=0;
   linhas.forEach(row=>{
     const nome=norm(row[idx.tecnico]);
@@ -5555,9 +5640,11 @@ function extrairDadosDias(matriz,mesInfo){
     const total=calc.producao>0?calc.producao:totalPlanilha;
     const dt=parseNumeroDias(row[idx.dt]);
     const pd=dt>0?total/dt:parseNumeroDias(row[idx.pd]);
-    if(dt>0 || pd>0 || total>0){
-      tecnicoRows.push({nome,total,dt,pd});
-    }
+    const nomeExibicao=nomeExibicaoTecnicoDias(nome);
+    const diasPrevistos=contarDiasPrevistosTecnicoDias(nomeExibicao,mesInfo);
+    const contabilizado=dt>0;
+    tecnicoRowsControle.push({nome:nomeExibicao,nomePlanilha:nome,total,dt,pd,totalPlanilha,diasPrevistos,contabilizado});
+    if(contabilizado) tecnicoRows.push({nome:nomeExibicao,nomePlanilha:nome,total,dt,pd,totalPlanilha,diasPrevistos,contabilizado});
   });
   const totaisDia=(totalRow?idx.dayIndices.map(i=>parseNumeroDias(totalRow[i])):[]);
   const totalPelosDias=totaisDia.reduce((a,b)=>a+(Number(b)||0),0);
@@ -5565,22 +5652,23 @@ function extrairDadosDias(matriz,mesInfo){
   const totalValidosEquipe=contarDiasValidosEquipe(linhas,idx,header,mesInfo);
   const totalPeloDTTecnicos=tecnicoRows.reduce((acc,t)=>acc+(Number(t.dt)||0),0);
   const totalGeralTecnicos=tecnicoRows.reduce((acc,t)=>acc+(Number(t.total)||0),0);
-  const totalJaFeito=totalPeloDTTecnicos>0?totalPeloDTTecnicos:(totalPeloDT>0?totalPeloDT:totalPelosDias);
+  const totalJaFeito=totalPeloDTTecnicos;
   const pdEquipe=totalJaFeito?totalGeralTecnicos/totalJaFeito:(totalRow?parseNumeroDias(totalRow[idx.pd]):0);
   // Usa somente lançamentos reais dos técnicos para descobrir onde começa o restante do mês.
   // A linha TOTAL DO DIA pode ter fórmulas/capacidade futura e não deve empurrar o início para o fim do mês.
   let ultimoDiaComValor=totalValidosEquipe?.ultimoDiaComValor||ultimoDiaTecnicos;
-  const metaInfo=extrairMetaMinimaDias(matriz,totalJaFeito,mesInfo);
-  const falta=Math.max(0,metaInfo.valor-totalJaFeito);
   const inicioRestante=inicioDiasUteisRestantes(DIAS_SHEET_CONFIG.anoPadrao,mesInfo.num,ultimoDiaComValor);
   const regraCalendario=regraCalendarioDias(mesInfo);
+  const capacidadeEquipeMes=contarDiasTrabalhoRestantes(DIAS_SHEET_CONFIG.anoPadrao,mesInfo.num,1,regraCalendario);
   const capacidadeRestante=contarDiasTrabalhoRestantes(DIAS_SHEET_CONFIG.anoPadrao,mesInfo.num,inicioRestante,regraCalendario);
   const diasRestantes=contarDatasRestantesMes(DIAS_SHEET_CONFIG.anoPadrao,mesInfo.num,inicioRestante,regraCalendario);
+  const metaInfo=resolverMetaMinimaDias(capacidadeEquipeMes.total,mesInfo);
+  const falta=Math.max(0,metaInfo.valor-totalJaFeito);
   // O divisor agora é a capacidade real de produção restante:
   // domingo/feriado com plantão = técnicos escalados; dia normal = 7 logins menos folgas e plantões.
   const diasUteisRestantes=capacidadeRestante.total;
   const metaDia=diasUteisRestantes?Math.ceil(falta/diasUteisRestantes):0;
-  return {tecnicoRows,totalJaFeito,totalPelosDias,totalPeloDT,totalPeloDTTecnicos,totalValidosEquipe:totalValidosEquipe?.total||0,pdEquipe,ultimoDiaComValor,meta:metaInfo.valor,metaOrigem:metaInfo.origem,falta,inicioRestante,diasUteis:diasUteisRestantes,diasDatasRestantes:diasRestantes.total,diasCapacidadeRestante:capacidadeRestante.total,diasCapacidadeDetalhes:capacidadeRestante.detalhes,metaDia,header,totalRow,regraCalendario};
+  return {tecnicoRows,tecnicoRowsControle,totalJaFeito,totalPelosDias,totalPeloDT,totalPeloDTTecnicos,totalValidosEquipe:totalValidosEquipe?.total||0,pdEquipe,ultimoDiaComValor,meta:metaInfo.valor,metaOrigem:metaInfo.origem,falta,inicioRestante,diasUteis:diasUteisRestantes,capacidadeEquipeMes:capacidadeEquipeMes.total,diasDatasRestantes:diasRestantes.total,diasCapacidadeRestante:capacidadeRestante.total,diasCapacidadeDetalhes:capacidadeRestante.detalhes,metaDia,header,totalRow,regraCalendario};
 }
 function urlsDiasPlanilha(mesInfo){
   const id=DIAS_SHEET_CONFIG.spreadsheetId;
@@ -5782,8 +5870,13 @@ function preencherSelectDias(){
   const sel=$("diasMes");
   if(!sel) return;
   sel.innerHTML=DIAS_SHEET_CONFIG.meses.map(m=>`<option value="${m.num}">${m.nome} ${DIAS_SHEET_CONFIG.anoPadrao}</option>`).join("");
-  const mesVigente=Number(DIAS_SHEET_CONFIG.mesVigente ?? 4);
-  sel.value=String(DIAS_SHEET_CONFIG.meses.some(m=>m.num===mesVigente)?mesVigente:4);
+  sel.value=String(mesCalendarioAtualDias());
+}
+function mesCalendarioAtualDias(){
+  const mesAtual=new Date().getMonth();
+  if(DIAS_SHEET_CONFIG.meses.some(m=>Number(m.num)===mesAtual)) return mesAtual;
+  const mesFallback=Number(DIAS_SHEET_CONFIG.mesVigente ?? 4);
+  return DIAS_SHEET_CONFIG.meses.some(m=>Number(m.num)===mesFallback)?mesFallback:4;
 }
 function mesDiasSelecionado(){
   const valor=Number($("diasMes")?.value);
@@ -5797,15 +5890,35 @@ function renderDiasErro(msg){
   setDiasText("diasUteisRestantes","-");
   setDiasText("diasMetaDia",String(DIAS_SHEET_CONFIG.loginsAtivos||7));
   setDiasText("diasCompetencia","-");
+  if($("diasTabelaTecnicos")) $("diasTabelaTecnicos").innerHTML='<tr><td colspan="3"><div class="empty">Não foi possível carregar os técnicos da planilha.</div></td></tr>';
   const mesInfo=mesDiasSelecionado();
   const tentativas=urlsDiasPlanilha(mesInfo).map(u=>esc(u.nome)).join(", ");
+}
+function renderTabelaTecnicosDias(dados,mesInfo){
+  const tbody=$("diasTabelaTecnicos");
+  if(!tbody) return;
+  const rows=(Array.isArray(dados?.tecnicoRowsControle)?dados.tecnicoRowsControle:[]).filter(t=>t.contabilizado);
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="3"><div class="empty">Nenhum técnico com DT preenchido na planilha de controle.</div></td></tr>';
+    return;
+  }
+  const capacidadeEquipe=detalhesCapacidadeMes(mesInfo,1).total||0;
+  const capacidadePorTecnico=capacidadeEquipe/rows.length;
+  tbody.innerHTML=rows.map(t=>{
+    return `<tr>
+      <td><strong>${esc(t.nome)}</strong></td>
+      <td>${formatNumeroDias(capacidadePorTecnico,1)} dias</td>
+      <td>${formatNumeroDias(t.dt,0)}</td>
+    </tr>`;
+  }).join("");
 }
 function aplicarMetaManualDias(valor){
   if(!diasDadosAtuais || !diasMesInfoAtual) return;
   const meta=Math.max(0,Math.round(parseNumeroDias(valor)));
   if(!meta) return;
+  salvarMetaManualDias(diasMesInfoAtual,meta);
   diasDadosAtuais.meta=meta;
-  diasDadosAtuais.metaOrigem="";
+  diasDadosAtuais.metaOrigem="Meta editada manualmente";
   diasDadosAtuais.falta=Math.max(0,meta-diasDadosAtuais.totalJaFeito);
   diasDadosAtuais.metaDia=diasDadosAtuais.diasUteis?Math.ceil(diasDadosAtuais.falta/diasDadosAtuais.diasUteis):0;
   renderDiasTrabalhados(diasDadosAtuais,diasMesInfoAtual,diasFonteAtual);
@@ -5822,13 +5935,13 @@ function renderDiasTrabalhados(dados,mesInfo,fonte){
   setDiasText("diasMetaMensal",formatNumeroDias(dados.meta,0));
   setDiasText("diasTotalFeito",formatNumeroDias(dados.totalJaFeito,0));
   setDiasText("diasFaltaMeta",formatNumeroDias(dados.falta,0));
-  setDiasText("diasUteisRestantes",formatNumeroDias(dados.diasUteis,0));
-  setDiasText("diasMetaDia",String(equipeAtivaMesDias(mesInfo)));
+  setDiasText("diasUteisRestantes",formatNumeroDias(dados.capacidadeEquipeMes,0));
+  setDiasText("diasMetaDia",String(dados.tecnicoRows?.length||0));
   setDiasText("diasCompetencia",`${mesInfo.label}-26`);
   setDiasText("diasCompetenciaSub",`${dataBR(inicio)} a ${dataBR(fim)}`);
   const barra=$("diasProgresso");
   if(barra) barra.style.width=`${progresso}%`;
-  preencherSelectCapacidadeInline();
+  preencherSelectCapacidadeInline(true);
 }
 function detalhesCapacidadeMes(mesInfo,inicioDia=1){
   const ano=DIAS_SHEET_CONFIG.anoPadrao;
@@ -5853,7 +5966,7 @@ function renderModalCapacidadeMes(mesNum){
   const conteudo=$("modalIndicadorConteudo");
   if(!conteudo) return;
   const mesInfo=DIAS_SHEET_CONFIG.meses.find(m=>Number(m.num)===Number(mesNum))||diasMesInfoAtual||mesDiasSelecionado();
-  const inicioDia=inicioCapacidadeSelecionadaDias(mesInfo);
+  const inicioDia=1;
   const capacidade=detalhesCapacidadeMes(mesInfo,inicioDia);
   const detalhes=Array.isArray(capacidade.detalhes)?capacidade.detalhes:[];
   const total=Number(capacidade.total)||0;  const linhas=detalhes.length?detalhes.map(item=>`<tr><td>${esc(item.data||"-")}</td><td>${formatNumeroDias(item.capacidade,0)}</td><td>${esc(item.status||"Normal")}</td></tr>`).join(""):'<tr><td colspan="3"><div class="empty">Nenhum dia disponível para produção neste mês.</div></td></tr>';
@@ -5867,8 +5980,7 @@ function abrirModalCapacidadeDias(){
   if(!modal||!conteudo) return;
   const mesInline=Number($("capacidadeMesSelectTopo")?.value ?? capacidadeMesSelecionado);
   const mesBase=diasMesInfoAtual||mesDiasSelecionado();
-  const proximoNum=(Number(mesBase?.num)||0)+1;
-  const mesPadrao=DIAS_SHEET_CONFIG.meses.find(m=>m.num===mesInline)||DIAS_SHEET_CONFIG.meses.find(m=>m.num===proximoNum)||DIAS_SHEET_CONFIG.meses.find(m=>m.num===Number(mesBase?.num))||DIAS_SHEET_CONFIG.meses[0];
+  const mesPadrao=DIAS_SHEET_CONFIG.meses.find(m=>m.num===mesInline)||DIAS_SHEET_CONFIG.meses.find(m=>m.num===Number(mesBase?.num))||DIAS_SHEET_CONFIG.meses[0];
   $("modalIndicadorTitulo").textContent="Capacidade em dias";
   modal.classList.add("active");
   modal.setAttribute("aria-hidden","false");
@@ -5893,7 +6005,7 @@ function mesInfoPlantaoVigenteDias(fallbackMesInfo){
       }
     }
   }catch(e){console.warn("Dias: não foi possível identificar o mês vigente da aba Plantões",e);}
-  const mesVigente=Number(DIAS_SHEET_CONFIG.mesVigente ?? 4);
+  const mesVigente=mesCalendarioAtualDias();
   return DIAS_SHEET_CONFIG.meses.find(m=>Number(m.num)===mesVigente)||fallbackMesInfo;
 }
 
@@ -5922,17 +6034,17 @@ function atualizarCardCapacidadeSelecionada(){
   const mesInfo=DIAS_SHEET_CONFIG.meses.find(m=>Number(m.num)===Number(sel?.value));
   if(!mesInfo) return;
   capacidadeMesSelecionado=Number(mesInfo.num);
-  const capacidade=detalhesCapacidadeMes(mesInfo,inicioCapacidadeSelecionadaDias(mesInfo));
+  const capacidade=detalhesCapacidadeMes(mesInfo,1);
   setDiasText("diasUteisRestantes",formatNumeroDias(capacidade.total||0,0));
-  setDiasText("diasMetaDia",String(equipeAtivaMesDias(mesInfo)));
+  setDiasText("diasMetaDia",String(Array.isArray(diasDadosAtuais?.tecnicoRows)?diasDadosAtuais.tecnicoRows.length:equipeAtivaMesDias(mesInfo)));
+  if(diasDadosAtuais) renderTabelaTecnicosDias(diasDadosAtuais,mesInfo);
 }
-function preencherSelectCapacidadeInline(){
+function preencherSelectCapacidadeInline(sincronizarComMesAvaliado=false){
   const sel=$("capacidadeMesSelectTopo");
   if(!sel) return;
   const mesBase=diasMesInfoAtual||mesDiasSelecionado();
-  const proximoNum=(Number(mesBase?.num)||0)+1;
-  const valorPadrao=DIAS_SHEET_CONFIG.meses.some(m=>m.num===proximoNum)?proximoNum:Number(mesBase?.num)||Number(DIAS_SHEET_CONFIG.mesVigente||4);
-  if(capacidadeMesSelecionado===null || !DIAS_SHEET_CONFIG.meses.some(m=>m.num===Number(capacidadeMesSelecionado))){
+  const valorPadrao=Number(mesBase?.num);
+  if(sincronizarComMesAvaliado || capacidadeMesSelecionado===null || !DIAS_SHEET_CONFIG.meses.some(m=>m.num===Number(capacidadeMesSelecionado))){
     capacidadeMesSelecionado=valorPadrao;
   }
   sel.innerHTML=DIAS_SHEET_CONFIG.meses.map(m=>`<option value="${m.num}">${m.nome} ${DIAS_SHEET_CONFIG.anoPadrao}</option>`).join("");
@@ -5957,7 +6069,7 @@ function inicializarDiasTrabalhados(){
   }
   if(!inicializarDiasTrabalhados._plantaoListener){
     document.addEventListener("lumar:plantoes-atualizados",()=>{
-      atualizarCardCapacidadeSelecionada();
+      atualizarDiasTrabalhados();
     });
     inicializarDiasTrabalhados._plantaoListener=true;
   }
@@ -5979,6 +6091,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   on("btnLimparHistorico","click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("🗑️ Histórico local limpo.");});
   on("btnCarregarCompetencia","click",carregarCompetenciaSelecionada);
   on("btnAtualizarCompetencias","click",atualizarSelectCompetencias);
+  on("historicoCompetencia","change",()=>aplicarCompetenciaPerformance($("historicoCompetencia")?.value||"",true));
   on("cardTecnicos","click",abrirModalTecnicos);
   on("cardBaseTotal","click",abrirModalBaseTotal);
   on("cardRevisitas","click",()=>abrirModalIndicador("revisita"));
@@ -6052,7 +6165,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 </script>
 
-<script id="plantao-data" type="application/json">{"technicians": [{"id": "t1", "label": "Técnico 1", "name": "Matheus Henrique", "status": "Ativo", "start": "", "end": ""}, {"id": "t2", "label": "Técnico 2", "name": "Matheus Reis", "status": "Ativo", "start": "", "end": ""}, {"id": "t3", "label": "Técnico 3", "name": "Apolinário", "status": "Ativo", "start": "", "end": ""}, {"id": "t4", "label": "Técnico 4", "name": "José Francisco", "status": "Ativo", "start": "", "end": ""}, {"id": "t5", "label": "Técnico 5", "name": "Lailson", "status": "Ativo", "start": "", "end": ""}, {"id": "t6", "label": "Técnico 6", "name": "Alex", "status": "Ativo", "start": "", "end": ""}], "months": [{"key": "Maio", "title": "PLANTÕES – MAIO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-05-01", "type": "Feriado Nacional", "description": "Dia do Trabalho", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-03", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-10", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-05-17", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-24", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-31", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Junho", "title": "PLANTÕES – JUNHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-06-04", "type": "Feriado Nacional", "description": "Corpus Christi", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-07", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-06-14", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-06-21", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-28", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Julho", "title": "PLANTÕES – JULHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-07-05", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-07-12", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-07-19", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-07-26", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Agosto", "title": "PLANTÕES – AGOSTO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-08-02", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-09", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-08-16", "type": "Feriado Municipal", "description": "Aniversário de Teresina", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-08-23", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-30", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Setembro", "title": "PLANTÕES – SETEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-09-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-07", "type": "Feriado Nacional", "description": "Independência do Brasil", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-09-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-09-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-27", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Outubro", "title": "PLANTÕES – OUTUBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-10-04", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-11", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-12", "type": "Feriado Nacional", "description": "Nossa Sra. Aparecida", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-10-18", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-19", "type": "Feriado Estadual", "description": "Dia da Batalha do Jenipapo", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-25", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Novembro", "title": "PLANTÕES – NOVEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-11-01", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-02", "type": "Feriado Nacional", "description": "Finados", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-08", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-15", "type": "Feriado Nacional", "description": "Proclamação da República", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-20", "type": "Feriado Nacional", "description": "Consciência Negra", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-22", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-29", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Dezembro", "title": "PLANTÕES – DEZEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-12-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-08", "type": "Feriado Nacional", "description": "Nossa Sra. da Conceição", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-12-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-25", "type": "Feriado Nacional", "description": "Natal", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-27", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}]}</script>
+<script id="plantao-data" type="application/json">{"technicians": [{"id": "t1", "label": "Técnico 1", "name": "MATHEUS HENRIQUE", "status": "Ativo", "start": "", "end": ""}, {"id": "t2", "label": "Técnico 2", "name": "Matheus Reis", "status": "Ativo", "start": "", "end": ""}, {"id": "t3", "label": "Técnico 3", "name": "Apolinário", "status": "Ativo", "start": "", "end": ""}, {"id": "t4", "label": "Técnico 4", "name": "José Francisco", "status": "Ativo", "start": "", "end": ""}, {"id": "t5", "label": "Técnico 5", "name": "Lailson", "status": "Ativo", "start": "", "end": ""}, {"id": "t6", "label": "Técnico 6", "name": "Alex", "status": "Ativo", "start": "", "end": ""}], "months": [{"key": "Maio", "title": "PLANTÕES – MAIO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-05-01", "type": "Feriado Nacional", "description": "Dia do Trabalho", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-03", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-10", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-05-17", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-24", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-31", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Junho", "title": "PLANTÕES – JUNHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-06-04", "type": "Feriado Nacional", "description": "Corpus Christi", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-07", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-06-14", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-06-21", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-28", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Julho", "title": "PLANTÕES – JULHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-07-05", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-07-12", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-07-19", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-07-26", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Agosto", "title": "PLANTÕES – AGOSTO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-08-02", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-09", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-08-16", "type": "Feriado Municipal", "description": "Aniversário de Teresina", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-08-23", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-30", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Setembro", "title": "PLANTÕES – SETEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-09-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-07", "type": "Feriado Nacional", "description": "Independência do Brasil", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-09-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-09-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-27", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Outubro", "title": "PLANTÕES – OUTUBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-10-04", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-11", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-12", "type": "Feriado Nacional", "description": "Nossa Sra. Aparecida", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-10-18", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-19", "type": "Feriado Estadual", "description": "Dia da Batalha do Jenipapo", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-25", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Novembro", "title": "PLANTÕES – NOVEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-11-01", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-02", "type": "Feriado Nacional", "description": "Finados", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-08", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-15", "type": "Feriado Nacional", "description": "Proclamação da República", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-20", "type": "Feriado Nacional", "description": "Consciência Negra", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-22", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-29", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Dezembro", "title": "PLANTÕES – DEZEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-12-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-08", "type": "Feriado Nacional", "description": "Nossa Sra. da Conceição", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-12-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-25", "type": "Feriado Nacional", "description": "Natal", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-27", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}]}</script>
 <script>
 (function(){
   const STORAGE_PLANTOES="lumar_escala_plantoes_2026_editavel_v3";
@@ -6072,8 +6185,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   function indiceMesVigentePlantao(state){
     const meses=state?.months||[];
-    const mesVigente=Number(window.DIAS_SHEET_CONFIG?.mesVigente ?? 4);
-    const anoVigente=Number(window.DIAS_SHEET_CONFIG?.anoPadrao ?? 2026);
+    const hoje=new Date();
+    const mesVigente=hoje.getMonth();
+    const anoVigente=hoje.getFullYear();
     const idxPorData=meses.findIndex(m=>(m?.rows||[]).some(row=>{
       const [ano,mes]=String(row?.date||"").split("-").map(Number);
       return ano===anoVigente && (mes-1)===mesVigente;
