@@ -2490,11 +2490,20 @@ let lastRenderRows=[];
 let modalTecnicosLista=[];
 let exportOverride=null;
 let tecnicoAtivoLogin="";
+let dashboardProducaoOnlineCache=null;
+let dashboardProducaoOnlineFonte="";
+let dashboardProducaoOnlineCarregando=false;
+let dashboardProducaoOnlineErro="";
 
 const STORAGE_LAST="lumar_dashboard_last_dataset_v1";
 const STORAGE_HISTORY="lumar_dashboard_history_v1";
 const STORAGE_MONTHLY="lumar_dashboard_monthly_datasets_v1";
 const DB_MONTHLY="lumar_dashboard_bases_mensais_v1";
+const DASHBOARD_PRODUCAO_ONLINE_CONFIG={
+  spreadsheetId:"1F7ZZUkY0XcDKyTQ1duFA0IflC71D5kBnbyiARV2bJXQ",
+  gid:"535121661",
+  nome:"Produção online PD"
+};
 /*
   FIREBASE - ÚLTIMA BASE NA NUVEM / SOMENTE CLOUD FIRESTORE
 
@@ -2911,7 +2920,7 @@ function aplicarBaseSalvaEmTela(saved,opcoes={}){
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
     currentSummary=processarResumo(filtrado);
-    renderDashboard(currentSummary);
+    renderDashboardComProducaoOnline(currentSummary);
 
     salvarUltimaBase(rawRows,currentFileName);
     abrirAbaDashboard();
@@ -2993,6 +3002,7 @@ function truncar(v,casas=1){
 }
 function pct(v){return truncar(v,1).toFixed(1).replace(".",",")+"%"}
 function num1(v){return truncar(v,1).toFixed(1).replace(".",",")}
+function num3(v){return truncar(v,2).toFixed(2).replace(".",",")}
 function getField(row,names){const wanted=names.map(head);for(const k of Object.keys(row)){if(wanted.includes(head(k)))return row[k]}return ""}
 function parseNumber(v){const s=norm(v).replace("%","").replace(",",".");const n=Number(s);return isNaN(n)?0:n}
 function formatarData(v){
@@ -3178,15 +3188,19 @@ function nomeTecnico(login){const key=loginKey(login);return TECNICOS_NOMES[key]
 function rotuloTecnico(login){const key=loginKey(login);return TECNICOS_NOMES[key]?`${TECNICOS_NOMES[key]} — ${key}`:nomeTecnico(login)}
 function celulaTecnico(login){const key=loginKey(login);const nome=nomeTecnico(key);return `<strong class="tech-name">${nome}</strong>${TECNICOS_NOMES[key]?`<div class="tech-code">${key}</div>`:""}`}
 function ordemLoginIndex(login){const idx=ORDEM_TECNICOS.indexOf(loginKey(login));return idx===-1?999:idx}
+function tecnicoEmAcompanhamento(t){
+  return (Number(t.revPct)||0)>LIMITE_ACOMP_REVISITA
+    || (Number(t.tec1Pct)||0)<LIMITE_ACOMP_TEC1
+    || (Number(t.mediaContratos)||0)<META_PRODUCAO;
+}
 function statusTecnico(t){
-  const revAcompanhamento=(Number(t.revPct)||0)>LIMITE_ACOMP_REVISITA;
-  const tec1Acompanhamento=(Number(t.tec1Pct)||0)<LIMITE_ACOMP_TEC1;
-  if(revAcompanhamento||tec1Acompanhamento) return ["Em acompanhamento","yellow"];
+  if(tecnicoEmAcompanhamento(t)) return ["Em acompanhamento","yellow"];
   return ["Certificado","green"];
 }
 
 const META_REVISITA=7;
 const META_TEC1=95;
+const META_PRODUCAO=5;
 const LIMITE_ACOMP_REVISITA=6;
 const LIMITE_ACOMP_TEC1=96;
 
@@ -3319,6 +3333,194 @@ function preencherFiltros(rows){
   if(fn) fn.innerHTML='<option value="">Todos os nodes</option>'+nodes.map(n=>`<option value="${n}">${n}</option>`).join("");
 }
 
+function parseNumeroDashboard(v){
+  let s=norm(v).replace("%","").replace(/\s/g,"");
+  if(!s) return 0;
+  if(s.includes(",")) s=s.replace(/\./g,"").replace(",",".");
+  else if(/\.\d{3}(\D|$)/.test(s)) s=s.replace(/\./g,"");
+  const n=Number(s);
+  return Number.isFinite(n)?n:0;
+}
+function chaveNomeProducaoDashboard(nome){
+  const h=head(nome);
+  if(!h) return "";
+  if(h==="ALEX"||h.includes("ALEX_EMIDIO")) return head("Alex Emidio");
+  if(h==="KLEYTON"||h.includes("APOLINARIO")) return head("Apolinario");
+  if(h.includes("GEOVANIO")) return head("MATHEUS HENRIQUE");
+  if(h.includes("MATHEUS")&&h.includes("HENRIQUE")) return head("MATHEUS HENRIQUE");
+  if(h.includes("JOSE")&&h.includes("FRANCISCO")) return head("José Francisco");
+  if(h.includes("MATEUS")&&h.includes("REIS")) return head("Mateus Reis");
+  return h;
+}
+function indiceColunaDashboard(header,nomes){
+  const alvos=nomes.map(head);
+  return header.findIndex(c=>alvos.includes(head(c)));
+}
+function extrairProducaoOnlineDashboard(matriz){
+  const idxHeader=(Array.isArray(matriz)?matriz:[]).findIndex(row=>{
+    const heads=(row||[]).map(head);
+    return (heads.includes("TOTAL_GERAL")||heads.includes("TOTAL")) && heads.includes("DT") && heads.some(h=>h==="TECNICO"||h==="NOME"||h==="COLABORADOR"||h==="FUNCIONARIO"||h==="TECNICOS");
+  });
+  if(idxHeader<0) throw new Error("não encontrei TOTAL GERAL, DT e técnico/nome para calcular a produção");
+  const header=matriz[idxHeader]||[];
+  let idxNome=indiceColunaDashboard(header,["TECNICO","TÉCNICO","NOME","COLABORADOR","FUNCIONARIO","FUNCIONÁRIO","TECNICOS","TÉCNICOS"]);
+  let idxTotal=indiceColunaDashboard(header,["TOTAL GERAL","TOTAL_GERAL","TOTAL"]);
+  let idxDT=indiceColunaDashboard(header,["DT"]);
+  if(idxNome<0) idxNome=0;
+  if(idxTotal<0) idxTotal=32;
+  if(idxDT<0) idxDT=33;
+  if(idxNome<0||idxTotal<0||idxDT<0) throw new Error("cabeçalho sem nome/TOTAL GERAL/DT");
+  const mapa=new Map();
+  matriz.slice(idxHeader+1).forEach(row=>{
+    const nome=norm(row[idxNome]);
+    const chave=chaveNomeProducaoDashboard(nome);
+    if(!chave || head(nome).includes("TOTAL")) return;
+    const total=parseNumeroDashboard(row[idxTotal]);
+    const dt=parseNumeroDashboard(row[idxDT]);
+    const producao=dt>0?truncar(total/dt/35,2):0;
+    if(Number.isFinite(producao)&&producao>0) mapa.set(chave,producao);
+  });
+  if(!mapa.size) throw new Error("nenhuma produção calculada por TOTAL GERAL / DT / 35");
+  return mapa;
+}
+function buscarGvizJSONPDashboardProducao(){
+  return new Promise((resolve,reject)=>{
+    const cb=`__dashboardProducao_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script=document.createElement("script");
+    let finalizado=false;
+    const limpar=()=>{
+      finalizado=true;
+      clearTimeout(timer);
+      try{delete window[cb];}catch(_){window[cb]=undefined;}
+      if(script.parentNode) script.parentNode.removeChild(script);
+    };
+    const timer=setTimeout(()=>{
+      if(finalizado) return;
+      limpar();
+      reject(new Error("tempo limite ao carregar a produção online"));
+    },7000);
+    window[cb]=(data)=>{
+      if(finalizado) return;
+      limpar();
+      if(data?.status==="error"){
+        const msg=(data.errors||[]).map(e=>e.detailed_message||e.message||e.reason).filter(Boolean).join("; ")||"erro retornado pelo Google Sheets";
+        reject(new Error(msg));
+        return;
+      }
+      const cols=data?.table?.cols||[];
+      const header=cols.map((c,i)=>norm(c?.label||c?.id||`COL_${i+1}`));
+      const rows=data?.table?.rows||[];
+      const body=rows.map(r=>{
+        const cells=r.c||[];
+        return header.map((_,i)=>{
+          const c=cells[i];
+          if(!c) return "";
+          return norm(c.f!=null?c.f:(c.v!=null?c.v:""));
+        });
+      }).filter(row=>row.some(Boolean));
+      resolve([header,...body]);
+    };
+    script.onerror=()=>{
+      if(finalizado) return;
+      limpar();
+      reject(new Error("não foi possível carregar o script da produção online"));
+    };
+    const cfg=DASHBOARD_PRODUCAO_ONLINE_CONFIG;
+    const tqx=`out:json;responseHandler:${cb}`;
+    script.src=`https://docs.google.com/spreadsheets/d/${cfg.spreadsheetId}/gviz/tq?headers=1&tqx=${encodeURIComponent(tqx)}&tq=${encodeURIComponent("select *")}&gid=${encodeURIComponent(cfg.gid)}&zx=${Date.now()}`;
+    document.head.appendChild(script);
+  });
+}
+async function buscarCSVComProxyDashboardProducao(){
+  const cfg=DASHBOARD_PRODUCAO_ONLINE_CONFIG;
+  const base=`https://docs.google.com/spreadsheets/d/${cfg.spreadsheetId}/export?format=csv&gid=${encodeURIComponent(cfg.gid)}&single=true&output=csv&zx=${Date.now()}`;
+  const fontes=[
+    {nome:"CSV direto",url:base},
+    {nome:"AllOrigins",url:`https://api.allorigins.win/raw?url=${encodeURIComponent(base)}`},
+    {nome:"CorsProxy",url:`https://corsproxy.io/?${encodeURIComponent(base)}`}
+  ];
+  const erros=[];
+  for(const fonte of fontes){
+    try{
+      const resp=await fetchDiasComTimeout(fonte.url,{},12000);
+      if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text=await resp.text();
+      if(/<html|DOCTYPE html|Sign in|Fazer login|ServiceLogin/i.test(text)) throw new Error("retornou HTML/login em vez de CSV");
+      const matriz=parseMatrizCSV(text);
+      extrairProducaoOnlineDashboard(matriz);
+      return {matriz,fonte:fonte.nome};
+    }catch(e){
+      erros.push(`${fonte.nome}: ${e.name==="AbortError"?"tempo limite":e.message}`);
+    }
+  }
+  throw new Error(erros.join(" | "));
+}
+async function atualizarProducaoOnlineDashboard(){
+  if(dashboardProducaoOnlineCarregando) return;
+  dashboardProducaoOnlineCarregando=true;
+  dashboardProducaoOnlineErro="";
+  try{
+    let matriz=null;
+    let fonte="Google Visualization";
+    try{
+      matriz=await buscarGvizJSONPDashboardProducao();
+    }catch(eGviz){
+      const csv=await buscarCSVComProxyDashboardProducao();
+      matriz=csv.matriz;
+      fonte=csv.fonte;
+    }
+    dashboardProducaoOnlineCache=extrairProducaoOnlineDashboard(matriz);
+    dashboardProducaoOnlineFonte=`${DASHBOARD_PRODUCAO_ONLINE_CONFIG.nome} · ${fonte} · gid ${DASHBOARD_PRODUCAO_ONLINE_CONFIG.gid}`;
+    const qtd=dashboardProducaoOnlineCache.size;
+    if(typeof setStatus==="function") setStatus(`✅ Produção online atualizada por TOTAL GERAL / DT / 35: <strong>${qtd}</strong> técnico(s).`);
+    if(currentSummary) atualizarProducaoOnlineDashboardVisivel();
+    else if(lastRenderRows&&lastRenderRows.length) renderDashboard(processarResumo(lastRenderRows));
+  }catch(e){
+    dashboardProducaoOnlineErro=e.message||String(e);
+    console.warn("Dashboard: produção online indisponível",e);
+    if(typeof setStatus==="function") setStatus(`⚠️ Não consegui atualizar a produção online por TOTAL GERAL / DT / 35. Mantive o cálculo local.<br><small>${dashboardProducaoOnlineErro}</small>`);
+  }finally{
+    dashboardProducaoOnlineCarregando=false;
+  }
+}
+function garantirProducaoOnlineDashboard(){
+  if(dashboardProducaoOnlineCache||dashboardProducaoOnlineCarregando) return;
+  atualizarProducaoOnlineDashboard();
+}
+async function renderDashboardComProducaoOnline(summary){
+  if(!dashboardProducaoOnlineCache&&!dashboardProducaoOnlineCarregando){
+    await atualizarProducaoOnlineDashboard();
+  }
+  renderDashboard(summary);
+}
+function aplicarProducaoOnlineDashboard(summary){
+  const mapa=dashboardProducaoOnlineCache;
+  if(!summary||!Array.isArray(summary.arr)||!mapa||!mapa.size) return summary;
+  let totalProducao=0;
+  summary.arr.forEach(t=>{
+    const chave=chaveNomeProducaoDashboard(t.nome||nomeTecnico(t.login));
+    if(mapa.has(chave)){
+      const pd=Number(mapa.get(chave))||0;
+      t.mediaContratos=pd;
+      t.producao=pd;
+      t.producaoFonte="PD online";
+    }
+    totalProducao+=Number(t.producao)||0;
+  });
+  summary.totalProducao=totalProducao;
+  return summary;
+}
+function atualizarProducaoOnlineDashboardVisivel(){
+  if(!currentSummary||!dashboardProducaoOnlineCache||!dashboardProducaoOnlineCache.size) return;
+  aplicarProducaoOnlineDashboard(currentSummary);
+  renderTabelaPerformance("tabelaTecnicos",currentSummary.arr||[]);
+  renderCardsMobile(currentSummary);
+  renderRankingOperacional(currentSummary);
+  renderTecnicoCertificado(currentSummary);
+  renderPlanoAcao(currentSummary);
+  renderPlanoAcaoDetalhado(currentSummary);
+}
+
 function processarResumo(rows){
   const tec={},nodes={},revisitas=[],tec1ForaPadrao=[];
   const historicoContratos=montarHistoricoContratos(processedRows.length?processedRows:rows);
@@ -3367,15 +3569,15 @@ function processarResumo(rows){
 
   const filtroSituacao=$("filtroStatus")?.value||"";
   if(filtroSituacao==="tec1baixo") arr=arr.filter(t=>t.tec1Pct<LIMITE_ACOMP_TEC1);
-  if(filtroSituacao==="acompanhamento") arr=arr.filter(t=>t.revPct>LIMITE_ACOMP_REVISITA||t.tec1Pct<LIMITE_ACOMP_TEC1);
-  if(filtroSituacao==="ok") arr=arr.filter(t=>!(t.revPct>LIMITE_ACOMP_REVISITA||t.tec1Pct<LIMITE_ACOMP_TEC1));
+  if(filtroSituacao==="acompanhamento") arr=arr.filter(tecnicoEmAcompanhamento);
+  if(filtroSituacao==="ok") arr=arr.filter(t=>!tecnicoEmAcompanhamento(t));
 
   const totalProducao=arr.reduce((a,t)=>a+t.producao,0);
   const totalRev=arr.reduce((a,t)=>a+t.revisitas,0);
   const totalOk=arr.reduce((a,t)=>a+t.tecOk,0);
   const totalTecBase=arr.reduce((a,t)=>a+t.tecBase,0);
   const arrNode=Object.entries(nodes).map(([node,qtd])=>{return {node,qtd}}).sort((a,b)=>b.qtd-a.qtd);
-  return {arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen:rows.length,sourceRows:[...rows]};
+  return aplicarProducaoOnlineDashboard({arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen:rows.length,sourceRows:[...rows]});
 }
 
 function renderBars(id,items,labelKey,valueKey,suffix){
@@ -3389,6 +3591,7 @@ function resumoSituacaoTecnico(t){
   const problemas=[];
   if((Number(t.revPct)||0)>LIMITE_ACOMP_REVISITA) problemas.push(`Revisita ${pct(t.revPct)}`);
   if((Number(t.tec1Pct)||0)<LIMITE_ACOMP_TEC1) problemas.push(`TEC1 ${pct(t.tec1Pct)}`);
+  if((Number(t.mediaContratos)||0)<META_PRODUCAO) problemas.push(`Produção ${num3(t.mediaContratos)}`);
   return problemas.length?problemas.join(" · "):"Dentro da meta";
 }
 function detalheAcompanhamento(t){
@@ -3398,6 +3601,9 @@ function detalheAcompanhamento(t){
   }
   if((Number(t.tec1Pct)||0)<LIMITE_ACOMP_TEC1){
     itens.push(`Tipo: TEC1 | Para: chegar a ${pct(LIMITE_ACOMP_TEC1)} dentro da janela${t.vtMetaTec1?` com ${t.vtMetaTec1} VT no padrão`:""}`);
+  }
+  if((Number(t.mediaContratos)||0)<META_PRODUCAO){
+    itens.push(`Tipo: Produção | Para: chegar a no mínimo ${num1(META_PRODUCAO)} de produção`);
   }
   return itens.join("<br>");
 }
@@ -3410,11 +3616,11 @@ function renderRankingOperacional(summary){
   const melhores=[...arr].filter(t=>t.producao>0).sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct||b.producao-a.producao).slice(0,5);
   ranking.innerHTML=melhores.length?melhores.map((t,i)=>`<div class="rank-item">
     <div class="rank-pos">${i+1}</div>
-    <div class="rank-main"><div class="rank-title">${t.nome}</div><div class="rank-sub">${t.contratosExecutados} contratos executados · média ${num1(t.mediaContratos)}/dia · ${t.revisitas} revisitas 10d</div></div>
+    <div class="rank-main"><div class="rank-title">${t.nome}</div><div class="rank-sub">${t.contratosExecutados} contratos executados · média ${num3(t.mediaContratos)}/dia · ${t.revisitas} revisitas 10d</div></div>
     <div class="rank-score good">${pct(t.revPct)} Rev<br>${pct(t.tec1Pct)} TEC1</div>
   </div>`).join(""):'<div class="empty">Sem dados.</div>';
 
-  const acomp=[...arr].filter(t=>(t.revPct>LIMITE_ACOMP_REVISITA)||(t.tec1Pct<LIMITE_ACOMP_TEC1))
+  const acomp=[...arr].filter(tecnicoEmAcompanhamento)
     .sort((a,b)=>{const pa=(a.revPct>LIMITE_ACOMP_REVISITA?1:0)+(a.tec1Pct<LIMITE_ACOMP_TEC1?1:0);const pb=(b.revPct>LIMITE_ACOMP_REVISITA?1:0)+(b.tec1Pct<LIMITE_ACOMP_TEC1?1:0);return pb-pa||b.revPct-a.revPct||a.tec1Pct-b.tec1Pct;}).slice(0,8);
   acompanhamentoEl.innerHTML=acomp.length?acomp.map((t,i)=>`<div class="rank-item">
     <div class="rank-pos">${i+1}</div>
@@ -3509,7 +3715,7 @@ function renderResumoPlanoAcao(summary,itens){
   const criticas=itens.filter(i=>i.nivel==="Crítica"||i.nivel==="Alta").length;
   const medias=itens.filter(i=>i.nivel==="Média").length;
   const baixas=itens.filter(i=>i.nivel==="Baixa").length;
-  const dentro=arr.filter(t=>!(t.revPct>LIMITE_ACOMP_REVISITA||t.tec1Pct<LIMITE_ACOMP_TEC1)).length;
+  const dentro=arr.filter(t=>!tecnicoEmAcompanhamento(t)).length;
   const piorRev=[...arr].sort((a,b)=>b.revPct-a.revPct)[0];
   grid.innerHTML=`<div class="priority-card redline"><strong>${criticas} ação crítica/alta</strong><span>Foco em revisita e TEC1 fora do limite operacional.</span></div>
     <div class="priority-card orangeline"><strong>${medias} ação média</strong><span>Correções de node, agenda e causa recorrente.</span></div>
@@ -3536,7 +3742,7 @@ function renderPlanoAcaoDetalhado(summary){
 function linhasTabelaPerformance(arr){
   return arr.map(t=>{const [lab,cor]=statusTecnico(t);return `<tr>
     <td>${celulaTecnico(t.login)}</td>
-    <td>${t.contratosExecutados}</td><td>${num1(t.mediaContratos)}</td><td>${t.revisitas}</td><td>${pct(t.revPct)}</td>
+    <td>${t.contratosExecutados}</td><td>${num3(t.mediaContratos)}</td><td>${t.revisitas}</td><td>${pct(t.revPct)}</td>
     <td>${celulaMetaRevisitaVT(t.vtMetaRevisita)}</td>
     <td>${celulaMargemRevisita(t)}</td>
     <td>${t.tecFora}</td><td>${pct(t.tec1Pct)}</td>
@@ -3555,7 +3761,7 @@ function renderCardsMobilePerformance(id,summary){
     <div class="tech-mobile-head"><div>${celulaTecnico(t.login)}</div><span class="badge ${cor}">${lab}</span></div>
     <div class="mobile-metrics">
       <div class="metric-box"><span>Contratos executados</span><strong>${t.contratosExecutados}</strong></div>
-      <div class="metric-box"><span>Produção</span><strong>${num1(t.mediaContratos)} média/dia</strong></div>
+      <div class="metric-box"><span>Produção</span><strong>${num3(t.mediaContratos)} média/dia</strong></div>
       <div class="metric-box"><span>Revisita 10d</span><strong>${pct(t.revPct)}</strong></div>
       <div class="metric-box"><span>TEC1 30d</span><strong>${pct(t.tec1Pct)}</strong></div>
       <div class="metric-box"><span>Fora janela</span><strong>${t.tecFora}</strong></div>
@@ -3582,11 +3788,11 @@ function linhaMediaPerformance(arr){
   const mediaFora=soma("tecFora")/qtd;
   const tec1Geral=totalTecBase?totalTecOk/totalTecBase*100:0;
   const mediaMetaTec1=arr.reduce((s,t)=>s+(Number(t.vtMetaTec1)||0),0)/qtd;
-  const certificados=arr.filter(t=>!(Number(t.revPct)>LIMITE_ACOMP_REVISITA||Number(t.tec1Pct)<LIMITE_ACOMP_TEC1)).length;
+  const certificados=arr.filter(t=>!tecnicoEmAcompanhamento(t)).length;
   return `<tr class="performance-total-row">
     <td><strong>Média geral</strong><div class="tech-code">${qtd} técnicos</div></td>
     <td>${num1(mediaContratos)}</td>
-    <td>${num1(mediaProd)}</td>
+    <td>${num3(mediaProd)}</td>
     <td>${num1(mediaRevQtd)}</td>
     <td>${pct(revGeral)}</td>
     <td></td>
@@ -3599,6 +3805,8 @@ function linhaMediaPerformance(arr){
 }
 
 function renderDashboard(summary){
+  garantirProducaoOnlineDashboard();
+  summary=aplicarProducaoOnlineDashboard(summary);
   currentSummary=summary;
   const {arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen}=summary;
 
@@ -3716,7 +3924,7 @@ function destaquePositivoHTML(arr){
     const ranking=resumoTecnicosParaRanking(linhas);
     const top=ranking[0];
     if(!top) return `<div class="positive-highlight"><div><strong>${p.titulo}</strong><span>Sem dados para ${rotuloPeriodoRanking(p.tipo,ref)}.</span></div><div class="positive-period-label">${rotuloPeriodoRanking(p.tipo,ref)}</div></div>`;
-    const top5=ranking.slice(0,5).map((t,i)=>`<div><span class="positive-rank-pos">${i+1}º</span><span>${t.nome} · ${t.contratosExecutados} OS · ${pct(t.revPct)} rev. · ${pct(t.tec1Pct)} TEC1 · média ${num1(t.mediaContratos)}/dia</span></div>`).join("");
+    const top5=ranking.slice(0,5).map((t,i)=>`<div><span class="positive-rank-pos">${i+1}º</span><span>${t.nome} · ${t.contratosExecutados} OS · ${pct(t.revPct)} rev. · ${pct(t.tec1Pct)} TEC1 · média ${num3(t.mediaContratos)}/dia</span></div>`).join("");
     return `<div class="positive-highlight"><div><strong>${p.titulo}</strong><div class="positive-ranking-list">${top5}</div></div><div class="positive-period-label">${rotuloPeriodoRanking(p.tipo,ref)}</div></div>`;
   });
   const leitura=`<div class="positive-report-note"><strong>Leitura do relatório:</strong> o ranking prioriza técnicos dentro das metas, menor revisita, melhor TEC1 e maior produção. ${melhorRev?`Menor revisita no período: <strong>${melhorRev.nome}</strong> (${pct(melhorRev.revPct)}).`:""} ${melhorTec1?`Melhor TEC1: <strong>${melhorTec1.nome}</strong> (${pct(melhorTec1.tec1Pct)}).`:""}</div>`;
@@ -4311,12 +4519,12 @@ function aplicarTecnicoNoDashboard(login){
   tecnicoAtivoLogin=loginKey(login);
   const filtrado=processedRows.filter(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))===loginKey(login));
   lastRenderRows=filtrado;
-  renderDashboard(processarResumo(filtrado));
+  renderDashboardComProducaoOnline(processarResumo(filtrado));
 }
 function limparFiltroTecnicoAtivo(){
   tecnicoAtivoLogin="";
   lastRenderRows=[...processedRows];
-  renderDashboard(processarResumo(processedRows));
+  renderDashboardComProducaoOnline(processarResumo(processedRows));
   abrirModalTecnicos(false);
 }
 function abrirIndicadoresTecnico(login,aplicarFiltro=true){
@@ -4330,7 +4538,7 @@ function abrirIndicadoresTecnico(login,aplicarFiltro=true){
   const [situacao,cor]=statusTecnico(t);
   conteudo.innerHTML=`<div class="modal-metrics">
     <div class="metric-box"><span>Contratos executados</span><strong>${t.contratosExecutados}</strong></div>
-    <div class="metric-box"><span>Produção</span><strong>${num1(t.mediaContratos)} média/dia</strong></div>
+    <div class="metric-box"><span>Produção</span><strong>${num3(t.mediaContratos)} média/dia</strong></div>
     <div class="metric-box"><span>Revisitas</span><strong>${t.revisitas} · ${pct(t.revPct)}</strong></div>
     <div class="metric-box"><span>TEC1</span><strong>${pct(t.tec1Pct)}</strong></div>
     <div class="metric-box"><span>Fora janela</span><strong>${t.tecFora}</strong></div>
@@ -4354,14 +4562,14 @@ async function exportarTecnico(login,tipo){
   exportOverride={tecnico:rotuloTecnico(login),node:"Todos os nodes",status:"Indicadores individuais",login};
   try{
     lastRenderRows=tecnicoRows;
-    renderDashboard(processarResumo(tecnicoRows));
+    await renderDashboardComProducaoOnline(processarResumo(tecnicoRows));
     if(tipo==="pdf") await exportarPDF();
     else await exportarImagem();
   }finally{
     exportOverride=null;
     lastRenderRows=rowsRestaurar.length?rowsRestaurar:[...processedRows];
     if(summaryRestaurar) renderDashboard(summaryRestaurar);
-    else renderDashboard(processarResumo(lastRenderRows));
+    else await renderDashboardComProducaoOnline(processarResumo(lastRenderRows));
   }
 }
 
@@ -4758,7 +4966,7 @@ function renderTecnicoCertificado(summary){
   tbody.innerHTML=summary.arr.map(t=>{
     const revOk=(Number(t.revPct)||0)<=LIMITE_ACOMP_REVISITA;
     const tec1Ok=(Number(t.tec1Pct)||0)>=LIMITE_ACOMP_TEC1 && (Number(t.tecBase)||0)>0;
-    const prodOk=(Number(t.producao)||0)>0 || (Number(t.contratosExecutados)||0)>0;
+    const prodOk=(Number(t.mediaContratos)||0)>=META_PRODUCAO;
 
     const t1Html=inputSistemicoCertificado(t.login,"t1",METAS_CERTIFICADO.t1,dados);
     const alfaHtml=inputSistemicoCertificado(t.login,"alfa",METAS_CERTIFICADO.alfa,dados);
@@ -4915,7 +5123,7 @@ function carregarUltimaBase(opcoes={}){
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
     currentSummary=processarResumo(filtrado);
-    renderDashboard(currentSummary);
+    renderDashboardComProducaoOnline(currentSummary);
 
     salvarUltimaBase(rawRows,currentFileName);
     abrirAbaDashboard();
@@ -5017,7 +5225,7 @@ async function carregarBase(){
     preencherFiltros(processedRows);
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
-    renderDashboard(processarResumo(filtrado));
+    await renderDashboardComProducaoOnline(processarResumo(filtrado));
     const signature=salvarUltimaBase(rows,currentFileName);
     const competencia=await salvarBaseMensalLocal(rows,currentFileName,signature);
     const historicoResultado=salvarHistorico({silencioso:true,signature,competencia});
@@ -5042,10 +5250,10 @@ function mensagemFiltrosAplicados(qtd){
   partes.push(`Registros no filtro: <strong>${Number(qtd)||0}</strong>`);
   return `✅ Filtros aplicados. ${partes.join(" · ")}.`;
 }
-function reaplicarFiltros(){
+async function reaplicarFiltros(){
   if(!processedRows.length){setStatus("⚠️ Carregue uma base primeiro.");return}
   const filtrado=aplicarFiltros(processedRows);lastRenderRows=filtrado;
-  renderDashboard(processarResumo(filtrado));setStatus(mensagemFiltrosAplicados(filtrado.length));
+  await renderDashboardComProducaoOnline(processarResumo(filtrado));setStatus(mensagemFiltrosAplicados(filtrado.length));
 }
 function limparFiltros(){
   if($("filtroTecnico")) $("filtroTecnico").value="";
@@ -6418,23 +6626,43 @@ document.addEventListener("DOMContentLoaded",()=>{
   function statusBaseTecnicoPlantao(t){
     return t?.status==="Técnico noturno" ? "Técnico noturno" : "Ativo";
   }
+  function intervaloMesPlantao(month){
+    const ano=anoPlantaoMes(month);
+    const mes=numeroMesPlantao(month);
+    return {
+      inicio:`${ano}-${String(mes+1).padStart(2,"0")}-01`,
+      fim:`${ano}-${String(mes+1).padStart(2,"0")}-${String(new Date(ano,mes+1,0).getDate()).padStart(2,"0")}`
+    };
+  }
+  function feriasCruzaMesPlantao(tec,month){
+    if(!tec||tec.status!=="Férias") return false;
+    if(!tec.start&&!tec.end) return true;
+    const mes=intervaloMesPlantao(month);
+    const ini=tec.start||mes.inicio;
+    const fim=tec.end||mes.fim;
+    return fim>=mes.inicio && ini<=mes.fim;
+  }
   function normalizarTecnicosPorMesPlantao(state){
     if(!state||!Array.isArray(state.technicians)||!Array.isArray(state.months)) return;
-    const selecionado=Math.min(Math.max(Number(state.selectedMonthIndex||0),0),Math.max(state.months.length-1,0));
     state.months.forEach((month,idx)=>{
       const existentes=new Map((Array.isArray(month.technicians)?month.technicians:[]).map(t=>[t.id,t]));
       month.technicians=state.technicians.map((base,i)=>{
         const atual=existentes.get(base.id);
-        const herdouStatus=!existentes.has(base.id) && idx===selecionado && ["Férias","Inativo"].includes(base.status);
-        const status=atual?.status || (herdouStatus?base.status:statusBaseTecnicoPlantao(base));
-        return {
+        const status=atual?.status || statusBaseTecnicoPlantao(base);
+        const item={
           id:base.id,
           label:base.label||`Técnico ${i+1}`,
           name:atual?.name||base.name||"",
           status,
-          start:atual?.start || (herdouStatus?base.start||"":""),
-          end:atual?.end || (herdouStatus?base.end||"":"")
+          start:atual?.start || "",
+          end:atual?.end || ""
         };
+        if(item.status==="Férias" && !feriasCruzaMesPlantao(item,month)){
+          item.status=statusBaseTecnicoPlantao(base);
+          item.start="";
+          item.end="";
+        }
+        return item;
       });
     });
     state.technicians=state.technicians.map((t,i)=>({
@@ -6641,11 +6869,14 @@ document.addEventListener("DOMContentLoaded",()=>{
     return lista.find(t=>t.id===id)||lista[0]||plantaoState.technicians[0];
   }
   function emFerias(tec,iso){
-    if(!tec||tec.status!=="Férias"||!tec.start||!tec.end) return false;
-    return iso>=tec.start&&iso<=tec.end;
+    if(!tec||tec.status!=="Férias") return false;
+    if(!tec.start&&!tec.end) return true;
+    const ini=tec.start||"0000-01-01";
+    const fim=tec.end||"9999-12-31";
+    return iso>=ini&&iso<=fim;
   }
   function disponivel(tec,iso,excluidos=new Set()){
-    return tec && !["Inativo","Férias","Técnico noturno"].includes(tec.status) && !excluidos.has(tec.id);
+    return tec && tec.status!=="Inativo" && tec.status!=="Técnico noturno" && !emFerias(tec,iso) && !excluidos.has(tec.id);
   }
   function escolherTecnico(preferidoId,iso,excluidos=new Set(),month=mesSelecionadoPlantao()){
     const lista=tecnicosPlantaoMes(month);
@@ -6747,7 +6978,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       }else{
         tec[el.dataset.field]=el.value;
       }
-      if(el.dataset.field==="status") recalcularPlantoesPorDisponibilidade(month);
+      if(["status","start","end"].includes(el.dataset.field)) recalcularPlantoesPorDisponibilidade(month);
       renderConfigPlantoes();
       renderTabelaPlantoes();
       salvarEdicaoPlantoesAutomaticamente();
@@ -6849,7 +7080,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   function garantirTodosTecnicosNoMes(month){
     if(!month||!Array.isArray(month.rows)) return false;
-    const ativos=tecnicosPlantaoMes(month).filter(t=>disponivel(t,"2026-01-01",new Set()));
+    const ativos=tecnicosPlantaoMes(month).filter(t=>(month.rows||[]).some(row=>disponivel(t,row.date,new Set())));
     const vagas=month.rows.reduce((total,row)=>total+2+(row.baseC?1:0),0);
     const minimo=Math.min(ativos.length,vagas);
     const ativosIds=new Set(ativos.map(t=>t.id));
@@ -6866,7 +7097,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   function redistribuirPlantoesMes(month){
     if(!month||!Array.isArray(month.rows)) return false;
     garantirConfigPlantao(false);
-    const ativos=tecnicosPlantaoMes(month).filter(t=>disponivel(t,"2026-01-01",new Set()));
+    const ativos=tecnicosPlantaoMes(month).filter(t=>(month.rows||[]).some(row=>disponivel(t,row.date,new Set())));
     if(ativos.length<2) return false;
     const mesIndex=(plantaoState.months||[]).indexOf(month);
     const mesAnterior=mesIndex>0?plantaoState.months[mesIndex-1]:null;
