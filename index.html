@@ -2040,6 +2040,46 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   #tecnicoCertificado .certificado-table-wrap{overflow-x:auto!important;}
   #tecnicoCertificado .certificado-table{min-width:1080px!important;}
 }
+
+
+/* === ABA CONSULTIVO === */
+#consultivo .consultivo-hero{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+#consultivo .consultivo-head{background:linear-gradient(135deg,#10213a,#155fc4);color:#fff;border-radius:14px;padding:20px 22px;box-shadow:var(--shadow-sm);display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+#consultivo .consultivo-head h2{color:#fff;border:0;padding:0;margin:0 0 6px;font-size:18px;letter-spacing:.06em}
+#consultivo .consultivo-head p{color:rgba(255,255,255,.78);font-size:13px;font-weight:600;margin:0}
+#consultivo .consultivo-head .success,#consultivo .consultivo-head .secondary{white-space:nowrap}
+#consultivo .consultivo-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#consultivo .consultivo-file input{display:none}
+#consultivo .consultivo-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+#consultivo .consultivo-kpis .kpi-card:nth-child(1){border-left-color:var(--indigo)}
+#consultivo .consultivo-kpis .kpi-card:nth-child(2){border-left-color:var(--cyan)}
+#consultivo .consultivo-kpis .kpi-card:nth-child(3){border-left-color:var(--green)}
+#consultivo .consultivo-kpis .kpi-card:nth-child(4){border-left-color:var(--orange)}
+#consultivo .consultivo-kpis .kpi-card:nth-child(5){border-left-color:var(--violet)}
+#consultivo .consultivo-kpis .kpi-card:nth-child(6){border-left-color:var(--blue)}
+#consultivo .consultivo-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-bottom:16px}
+#consultivo .consultivo-chart{height:250px}
+#consultivo canvas{width:100%;height:100%;display:block}
+#consultivo .consultivo-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#consultivo .consultivo-form .span-2{grid-column:span 2}
+#consultivo .consultivo-form .span-4{grid-column:1/-1}
+#consultivo .consultivo-form label{display:grid;gap:5px;color:#53647a;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+#consultivo .consultivo-form input,#consultivo .consultivo-form select,#consultivo .consultivo-form textarea{width:100%;min-height:36px;border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;background:#fff;color:#1b2638;font-family:inherit;font-size:12px;outline:none;text-transform:none;letter-spacing:0;font-weight:700}
+#consultivo .consultivo-form textarea{min-height:68px;resize:vertical}
+#consultivo .consultivo-form input:focus,#consultivo .consultivo-form select:focus,#consultivo .consultivo-form textarea:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(21,95,196,.11)}
+#consultivo .consultivo-form-actions{display:flex;gap:8px;justify-content:flex-end;align-items:end}
+#consultivo .consultivo-table table{min-width:1060px;font-size:12px}
+#consultivo .consultivo-table th{font-size:9px}
+#consultivo .consultivo-table td{vertical-align:middle}
+#consultivo .consultivo-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;border:1px solid #d9e2ee;background:#eef5ff;color:#17375f;white-space:nowrap}
+#consultivo .consultivo-status.instalado{background:#ecfdf3;color:#047857;border-color:#bbf7d0}
+#consultivo .consultivo-status.pendente{background:#fff7ed;color:#b45309;border-color:#fed7aa}
+#consultivo .consultivo-status.cancelado{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+#consultivo .consultivo-row-actions{display:flex;gap:6px;flex-wrap:wrap}
+#consultivo .consultivo-row-actions button{padding:6px 8px;font-size:10px}
+@media(max-width:1180px){#consultivo .consultivo-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}#consultivo .consultivo-grid,#consultivo .consultivo-form{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){#consultivo .consultivo-head{padding:16px}#consultivo .consultivo-kpis,#consultivo .consultivo-grid,#consultivo .consultivo-form{grid-template-columns:1fr}#consultivo .consultivo-form .span-2,#consultivo .consultivo-form .span-4{grid-column:1/-1}#consultivo .consultivo-form-actions{justify-content:stretch;flex-direction:column}#consultivo .consultivo-form-actions button{width:100%}}
+
 </style>
 </head>
 <body>
@@ -2067,6 +2107,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   <button class="tab-btn" data-tab="plantoes">Plantões</button>
   <button class="tab-btn" data-tab="historico">Histórico Local</button>
   <button class="tab-btn" data-tab="tecnicoCertificado">Técnico Certificado</button>
+  <button class="tab-btn" data-tab="consultivo">Consultivo</button>
 </div>
 
 <!-- DASHBOARD -->
@@ -2462,6 +2503,80 @@ button:hover,.btn:hover{transform:translateY(-1px)}
       </div>
     </div>
   </div>
+</section>
+
+
+<!-- CONSULTIVO -->
+<section id="consultivo" class="tab-panel">
+  <script id="consultivoSeed" type="application/json">{"records": [{"id": "c1", "tecnico": "KLEYTON APOLINARIO DA SILVA", "contrato": "1657501", "dataIndicacao": "2026-06-12", "dataInstalacao": "2026-06-15", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c2", "tecnico": "KLEYTON APOLINARIO DA SILVA", "contrato": "2267413", "dataIndicacao": "2026-06-15", "dataInstalacao": "2026-06-16", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "PENDENTE", "observacao": ""}, {"id": "c3", "tecnico": "LAILSON SILVA OLIVEIRA", "contrato": "1456948", "dataIndicacao": "2026-06-11", "dataInstalacao": "2026-06-12", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c4", "tecnico": "JOSE FRANCISCO SOARES DE OLIVEIRA", "contrato": "2039380", "dataIndicacao": "2026-06-09", "dataInstalacao": "2026-06-11", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c5", "tecnico": "ALEX DA SILVA EMIDIO", "contrato": "1998007", "dataIndicacao": "2026-06-10", "dataInstalacao": "2026-06-10", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}], "tecnicos": ["ALEX DA SILVA EMIDIO", "IZIDORO PEREIRA DA CUNHA NETO", "JOSE FRANCISCO SOARES DE OLIVEIRA", "KLEYTON APOLINARIO DA SILVA", "LAILSON SILVA OLIVEIRA", "MATEUS LIMA DOS REIS"], "tipos": ["INDICAÇÃO", "INSTALAÇÃO", "MIGRAÇÃO", "OUTRO", "UPGRADE"], "statuses": ["CANCELADO", "INSTALADO", "PENDENTE"]}</script>
+  <div class="consultivo-hero">
+    <div class="consultivo-head">
+      <div>
+        <h2>Controle Consultivo</h2>
+        <p>Indicações, instalações, pendências e valores do consultivo em rotina diária.</p>
+      </div>
+      <div class="consultivo-actions">
+        <label class="secondary consultivo-file" for="consultivoImportFile">Carregar Base
+          <input id="consultivoImportFile" type="file" accept=".xlsx,.xls,.csv,.json">
+        </label>
+        <button id="consultivoExportCsv" class="secondary" type="button">CSV</button>
+        <button id="consultivoBackupJson" class="secondary" type="button">Backup</button>
+        <button id="consultivoRestore" class="danger" type="button">Limpar</button>
+      </div>
+    </div>
+
+    <section class="filters">
+      <div class="filter-card"><label>Buscar</label><input id="consultivoBusca" placeholder="Técnico, contrato, serviço ou observação"></div>
+      <div class="filter-card"><label>Técnico</label><select id="consultivoFiltroTecnico"><option value="">Todos</option></select></div>
+      <div class="filter-card"><label>Status</label><select id="consultivoFiltroStatus"><option value="">Todos</option></select></div>
+      <div class="filter-card"><label>Serviço</label><select id="consultivoFiltroTipo"><option value="">Todos</option></select></div>
+      <div class="filter-card"><label>Início</label><input id="consultivoDataInicio" type="date"></div>
+      <div class="filter-card"><label>Fim</label><input id="consultivoDataFim" type="date"></div>
+    </section>
+
+    <section class="kpis consultivo-kpis">
+      <div class="kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value" id="consultivoKpiRegistros">0</div><div class="kpi-sub">linhas filtradas</div></div>
+      <div class="kpi-card"><div class="kpi-label">Indicações</div><div class="kpi-value" id="consultivoKpiIndicacoes">0</div><div class="kpi-sub">quantidade total</div></div>
+      <div class="kpi-card"><div class="kpi-label">Instalados</div><div class="kpi-value" id="consultivoKpiInstalados">0</div><div class="kpi-sub">status instalado</div></div>
+      <div class="kpi-card"><div class="kpi-label">Pendentes</div><div class="kpi-value" id="consultivoKpiPendentes">0</div><div class="kpi-sub">em aberto</div></div>
+      <div class="kpi-card"><div class="kpi-label">Valor</div><div class="kpi-value" id="consultivoKpiValor">R$ 0</div><div class="kpi-sub">soma filtrada</div></div>
+      <div class="kpi-card"><div class="kpi-label">Conversão</div><div class="kpi-value" id="consultivoKpiConversao">0%</div><div class="kpi-sub">instalados / registros</div></div>
+    </section>
+
+    <div class="consultivo-grid">
+      <section class="card"><div class="section-title-line"><h2>Performance por Técnico</h2><span class="section-caption">Quantidade no filtro atual</span></div><div class="consultivo-chart"><canvas id="consultivoChartTecnicos"></canvas></div></section>
+      <section class="card"><div class="section-title-line"><h2>Status dos Contratos</h2><span class="section-caption">Instalados, pendentes e cancelados</span></div><div class="consultivo-chart"><canvas id="consultivoChartStatus"></canvas></div></section>
+      <section class="card"><div class="section-title-line"><h2>Ranking Operacional</h2><span class="section-caption">Melhores resultados</span></div><div id="consultivoRanking" class="rank-list"><div class="empty">Sem dados.</div></div></section>
+      <section class="card"><div class="section-title-line"><h2>Novo Lançamento</h2><span class="section-caption">Atualização diária</span></div>
+        <form id="consultivoForm" class="consultivo-form">
+          <input id="consultivoId" type="hidden">
+          <label class="span-2">Técnico<input id="consultivoTecnico" list="consultivoTecnicosLista" required></label>
+          <label>Contrato<input id="consultivoContrato" required></label>
+          <label>Tipo<input id="consultivoTipo" list="consultivoTiposLista" required></label>
+          <label>Data indicação<input id="consultivoDataIndicacao" type="date" required></label>
+          <label>Data instalação<input id="consultivoDataInstalacao" type="date"></label>
+          <label>Status<input id="consultivoStatus" list="consultivoStatusLista" required></label>
+          <label>Quantidade<input id="consultivoQuantidade" type="number" step="1" min="0" value="1"></label>
+          <label>Valor<input id="consultivoValor" type="number" step="0.01" min="0" value="8"></label>
+          <label class="span-4">Observação<textarea id="consultivoObservacao"></textarea></label>
+          <div class="span-4 consultivo-form-actions"><button class="secondary" id="consultivoCancelarEdicao" type="button">Cancelar edição</button><button class="success" type="submit">Salvar lançamento</button></div>
+        </form>
+      </section>
+    </div>
+
+    <section class="card consultivo-table">
+      <div class="section-title-line"><h2>Lançamentos</h2><span class="section-caption"><span id="consultivoTotalTabela">0</span> registros exibidos</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Técnico</th><th>Contrato</th><th>Indicação</th><th>Instalação</th><th>Serviço</th><th>Status</th><th>Qtd.</th><th>Valor</th><th>Observação</th><th>Ações</th></tr></thead>
+          <tbody id="consultivoTabela"><tr><td colspan="10"><div class="empty">Sem lançamentos.</div></td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <datalist id="consultivoTecnicosLista"></datalist>
+  <datalist id="consultivoTiposLista"></datalist>
+  <datalist id="consultivoStatusLista"></datalist>
 </section>
 
 </div>
@@ -6403,6 +6518,222 @@ document.addEventListener("DOMContentLoaded",()=>{
     });
   }
 
+
+
+  /* === CONSULTIVO === */
+  const CONSULTIVO_STORAGE_KEY="lumar-consultivo-v1";
+  let consultivoState=null;
+  let consultivoFiltrado=[];
+  const consultivoMoney=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+  const consultivoInt=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0});
+  function consultivoSeedData(){
+    try{return JSON.parse(document.getElementById("consultivoSeed")?.textContent||"{}");}
+    catch(e){return {records:[],tecnicos:[],tipos:[],statuses:[]};}
+  }
+  function consultivoLoad(){
+    if(consultivoState) return consultivoState;
+    try{
+      const saved=localStorage.getItem(CONSULTIVO_STORAGE_KEY);
+      if(saved) consultivoState=JSON.parse(saved);
+    }catch(e){}
+    if(!consultivoState){
+      const seed=consultivoSeedData();
+      consultivoState={records:seed.records||[],tecnicos:seed.tecnicos||[],tipos:seed.tipos||[],statuses:seed.statuses||[]};
+    }
+    return consultivoState;
+  }
+  function consultivoSave(){try{localStorage.setItem(CONSULTIVO_STORAGE_KEY,JSON.stringify(consultivoState));}catch(e){}}
+  function consultivoEsc(v){return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));}
+  function consultivoNorm(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();}
+  function consultivoUniq(arr){return [...new Set(arr.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));}
+  function consultivoQty(r){return Number(r.quantidade||0);}
+  function consultivoValor(r){return Number(r.valor||0);}
+  function consultivoInstalado(r){return consultivoNorm(r.status).includes("instalado");}
+  function consultivoPendente(r){return consultivoNorm(r.status).includes("pendente");}
+  function consultivoDate(v){
+    if(!v) return "";
+    if(v instanceof Date&&!isNaN(v)) return v.toISOString().slice(0,10);
+    if(typeof v==="number"&&window.XLSX){
+      const parsed=XLSX.SSF.parse_date_code(v);
+      if(parsed) return `${parsed.y}-${String(parsed.m).padStart(2,"0")}-${String(parsed.d).padStart(2,"0")}`;
+    }
+    const text=String(v).trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0,10);
+    const br=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(br) return `${br[3]}-${br[2].padStart(2,"0")}-${br[1].padStart(2,"0")}`;
+    return text.slice(0,10);
+  }
+  function consultivoFmtDate(v){if(!v) return ""; const p=String(v).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:consultivoEsc(v);}
+  function consultivoSyncLists(){
+    const s=consultivoLoad();
+    s.tecnicos=consultivoUniq([...(s.tecnicos||[]),...s.records.map(r=>r.tecnico)]);
+    s.tipos=consultivoUniq([...(s.tipos||[]),...s.records.map(r=>r.tipo)]);
+    s.statuses=consultivoUniq([...(s.statuses||[]),...s.records.map(r=>r.status)]);
+    consultivoFillSelect("consultivoFiltroTecnico","Todos",s.tecnicos);
+    consultivoFillSelect("consultivoFiltroTipo","Todos",s.tipos);
+    consultivoFillSelect("consultivoFiltroStatus","Todos",s.statuses);
+    consultivoFillDatalist("consultivoTecnicosLista",s.tecnicos);
+    consultivoFillDatalist("consultivoTiposLista",s.tipos);
+    consultivoFillDatalist("consultivoStatusLista",s.statuses);
+  }
+  function consultivoFillSelect(id,label,values){
+    const el=$(id); if(!el) return; const current=el.value;
+    el.innerHTML=`<option value="">${label}</option>`+values.map(v=>`<option value="${consultivoEsc(v)}">${consultivoEsc(v)}</option>`).join("");
+    el.value=current;
+  }
+  function consultivoFillDatalist(id,values){const el=$(id); if(el) el.innerHTML=values.map(v=>`<option value="${consultivoEsc(v)}"></option>`).join("");}
+  function consultivoAplicarFiltros(){
+    const s=consultivoLoad();
+    const q=consultivoNorm($("consultivoBusca")?.value||"");
+    const tecnico=$("consultivoFiltroTecnico")?.value||"";
+    const status=$("consultivoFiltroStatus")?.value||"";
+    const tipo=$("consultivoFiltroTipo")?.value||"";
+    const ini=$("consultivoDataInicio")?.value||"";
+    const fim=$("consultivoDataFim")?.value||"";
+    consultivoFiltrado=s.records.filter(r=>{
+      const hay=consultivoNorm([r.tecnico,r.contrato,r.tipo,r.status,r.observacao].join(" "));
+      const data=r.dataIndicacao||r.dataInstalacao||"";
+      return (!q||hay.includes(q))&&(!tecnico||r.tecnico===tecnico)&&(!status||r.status===status)&&(!tipo||r.tipo===tipo)&&(!ini||data>=ini)&&(!fim||data<=fim);
+    });
+    consultivoRender();
+  }
+  function consultivoRender(){
+    if(!$("consultivo")) return;
+    consultivoRenderKpis();
+    consultivoRenderTabela();
+    consultivoRenderRanking();
+    if($("consultivo").classList.contains("active")) consultivoDrawCharts();
+  }
+  function consultivoRenderKpis(){
+    const total=consultivoFiltrado.length;
+    const quantidade=consultivoFiltrado.reduce((s,r)=>s+consultivoQty(r),0);
+    const instalados=consultivoFiltrado.filter(consultivoInstalado).length;
+    const pendentes=consultivoFiltrado.filter(consultivoPendente).length;
+    const valor=consultivoFiltrado.reduce((s,r)=>s+consultivoValor(r),0);
+    if($("consultivoKpiRegistros")) $("consultivoKpiRegistros").textContent=consultivoInt.format(total);
+    if($("consultivoKpiIndicacoes")) $("consultivoKpiIndicacoes").textContent=consultivoInt.format(quantidade);
+    if($("consultivoKpiInstalados")) $("consultivoKpiInstalados").textContent=consultivoInt.format(instalados);
+    if($("consultivoKpiPendentes")) $("consultivoKpiPendentes").textContent=consultivoInt.format(pendentes);
+    if($("consultivoKpiValor")) $("consultivoKpiValor").textContent=consultivoMoney.format(valor);
+    if($("consultivoKpiConversao")) $("consultivoKpiConversao").textContent=total?`${Math.round(instalados/total*100)}%`:"0%";
+    if($("consultivoTotalTabela")) $("consultivoTotalTabela").textContent=consultivoInt.format(total);
+  }
+  function consultivoRenderTabela(){
+    const body=$("consultivoTabela"); if(!body) return;
+    if(!consultivoFiltrado.length){body.innerHTML='<tr><td colspan="10"><div class="empty">Nenhum lançamento encontrado.</div></td></tr>';return;}
+    body.innerHTML=consultivoFiltrado.map(r=>`<tr>
+      <td><strong class="tech-name">${consultivoEsc(r.tecnico)}</strong></td>
+      <td>${consultivoEsc(r.contrato)}</td><td>${consultivoFmtDate(r.dataIndicacao)}</td><td>${consultivoFmtDate(r.dataInstalacao)}</td>
+      <td>${consultivoEsc(r.tipo)}</td><td><span class="consultivo-status ${consultivoNorm(r.status)}">${consultivoEsc(r.status)}</span></td>
+      <td>${consultivoInt.format(consultivoQty(r))}</td><td>${consultivoMoney.format(consultivoValor(r))}</td><td>${consultivoEsc(r.observacao)}</td>
+      <td><div class="consultivo-row-actions"><button class="secondary" type="button" onclick="consultivoEditar('${r.id}')">Editar</button><button class="danger" type="button" onclick="consultivoExcluir('${r.id}')">Excluir</button></div></td>
+    </tr>`).join("");
+  }
+  function consultivoGroup(key){
+    const map=new Map();
+    consultivoFiltrado.forEach(r=>map.set(r[key]||"Sem informação",(map.get(r[key]||"Sem informação")||0)+(consultivoQty(r)||1)));
+    return [...map.entries()].sort((a,b)=>b[1]-a[1]);
+  }
+  function consultivoRenderRanking(){
+    const el=$("consultivoRanking"); if(!el) return;
+    const data=consultivoGroup("tecnico").slice(0,6);
+    el.innerHTML=data.length?data.map((d,i)=>`<div class="rank-item"><span class="rank-pos">${i+1}</span><div><strong>${consultivoEsc(d[0])}</strong><small>${consultivoInt.format(d[1])} indicação(ões)</small></div></div>`).join(""):'<div class="empty">Sem dados.</div>';
+  }
+  function consultivoCanvas(id){
+    const c=$(id); if(!c) return null; const box=c.getBoundingClientRect(); const w=Math.max(320,box.width||320), h=Math.max(220,box.height||220), dpr=window.devicePixelRatio||1;
+    c.width=Math.floor(w*dpr); c.height=Math.floor(h*dpr); const ctx=c.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h); return {ctx,w,h};
+  }
+  function consultivoDrawCharts(){
+    consultivoDrawBar("consultivoChartTecnicos",consultivoGroup("tecnico").slice(0,8),"#155fc4");
+    consultivoDrawDonut("consultivoChartStatus",consultivoGroup("status"),["#19a976","#f59e0b","#dc2626","#155fc4"]);
+  }
+  function consultivoDrawBar(id,data,color){
+    const cv=consultivoCanvas(id); if(!cv) return; const {ctx,w,h}=cv; if(!data.length){consultivoNoData(ctx,w,h);return;}
+    const pad=24,labelW=138,max=Math.max(1,...data.map(d=>d[1])); ctx.font="12px Arial";
+    data.forEach((d,i)=>{const step=(h-pad*2)/Math.max(data.length,1), y=pad+i*step, bh=Math.min(22,step-6), bw=(w-labelW-pad-34)*(d[1]/max); ctx.fillStyle="#334155"; ctx.fillText(String(d[0]).slice(0,24),10,y+14); ctx.fillStyle=color; ctx.fillRect(labelW,y,bw,bh); ctx.fillStyle="#10213a"; ctx.fillText(consultivoInt.format(d[1]),labelW+bw+7,y+14);});
+  }
+  function consultivoDrawDonut(id,data,colors){
+    const cv=consultivoCanvas(id); if(!cv) return; const {ctx,w,h}=cv; if(!data.length){consultivoNoData(ctx,w,h);return;}
+    const total=data.reduce((s,d)=>s+d[1],0)||1,cx=w*.34,cy=h*.5,r=Math.min(w,h)*.29; let start=-Math.PI/2;
+    data.forEach((d,i)=>{const a=d[1]/total*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+a); ctx.closePath(); ctx.fillStyle=colors[i%colors.length]; ctx.fill(); start+=a;});
+    ctx.beginPath(); ctx.arc(cx,cy,r*.58,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill(); ctx.fillStyle="#10213a"; ctx.font="800 20px Arial"; ctx.textAlign="center"; ctx.fillText(consultivoInt.format(total),cx,cy+7); ctx.textAlign="left"; ctx.font="12px Arial";
+    data.forEach((d,i)=>{const y=42+i*24; ctx.fillStyle=colors[i%colors.length]; ctx.fillRect(w*.62,y-10,12,12); ctx.fillStyle="#334155"; ctx.fillText(`${d[0]} (${consultivoInt.format(d[1])})`,w*.62+18,y);});
+  }
+  function consultivoNoData(ctx,w,h){ctx.fillStyle="#718096";ctx.textAlign="center";ctx.fillText("Sem dados para exibir",w/2,h/2);ctx.textAlign="left";}
+  function consultivoResetForm(){
+    ["consultivoId","consultivoTecnico","consultivoContrato","consultivoTipo","consultivoDataInstalacao","consultivoStatus","consultivoObservacao"].forEach(id=>{if($(id)) $(id).value="";});
+    if($("consultivoDataIndicacao")) $("consultivoDataIndicacao").value=new Date().toISOString().slice(0,10);
+    if($("consultivoQuantidade")) $("consultivoQuantidade").value=1;
+    if($("consultivoValor")) $("consultivoValor").value=8;
+  }
+  window.consultivoEditar=function(id){
+    const r=consultivoLoad().records.find(item=>item.id===id); if(!r) return;
+    Object.entries({consultivoId:r.id,consultivoTecnico:r.tecnico,consultivoContrato:r.contrato,consultivoTipo:r.tipo,consultivoDataIndicacao:r.dataIndicacao,consultivoDataInstalacao:r.dataInstalacao,consultivoStatus:r.status,consultivoQuantidade:r.quantidade,consultivoValor:r.valor,consultivoObservacao:r.observacao}).forEach(([id,v])=>{if($(id)) $(id).value=v??"";});
+    $("consultivoForm")?.scrollIntoView({behavior:"smooth",block:"center"});
+  };
+  window.consultivoExcluir=function(id){
+    if(!confirm("Excluir este lançamento do Consultivo?")) return;
+    consultivoLoad().records=consultivoLoad().records.filter(r=>r.id!==id);
+    consultivoSave(); consultivoSyncLists(); consultivoAplicarFiltros();
+  };
+  function consultivoToCsv(rows){
+    const cols=["tecnico","contrato","dataIndicacao","dataInstalacao","valor","tipo","quantidade","status","observacao"];
+    return [cols.join(";"),...rows.map(r=>cols.map(c=>`"${String(r[c]??"").replace(/"/g,'""')}"`).join(";"))].join("\n");
+  }
+  function consultivoDownload(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),900);}
+  function consultivoImportRows(rows){
+    consultivoLoad().records=rows.map((r,i)=>({
+      id:r.id||`c${Date.now()}${i}`,
+      tecnico:String(r.tecnico||r["TÉCNICO"]||r["TECNICO"]||"").trim(),
+      contrato:String(r.contrato||r["CONTRATO"]||"").trim(),
+      dataIndicacao:consultivoDate(r.dataIndicacao||r["DATA DA INDICAÇÃO"]||r["DATA INDICACAO"]||""),
+      dataInstalacao:consultivoDate(r.dataInstalacao||r["DATA DA INSTALAÇÃO"]||r["DATA INSTALACAO"]||""),
+      valor:Number(String(r.valor??r["VALOR"]??0).replace(",","."))||0,
+      tipo:String(r.tipo||r["TIPO DE SERVIÇO"]||r["TIPO DE SERVICO"]||"").trim(),
+      quantidade:Number(String(r.quantidade??r["QUANTIDADE"]??1).replace(",","."))||0,
+      status:String(r.status||r["STATUS"]||"").trim(),
+      observacao:String(r.observacao||r["OBSERVAÇÃO"]||r["OBSERVACAO"]||"").trim()
+    })).filter(r=>r.tecnico||r.contrato||r.tipo||r.status);
+    consultivoSave(); consultivoSyncLists(); consultivoAplicarFiltros();
+  }
+  function consultivoParseCsv(text){
+    const lines=text.trim().split(/\r?\n/).filter(Boolean);
+    const split=line=>{const out=[];let cur="",q=false;for(let i=0;i<line.length;i++){const ch=line[i],n=line[i+1];if(ch==='"'&&q&&n==='"'){cur+='"';i++;}else if(ch==='"')q=!q;else if((ch===";"||ch===",")&&!q){out.push(cur);cur="";}else cur+=ch;}out.push(cur);return out;};
+    const cols=split(lines.shift()||""); return lines.map(line=>{const vals=split(line),r={}; cols.forEach((c,i)=>r[c]=vals[i]||""); return r;});
+  }
+  async function consultivoHandleImport(file){
+    if(!file) return; const name=file.name.toLowerCase();
+    if(name.endsWith(".json")){
+      const obj=JSON.parse(await file.text());
+      if(Array.isArray(obj)) consultivoImportRows(obj); else {consultivoState=obj; consultivoSave(); consultivoSyncLists(); consultivoAplicarFiltros();}
+      return;
+    }
+    if(name.endsWith(".csv")){consultivoImportRows(consultivoParseCsv(await file.text()));return;}
+    const buffer=await file.arrayBuffer();
+    const wb=XLSX.read(buffer,{type:"array",cellDates:true});
+    const sheetName=wb.SheetNames.includes("Lançamentos")?"Lançamentos":wb.SheetNames[0];
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:"",range:3});
+    consultivoImportRows(rows);
+  }
+  function consultivoInit(){
+    if(!$("consultivo")) return;
+    consultivoLoad(); consultivoSyncLists(); consultivoResetForm();
+    ["consultivoBusca","consultivoFiltroTecnico","consultivoFiltroStatus","consultivoFiltroTipo","consultivoDataInicio","consultivoDataFim"].forEach(id=>$(id)?.addEventListener("input",consultivoAplicarFiltros));
+    $("consultivoForm")?.addEventListener("submit",e=>{
+      e.preventDefault(); const s=consultivoLoad(); const id=$("consultivoId")?.value||`c${Date.now()}`;
+      const record={id,tecnico:$("consultivoTecnico").value.trim(),contrato:$("consultivoContrato").value.trim(),tipo:$("consultivoTipo").value.trim(),dataIndicacao:$("consultivoDataIndicacao").value,dataInstalacao:$("consultivoDataInstalacao").value,status:$("consultivoStatus").value.trim(),quantidade:Number($("consultivoQuantidade").value||0),valor:Number($("consultivoValor").value||0),observacao:$("consultivoObservacao").value.trim()};
+      const idx=s.records.findIndex(r=>r.id===id); idx>=0?s.records.splice(idx,1,record):s.records.push(record);
+      consultivoSave(); consultivoSyncLists(); consultivoResetForm(); consultivoAplicarFiltros();
+    });
+    $("consultivoCancelarEdicao")?.addEventListener("click",consultivoResetForm);
+    $("consultivoExportCsv")?.addEventListener("click",()=>consultivoDownload("controle-consultivo.csv",consultivoToCsv(consultivoLoad().records),"text/csv;charset=utf-8"));
+    $("consultivoBackupJson")?.addEventListener("click",()=>consultivoDownload("controle-consultivo-backup.json",JSON.stringify(consultivoLoad(),null,2),"application/json;charset=utf-8"));
+    $("consultivoRestore")?.addEventListener("click",()=>{if(confirm("Limpar alterações locais e restaurar a base inicial do Consultivo?")){localStorage.removeItem(CONSULTIVO_STORAGE_KEY);consultivoState=null;consultivoLoad();consultivoSyncLists();consultivoResetForm();consultivoAplicarFiltros();}});
+    $("consultivoImportFile")?.addEventListener("change",async e=>{await consultivoHandleImport(e.target.files?.[0]); e.target.value="";});
+    window.addEventListener("resize",()=>{if($("consultivo")?.classList.contains("active")) consultivoDrawCharts();});
+    consultivoAplicarFiltros();
+  }
+
   document.querySelectorAll(".tab-btn").forEach(btn=>{
     btn.addEventListener("click",()=>{
       document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
@@ -6411,9 +6742,11 @@ document.addEventListener("DOMContentLoaded",()=>{
       const panel=$(btn.dataset.tab);
       if(panel) panel.classList.add("active");
       if(btn.dataset.tab==="dias") atualizarDiasTrabalhadosAutomaticamente();
+      if(btn.dataset.tab==="consultivo") consultivoRender();
     });
   });
 
+  consultivoInit();
   inicializarDiasTrabalhados();
   renderHistorico();
   atualizarSelectCompetencias();
@@ -7983,6 +8316,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 </body>
 </html>
+
 
 
 
