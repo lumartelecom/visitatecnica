@@ -2543,7 +2543,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 
 <!-- CONSULTIVO -->
 <section id="consultivo" class="tab-panel">
-  <script id="consultivoSeed" type="application/json">{"records": [{"id": "c1", "tecnico": "KLEYTON APOLINARIO DA SILVA", "contrato": "1657501", "dataIndicacao": "2026-06-12", "dataInstalacao": "2026-06-15", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c2", "tecnico": "KLEYTON APOLINARIO DA SILVA", "contrato": "2267413", "dataIndicacao": "2026-06-15", "dataInstalacao": "2026-06-16", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "PENDENTE", "observacao": ""}, {"id": "c3", "tecnico": "LAILSON SILVA OLIVEIRA", "contrato": "1456948", "dataIndicacao": "2026-06-11", "dataInstalacao": "2026-06-12", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c4", "tecnico": "JOSE FRANCISCO SOARES DE OLIVEIRA", "contrato": "2039380", "dataIndicacao": "2026-06-09", "dataInstalacao": "2026-06-11", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c5", "tecnico": "ALEX DA SILVA EMIDIO", "contrato": "1998007", "dataIndicacao": "2026-06-10", "dataInstalacao": "2026-06-10", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}], "tecnicos": ["ALEX DA SILVA EMIDIO", "IZIDORO PEREIRA DA CUNHA NETO", "JOSE FRANCISCO SOARES DE OLIVEIRA", "KLEYTON APOLINARIO DA SILVA", "LAILSON SILVA OLIVEIRA", "MATEUS LIMA DOS REIS"], "tipos": ["INDICAÇÃO", "INSTALAÇÃO", "MIGRAÇÃO", "OUTRO", "UPGRADE"], "statuses": ["CANCELADO", "INSTALADO", "PENDENTE"]}</script>
+  <script id="consultivoSeed" type="application/json">{"records": [{"id": "c1", "tecnico": "KLEYTON APOLINARIO DA SILVA", "contrato": "1657501", "dataIndicacao": "2026-06-12", "dataInstalacao": "2026-06-15", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c2", "tecnico": "KLEYTON APOLINARIO DA SILVA", "contrato": "2267413", "dataIndicacao": "2026-06-15", "dataInstalacao": "2026-06-16", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "PENDENTE", "observacao": ""}, {"id": "c3", "tecnico": "LAILSON SILVA OLIVEIRA", "contrato": "1456948", "dataIndicacao": "2026-06-11", "dataInstalacao": "2026-06-12", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c4", "tecnico": "JOSE FRANCISCO SOARES DE OLIVEIRA", "contrato": "2039380", "dataIndicacao": "2026-06-09", "dataInstalacao": "2026-06-11", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}, {"id": "c5", "tecnico": "ALEX DA SILVA EMIDIO", "contrato": "1998007", "dataIndicacao": "2026-06-10", "dataInstalacao": "2026-06-10", "valor": 8.0, "tipo": "MIGRAÇÃO", "quantidade": 1.0, "status": "INSTALADO", "observacao": ""}], "tecnicos": ["ALEX DA SILVA EMIDIO", "IZIDORO PEREIRA DA CUNHA NETO", "JOSE FRANCISCO SOARES DE OLIVEIRA", "KLEYTON APOLINARIO DA SILVA", "LAILSON SILVA OLIVEIRA", "MATEUS LIMA DOS REIS"], "tipos": ["INDICAÇÃO", "INSTALAÇÃO", "MIGRAÇÃO", "MUDANÇA DE PACOTE", "OUTRO", "UPGRADE"], "statuses": ["CANCELADO", "INSTALADO", "PENDENTE"]}</script>
   <div class="consultivo-hero">
     <div class="consultivo-head">
       <div>
@@ -6601,6 +6601,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     return [
       {tipo:"Instalação Mesh",valor:54.30},
       {tipo:"Migração",valor:8.00},
+      {tipo:"Mudança de Pacote",valor:0},
       {tipo:"Instalação Ponto TV",valor:104.71},
       {tipo:"Ponto Ultra",valor:0},
       {tipo:"Outro",valor:0}
@@ -6610,8 +6611,9 @@ document.addEventListener("DOMContentLoaded",()=>{
     const n=consultivoNorm(tipo);
     const found=consultivoServicosPadrao().find(item=>consultivoNorm(item.tipo)===n);
     if(found) return found.tipo;
-    if(n==="migracao"||n==="migraçao") return "Migração";
+    if(n==="migracao"||n==="migração") return "Migração";
     if(n.includes("mesh")) return "Instalação Mesh";
+    if(n.includes("mudanca de pacote")||n.includes("mudança de pacote")) return "Mudança de Pacote";
     if(n.includes("ponto ultra")||n.includes("ultra")) return "Ponto Ultra";
     if(n.includes("ponto tv")||n.includes("tv")) return "Instalação Ponto TV";
     if(n==="outro") return "Outro";
