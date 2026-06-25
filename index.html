@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -1757,6 +1757,47 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 }
 /* === FIM CORREÇÃO PERFORMANCE === */
 
+
+/* ─── NR35 TABLE STYLES ─── */
+.table-wrapper-nr35{overflow-x:auto}
+.table-wrapper-nr35 table{font-size:13px}
+.table-wrapper-nr35 thead{background:var(--navy2);color:#fff}
+.table-wrapper-nr35 th{padding:12px 14px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.table-wrapper-nr35 td{padding:12px 14px;border-bottom:1px solid var(--border)}
+.table-wrapper-nr35 tbody tr:hover{background:var(--surface-alt)}
+.tecnico-cell-nr35{font-weight:600;color:var(--navy)}
+.numero{font-weight:600;color:var(--navy);text-align:center}
+.percentage{font-weight:700;text-align:center;padding:4px 10px;border-radius:4px;font-size:12px;display:inline-block}
+.percentage.high{background:var(--green-light);color:var(--green)}
+.percentage.medium{background:var(--yellow-light);color:var(--yellow)}
+.percentage.low{background:var(--red-light);color:var(--red)}
+.duracao{text-align:center;color:var(--text-muted);font-size:13px}
+.cell-input{width:90%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;background:var(--surface)}
+.cell-input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(30,58,95,.1)}
+
+/* ─── MODAL STYLES ─── */
+.modal-nr35{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;overflow:hidden}
+.modal-content-nr35{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow);width:min(96vw,1240px);max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
+.modal-header-nr35{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface-alt);position:relative;top:0;z-index:20;flex:0 0 auto}
+.modal-header-nr35 h3{margin:0;color:var(--navy);font-size:18px}
+.btn-fechar-modal{background:none;border:none;font-size:28px;color:var(--text-muted);cursor:pointer;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.btn-fechar-modal:hover{color:var(--text)}
+.modal-body-nr35{overflow:auto;padding:0 20px 20px;flex:1;position:relative}
+.tabela-contratos{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed}
+.tabela-contratos thead{background:var(--navy2);color:#fff}
+.tabela-contratos thead th{position:sticky;top:0;z-index:10}
+.tabela-contratos th{height:54px;padding:0 14px;text-align:left;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;background:var(--navy2);box-shadow:0 3px 0 var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabela-contratos tbody tr:first-child td{padding-top:16px}
+.tabela-contratos td{padding:13px 14px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.tabela-contratos th:nth-child(1),.tabela-contratos td:nth-child(1){width:13%}
+.tabela-contratos th:nth-child(2),.tabela-contratos td:nth-child(2){width:13%}
+.tabela-contratos th:nth-child(3),.tabela-contratos td:nth-child(3){width:12%}
+.tabela-contratos th:nth-child(4),.tabela-contratos td:nth-child(4){width:28%}
+.tabela-contratos th:nth-child(5),.tabela-contratos td:nth-child(5){width:13%}
+.tabela-contratos th:nth-child(6),.tabela-contratos td:nth-child(6){width:13%}
+.tabela-contratos th:nth-child(7),.tabela-contratos td:nth-child(7){width:8%}
+.tabela-contratos tbody tr:hover{background:var(--surface-alt)}
+@media(max-width:640px){.modal-content-nr35{width:95%;max-height:95vh}.tabela-contratos{font-size:11px}.tabela-contratos th,.tabela-contratos td{padding:8px}}
 </style>
 
 <style>
@@ -2127,7 +2168,8 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 <div class="container">
 
 <div class="tabs">
-  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="nr35">Dashboard</button>
+  <button class="tab-btn active" data-tab="performance_tecnico">Performance por Técnico</button>
   <button class="tab-btn" data-tab="acao">Plano de Ação</button>
   <button class="tab-btn" data-tab="dias">Dias Trabalhados</button>
   <button class="tab-btn" data-tab="plantoes">Plantões</button>
@@ -2137,7 +2179,160 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 </div>
 
 <!-- DASHBOARD -->
-<section id="dashboard" class="tab-panel active">
+<section id="nr35" class="tab-panel">
+  <div class="card">
+    <div class="section-title-line">
+      <h2>Controle por Técnico</h2>
+    </div>
+    <div class="table-wrapper-nr35">
+      <table>
+        <thead>
+          <tr>
+            <th>Técnico</th>
+            <th style="text-align: center;">NR35</th>
+            <th style="text-align: center;">Tec. Certificado</th>
+            <th style="text-align: center;">Certidão Atendimento</th>
+            <th style="text-align: center;">Treinamentos</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaNR35">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONTRATOS -->
+  <div id="modalContratos" class="modal-nr35" style="display:none;">
+    <div class="modal-content-nr35">
+      <div class="modal-header-nr35">
+        <h3 id="modalTecnicoNome"></h3>
+        <button class="btn-fechar-modal" onclick="document.getElementById('modalContratos').style.display='none';">&times;</button>
+      </div>
+      <div class="modal-body-nr35">
+        <table class="tabela-contratos">
+          <colgroup>
+            <col style="width:13%">
+            <col style="width:13%">
+            <col style="width:12%">
+            <col style="width:28%">
+            <col style="width:13%">
+            <col style="width:13%">
+            <col style="width:8%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Contrato</th>
+              <th>Cód. Baixa</th>
+              <th>Tipo</th>
+              <th>Hora Entrada</th>
+              <th>Hora Saída</th>
+              <th>Duração</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyContratos">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Dados de contratos por técnico
+const contatosPorTecnico = {
+  "Z132322": {"nome":"Apolinario","codigo":"Z132322","total":14,"com_altura":14,"pct_altura":100.0,"contratos":[{"cod_os":"2639253514","data":"2026-06-02","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"41min","subiu":"09:16:00","desceu":"09:57:29"},{"cod_os":"2639513579","data":"2026-06-03","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"5min","subiu":"15:44:35","desceu":"15:50:00"},{"cod_os":"2639456418","data":"2026-06-03","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"3min","subiu":"10:10:40","desceu":"10:13:59"},{"cod_os":"2641410130","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"10:54:06","desceu":"10:58:26"},{"cod_os":"2639597649","data":"2026-06-05","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"7min","subiu":"10:30:22","desceu":"10:37:43"},{"cod_os":"2639485667","data":"2026-06-03","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"1min","subiu":"16:26:47","desceu":"16:28:22"},{"cod_os":"2639462707","data":"2026-06-03","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"11:47:24","desceu":"11:51:39"},{"cod_os":"2639870957","data":"2026-06-06","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"5min","subiu":"10:23:14","desceu":"10:28:14"},{"cod_os":"2641637333","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"10min","subiu":"15:04:02","desceu":"15:15:01"},{"cod_os":"2641610457","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"16:15:02","desceu":"16:19:41"},{"cod_os":"2639205049","data":"2026-06-01","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"6min","subiu":"15:19:48","desceu":"15:26:06"},{"cod_os":"2641279852","data":"2026-06-14","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"1min","subiu":"11:53:15","desceu":"11:55:06"},{"cod_os":"2640530200","data":"2026-06-10","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"08:47:10","desceu":"08:51:46"},{"cod_os":"2641306000","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"3min","subiu":"09:10:42","desceu":"09:14:16"}]},
+  "Z132323": {"nome":"Lailson","codigo":"Z132323","total":8,"com_altura":1,"pct_altura":12.5,"contratos":[{"cod_os":"2641933499","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639544618","data":"2026-06-03","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641223884","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640946751","data":"2026-06-11","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641389371","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640646871","data":"2026-06-10","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640950969","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640927604","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"3min","subiu":"09:25:31","desceu":"09:28:40"}]},
+  "Z164141": {"nome":"Izidoro","codigo":"Z164141","total":16,"com_altura":15,"pct_altura":93.75,"contratos":[{"cod_os":"2639917566","data":"2026-06-06","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"1min","subiu":"12:20:56","desceu":"12:22:43"},{"cod_os":"2641876260","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"3min","subiu":"13:02:34","desceu":"13:05:36"},{"cod_os":"2641077690","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"11min","subiu":"12:49:00","desceu":"13:00:23"},{"cod_os":"2639525460","data":"2026-06-03","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641615889","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"16min","subiu":"15:33:19","desceu":"15:49:22"},{"cod_os":"2640187499","data":"2026-06-08","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"14min","subiu":"11:39:47","desceu":"11:54:08"},{"cod_os":"2640713483","data":"2026-06-13","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"2min","subiu":"17:47:01","desceu":"17:49:59"},{"cod_os":"2641638996","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"3min","subiu":"16:35:39","desceu":"16:39:23"},{"cod_os":"2640601894","data":"2026-06-10","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"20min","subiu":"11:16:12","desceu":"11:36:52"},{"cod_os":"2639345404","data":"2026-06-02","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"5min","subiu":"15:31:01","desceu":"15:36:01"},{"cod_os":"2641408654","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"3min","subiu":"13:00:04","desceu":"13:03:09"},{"cod_os":"2640160962","data":"2026-06-08","tipo":"VISITA TÉCNICA DIGITAL","duracao":"14min","subiu":"14:46:09","desceu":"15:00:37"},{"cod_os":"2642086220","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"10min","subiu":"14:59:46","desceu":"15:09:51"},{"cod_os":"2641627073","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"17:58:55","desceu":"18:03:38"},{"cod_os":"2641933039","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"20:01:14","desceu":"20:05:34"},{"cod_os":"2641409622","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"4min","subiu":"13:56:17","desceu":"14:00:55"}]},
+  "Z247088": {"nome":"Matheus Henrique","codigo":"Z247088","total":23,"com_altura":9,"pct_altura":39.13,"contratos":[{"cod_os":"2642076667","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639805258","data":"2026-06-07","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"14:30:53","desceu":"14:31:05"},{"cod_os":"2641355037","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641586943","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"12:18:53","desceu":"12:18:58"},{"cod_os":"2641460944","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"09:54:55","desceu":"09:55:07"},{"cod_os":"2639635305","data":"2026-06-05","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639267104","data":"2026-06-02","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640057990","data":"2026-06-06","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"11:24:17","desceu":"11:24:24"},{"cod_os":"2641836693","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639402903","data":"2026-06-05","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640191517","data":"2026-06-08","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641857023","data":"2026-06-17","tipo":"LIMPEZA DE RUIDO INDOOR","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640638681","data":"2026-06-10","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"08:29:16","desceu":"08:29:23"},{"cod_os":"2640514998","data":"2026-06-09","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639340016","data":"2026-06-02","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640882402","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"10:55:08","desceu":"10:55:15"},{"cod_os":"2640631527","data":"2026-06-10","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"14:33:32","desceu":"14:33:39"},{"cod_os":"2641388099","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640567479","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640912440","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"10:08:07","desceu":"10:08:21"},{"cod_os":"2641088636","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641103959","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640949765","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"09:25:49","desceu":"09:25:53"}]},
+  "Z367110": {"nome":"Alex Emidio","codigo":"Z367110","total":10,"com_altura":9,"pct_altura":90.0,"contratos":[{"cod_os":"2640649009","data":"2026-06-11","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"9min","subiu":"08:58:18","desceu":"09:07:53"},{"cod_os":"2641866360","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"17min","subiu":"15:29:04","desceu":"15:46:34"},{"cod_os":"2641421479","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"14min","subiu":"11:15:10","desceu":"11:29:47"},{"cod_os":"2639778729","data":"2026-06-04","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641824937","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"15min","subiu":"10:54:14","desceu":"11:09:26"},{"cod_os":"2640171762","data":"2026-06-08","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"6min","subiu":"11:37:56","desceu":"11:44:04"},{"cod_os":"2641468885","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"19min","subiu":"15:10:35","desceu":"15:30:18"},{"cod_os":"2640765288","data":"2026-06-11","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"17min","subiu":"11:56:41","desceu":"12:14:28"},{"cod_os":"2641356634","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"15min","subiu":"11:44:47","desceu":"12:00:35"},{"cod_os":"2640931351","data":"2026-06-12","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"14min","subiu":"15:27:53","desceu":"15:42:15"}]},
+  "Z445950": {"nome":"Mateus Reis","codigo":"Z445950","total":12,"com_altura":12,"pct_altura":100.0,"contratos":[{"cod_os":"2641778182","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"11:43:18","desceu":"11:43:21"},{"cod_os":"2639314589","data":"2026-06-02","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"15:50:51","desceu":"15:50:53"},{"cod_os":"2639995090","data":"2026-06-06","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"16:35:50","desceu":"16:35:57"},{"cod_os":"2639832180","data":"2026-06-05","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"10:41:26","desceu":"10:41:54"},{"cod_os":"2640088792","data":"2026-06-07","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"11:34:27","desceu":"11:34:47"},{"cod_os":"2639713087","data":"2026-06-05","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"15:51:37","desceu":"15:52:01"},{"cod_os":"2641960893","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"2min","subiu":"12:00:23","desceu":"12:02:44"},{"cod_os":"2639208109","data":"2026-06-02","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"09:44:42","desceu":"09:44:46"},{"cod_os":"2639616584","data":"2026-06-08","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"10:49:58","desceu":"10:50:04"},{"cod_os":"2639864264","data":"2026-06-05","tipo":"MANUTENÇÃO PREVENTIVA INDOOR I","duracao":"0min","subiu":"09:55:50","desceu":"09:55:51"},{"cod_os":"2640859631","data":"2026-06-11","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"17:49:54","desceu":"17:50:08"},{"cod_os":"2642031309","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"0min","subiu":"09:23:35","desceu":"09:23:37"}]},
+  "Z450037": {"nome":"José Francisco","codigo":"Z450037","total":13,"com_altura":0,"pct_altura":0.0,"contratos":[{"cod_os":"2641850622","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641564231","data":"2026-06-16","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639948100","data":"2026-06-06","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2639143725","data":"2026-06-01","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2638668344","data":"2026-06-01","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640068138","data":"2026-06-06","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641833982","data":"2026-06-17","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2638975222","data":"2026-06-01","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2640657446","data":"2026-06-10","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641281215","data":"2026-06-14","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641854424","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641303401","data":"2026-06-15","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"},{"cod_os":"2641344327","data":"2026-06-18","tipo":"VISITA TÉCNICA - VIRTUA","duracao":"N/A","subiu":"-","desceu":"-"}]}
+};
+
+const contratosPorOsNR35 = {"2642076667":"2206210","2640649009":"1854340","2639253514":"2364028","2641850622":"1725841","2641866360":"50921742","2639917566":"2248656","2641876260":"2279349","2641077690":"2320608","2641933499":"2206066","2641778182":"2411360","2639525460":"1937946","2639805258":"2123780","2639314589":"8223434","2639544618":"2374112","2639513579":"1403976","2639456418":"8664660","2641615889":"1763344","2639995090":"2420351","2641355037":"2202494","2641421479":"1841671","2639832180":"2055718","2641564231":"2071837","2640187499":"2358826","2641410130":"1976798","2639597649":"1899009","2639778729":"8664660","2641223884":"2362629","2639485667":"8607372","2639948100":"6055127","2639143725":"1916477","2639462707":"2335923","2641586943":"2282005","2641460944":"2228876","2639635305":"2109036","2639870957":"2156913","2641637333":"2036810","2639267104":"2088730","2640713483":"50523719","2640057990":"1959567","2641610457":"2282013","2641638996":"2286680","2640088792":"2194602","2641836693":"8261204","2638668344":"8656845","2641824937":"2024120","2639402903":"8240614","2639713087":"8649296","2640068138":"1343540","2641833982":"2390584","2640191517":"1887906","2641960893":"2418810","2639208109":"2002622","2640171762":"1693087","2640946751":"1505957","2639616584":"2156328","2639205049":"2239177","2638975222":"8299023","2641468885":"2007284","2641279852":"1693087","2641857023":"2259372","2640601894":"2281513","2639864264":"2211469","2641389371":"9013670","2640859631":"2411360","2640765288":"2010471","2640638681":"2416028","2640514998":"2398747","2639340016":"1760965","2640657446":"2401551","2639345404":"1433468","2641408654":"50934849","2640160962":"1193394","2641356634":"2205000","2640882402":"2219842","2640530200":"2058008","2641281215":"1230460","2642031309":"2350310","2640631527":"1819684","2642086220":"1644124","2641627073":"2153124","2641933039":"1523475","2641854424":"6004344","2640646871":"2415560","2641303401":"1960492","2641388099":"2002622","2640567479":"2308918","2641344327":"8646785","2641409622":"1543999","2641306000":"1397674","2640931351":"1923643","2640912440":"2392242","2641088636":"1907745","2641103959":"2413312","2640950969":"8233642","2640949765":"8278549","2640927604":"1891504"};
+const codBaixaPorOsNR35 = {"2642076667":"203","2640649009":"203","2639253514":"566","2641850622":"566","2641866360":"566","2639917566":"566","2641876260":"203","2641077690":"203","2641933499":"203","2641778182":"545","2639525460":"203","2639805258":"566","2639314589":"203","2639544618":"566","2639513579":"203","2639456418":"203","2641615889":"566","2639995090":"566","2641355037":"203","2641421479":"203","2639832180":"203","2641564231":"566","2640187499":"566","2641410130":"203","2639597649":"203","2639778729":"203","2641223884":"203","2639485667":"203","2639948100":"566","2639143725":"203","2639462707":"203","2641586943":"566","2641460944":"566","2639635305":"203","2639870957":"203","2641637333":"203","2639267104":"566","2640713483":"203","2640057990":"562","2641610457":"203","2641638996":"203","2640088792":"566","2641836693":"203","2638668344":"566","2641824937":"203","2639402903":"203","2639713087":"566","2640068138":"203","2641833982":"566","2640191517":"566","2641960893":"566","2639208109":"566","2640171762":"203","2640946751":"203","2639616584":"566","2639205049":"203","2638975222":"203","2641468885":"203","2641279852":"203","2641857023":"203","2640601894":"566","2639864264":"203","2641389371":"203","2640859631":"566","2640765288":"566","2640638681":"562","2640514998":"203","2639340016":"203","2640657446":"203","2639345404":"203","2641408654":"203","2640160962":"203","2641356634":"203","2640882402":"566","2640530200":"203","2641281215":"562","2642031309":"566","2640631527":"562","2642086220":"203","2641627073":"203","2641933039":"203","2641854424":"566","2640646871":"203","2641303401":"566","2641388099":"203","2640567479":"203","2641344327":"203","2641409622":"203","2641306000":"203","2640931351":"203","2640912440":"566","2641088636":"203","2641103959":"203","2640950969":"203","2640949765":"203","2640927604":"203"};
+
+function abrirModal(codigo) {
+  const dados = contatosPorTecnico[codigo];
+  document.getElementById('modalTecnicoNome').textContent = dados.nome + ' (' + codigo + ')';
+  
+  const tbody = document.getElementById('tbodyContratos');
+  tbody.innerHTML = '';
+  
+  dados.contratos.forEach(c => {
+    const tr = document.createElement('tr');
+    const contrato = c.contrato || contratosPorOsNR35[String(c.cod_os || '')] || '-';
+    const codBaixa = c.cod_baixa || codBaixaPorOsNR35[String(c.cod_os || '')] || '-';
+    tr.innerHTML = `
+      <td>${c.data}</td>
+      <td>${contrato}</td>
+      <td>${codBaixa}</td>
+      <td>${c.tipo}</td>
+      <td>${c.subiu}</td>
+      <td>${c.desceu}</td>
+      <td>${c.duracao}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  document.getElementById('modalContratos').style.display = 'flex';
+}
+
+function valorTecnicoCertificadoTelaNR35(codigo, campo) {
+  const row = document.querySelector(`#tabelaTecnicoCertificado tr[data-cert-login="${codigo}"]`);
+  if (!row) return '';
+  const el = row.querySelector(`[data-campo="${campo}"]`);
+  if (!el) return '';
+  return String(el.value || '').trim();
+}
+
+function valorCertidaoNR35(codigo) {
+  const tela = valorTecnicoCertificadoTelaNR35(codigo, 'certidao');
+  if (tela) return tela;
+  return typeof valorSistemaCertificado === 'function' ? valorSistemaCertificado({}, codigo, 'certidao') : '';
+}
+
+function valorTreinamentoNR35(codigo) {
+  const tela = valorTecnicoCertificadoTelaNR35(codigo, 't1');
+  if (tela) return tela;
+  return typeof valorSistemaCertificado === 'function' ? valorSistemaCertificado({}, codigo, 't1') : '';
+}
+
+function renderizarTabelaNR35() {
+  const tbody = document.getElementById('tabelaNR35');
+  tbody.innerHTML = '';
+  
+  const ordem = ['Z132322', 'Z132323', 'Z164141', 'Z247088', 'Z367110', 'Z445950', 'Z450037'];
+  
+  ordem.forEach(codigo => {
+    const dados = contatosPorTecnico[codigo];
+    const resumo = (window.currentSummary?.arr || currentSummary?.arr || []).find(t => String(t.login || '').toUpperCase() === codigo);
+    const temResumo = !!resumo;
+    const certificadoOk = temResumo ? !tecnicoEmAcompanhamento(resumo) : false;
+    const certidao = valorCertidaoNR35(codigo);
+    const treinamento = valorTreinamentoNR35(codigo);
+    const treinamentoOk = String(treinamento || '').toLowerCase() === 'realizado';
+    const tr = document.createElement('tr');
+    
+    let classe = Number(dados.pct_altura) >= 90 ? 'percentage high' : 'percentage low';
+    
+    tr.innerHTML = `
+      <td class="tecnico-cell-nr35">
+        ${dados.nome}<br><small style="color:var(--text-muted); font-weight:400;">${codigo}</small>
+      </td>
+      <td style="text-align:center;"><span class="${classe} clicavel" onclick="abrirModal('${codigo}')" style="cursor:pointer;">${dados.pct_altura}%</span></td>
+      <td style="text-align:center;"><span class="cert-badge ${!temResumo ? 'cert-nao' : (certificadoOk ? 'cert-sim' : 'cert-nao')}">${!temResumo ? '-' : (certificadoOk ? 'CERTIFICADO' : 'NÃO CERTIFICADO')}</span></td>
+      <td style="text-align:center;">${certidao !== '' ? `<span class="cert-badge ${Number(String(certidao).replace(',', '.')) >= 90 ? 'cert-sim' : 'cert-nao'}">${String(certidao).replace('.', ',')}%</span>` : '<span class="cert-badge cert-nao">-</span>'}</td>
+      <td style="text-align:center;"><span class="cert-badge ${treinamentoOk ? 'cert-sim' : 'cert-nao'}">${treinamento || '-'}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', renderizarTabelaNR35);
+</script>
+<section id="performance_tecnico" class="tab-panel active">
 
   <!-- KPIs -->
   <section class="kpis">
@@ -2401,7 +2596,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
         <thead>
           <tr>
             <th>Data</th><th>Semana</th><th>Tipo</th><th>Descrição</th>
-            <th>Técnico A</th><th>Técnico B</th><th class="plantoes-terceiro-col">Técnico C</th><th>Folga A</th><th>Folga B</th><th class="plantoes-terceiro-col">Folga C</th><th>⚠ Aviso</th>
+            <th>Técnico A</th><th>Técnico B</th><th class="plantoes-terceiro-col">Técnico C</th><th>Folga A</th><th>Folga B</th><th class="plantoes-terceiro-col">Folga C</th><th>Aviso</th>
           </tr>
         </thead>
         <tbody id="plantaoTabelaBody"></tbody>
@@ -2639,6 +2834,7 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 <script>
 let arquivoSelecionado=null;
 let rawRows=[];
+let rawSheets={};
 let processedRows=[];
 let currentSummary=null;
 let currentFileName="";
@@ -2733,7 +2929,8 @@ async function salvarUltimaBaseNuvem(rows,fileName,signature){
       fileName:fileName||"Base indicadores VT",
       date:new Date().toISOString(),
       signature:signature||assinaturaPlanilha(rows),
-      rows:rows||[]
+      rows:rows||[],
+      sheets:rawSheets&&typeof rawSheets==="object"?rawSheets:{}
     };
 
     const texto=JSON.stringify(payload);
@@ -2815,7 +3012,7 @@ async function salvarBaseMensalLocal(rows,fileName,signature){
   const competencia=infoCompetenciaBase(rows);
   try{
     const db=await abrirBancoBasesMensais();
-    const payload={key:competencia.key,fileName:fileName||"Base indicadores VT",date:new Date().toISOString(),signature:signature||assinaturaPlanilha(rows),competencia,rows:rows||[]};
+    const payload={key:competencia.key,fileName:fileName||"Base indicadores VT",date:new Date().toISOString(),signature:signature||assinaturaPlanilha(rows),competencia,rows:rows||[],sheets:rawSheets&&typeof rawSheets==="object"?rawSheets:{}};
     await new Promise((resolve,reject)=>{
       const tx=db.transaction("competencias","readwrite");
       tx.objectStore("competencias").put(payload);
@@ -2864,7 +3061,7 @@ async function salvarBaseMensalNuvem(rows,fileName,signature){
   const competencia=infoCompetenciaBase(rows);
   if(!fb) return {salvo:false,competencia};
   try{
-    const payload={fileName:fileName||"Base indicadores VT",date:new Date().toISOString(),signature:signature||assinaturaPlanilha(rows),competencia,rows:rows||[]};
+    const payload={fileName:fileName||"Base indicadores VT",date:new Date().toISOString(),signature:signature||assinaturaPlanilha(rows),competencia,rows:rows||[],sheets:rawSheets&&typeof rawSheets==="object"?rawSheets:{}};
     const partes=quebrarTextoFirestore(JSON.stringify(payload));
     const version=String(Date.now());
     const docRef=fb.db.collection(FIREBASE_DOC_ULTIMA_BASE.collection).doc(FIREBASE_DOC_ULTIMA_BASE.doc).collection("competencias").doc(competencia.key);
@@ -2904,7 +3101,7 @@ async function encontrarBaseMensalNuvem(key){
     const payload=partes.length?JSON.parse(partes.join("")):meta;
     const rows=payload?.rows||[];
     if(!Array.isArray(rows)||!rows.length) return null;
-    return {...payload,rows,origem:"firebase",competencia:payload.competencia||meta.competencia||{key,label:key}};
+    return {...payload,rows,sheets:payload.sheets||{},origem:"firebase",competencia:payload.competencia||meta.competencia||{key,label:key}};
   }catch(e){
     console.warn("Não foi possível carregar a competência no Firestore.",e);
     return null;
@@ -2937,12 +3134,12 @@ async function atualizarSelectCompetencias(){
 
 async function carregarCompetenciaSelecionada(){
   const key=$("historicoCompetencia")?.value||"";
-  if(!key){setStatus("⚠️ Nenhuma competência arquivada disponível.");return;}
-  setStatus("⏳ Carregando competência arquivada...");
+  if(!key){setStatus("Nenhuma competência arquivada disponível.");return;}
+  setStatus("Carregando competência arquivada...");
   const nuvem=await encontrarBaseMensalNuvem(key);
   const local=await encontrarBaseMensalLocal(key);
   const saved=nuvem||(local?{...local,origem:"navegador"}:null);
-  if(!saved){setStatus("⚠️ Não encontrei os dados completos desta competência.");return;}
+  if(!saved){setStatus("Não encontrei os dados completos desta competência.");return;}
   aplicarBaseSalvaEmTela(saved,{competenciaKey:key});
 }
 
@@ -2985,6 +3182,7 @@ async function encontrarUltimaBaseNuvem(){
       date:payload.date||meta.date||new Date().toISOString(),
       signature:payload.signature||meta.signature||assinaturaPlanilha(rows),
       rows,
+      sheets:payload.sheets||{},
       origem:"firebase"
     };
   }catch(e){
@@ -3007,7 +3205,7 @@ async function carregarUltimaBaseFirebaseOuLocal(opcoes={}){
   }
 
   if(!opcoes.auto){
-    setStatus("⚠️ Nenhuma última base encontrada. Configure o Firebase ou carregue uma planilha.");
+    setStatus("Nenhuma última base encontrada. Configure o Firebase ou carregue uma planilha.");
   }
   return false;
 }
@@ -3036,6 +3234,7 @@ function lerUltimaBaseEmbutida(){
       date:payload.date||new Date().toISOString(),
       signature:payload.signature||assinaturaPlanilha(rows),
       rows,
+      sheets:payload.sheets||{},
       origem:"html"
     };
   }catch(e){
@@ -3046,12 +3245,13 @@ function lerUltimaBaseEmbutida(){
 
 function aplicarBaseSalvaEmTela(saved,opcoes={}){
   if(!saved||!saved.rows?.length){
-    if(!opcoes.auto) setStatus("⚠️ Nenhuma base salva encontrada.");
+    if(!opcoes.auto) setStatus("Nenhuma base salva encontrada.");
     return false;
   }
 
   try{
     rawRows=saved.rows||[];
+    rawSheets=saved.sheets||{};
     currentFileName=saved.fileName||"Base salva";
     tecnicoAtivoLogin="";
 
@@ -3076,12 +3276,12 @@ function aplicarBaseSalvaEmTela(saved,opcoes={}){
 
     const origem=saved.origem==="firebase"?"Firebase":(saved.origem==="html"?"HTML":"navegador");
     const dataTxt=saved.date?new Date(saved.date).toLocaleString("pt-BR"):"";
-    const prefixo=opcoes.auto?"🚀 Sistema aberto carregando a última base":"🔁 Última base carregada";
+    const prefixo=opcoes.auto?"Sistema aberto carregando a última base":"Última base carregada";
     setStatus(`${prefixo} do ${origem}: <strong>${esc(currentFileName)}</strong>.<br>Registros carregados: <strong>${processedRows.length}</strong>${dataTxt?`<br>Atualizada em: <strong>${dataTxt}</strong>`:""}.`);
     return true;
   }catch(e){
     console.error(e);
-    setStatus("❌ Erro ao carregar base salva: <strong>"+e.message+"</strong>");
+    setStatus("Erro ao carregar base salva: <strong>"+e.message+"</strong>");
     return false;
   }
 }
@@ -3100,14 +3300,14 @@ function carregarUltimaBaseEmbutidaOuLocal(opcoes={}){
   }
 
   if(!opcoes.auto){
-    setStatus("⚠️ Nenhuma última base encontrada. Carregue uma planilha e gere o HTML atualizado.");
+    setStatus("Nenhuma última base encontrada. Carregue uma planilha e gere o HTML atualizado.");
   }
   return false;
 }
 
 function baixarHtmlComBaseEmbutida(){
   if(!rawRows||!rawRows.length){
-    setStatus("⚠️ Carregue uma planilha primeiro para gerar o HTML atualizado.");
+    setStatus("Carregue uma planilha primeiro para gerar o HTML atualizado.");
     return;
   }
 
@@ -3116,7 +3316,8 @@ function baixarHtmlComBaseEmbutida(){
       fileName:currentFileName||"Base indicadores VT",
       date:new Date().toISOString(),
       signature:assinaturaPlanilha(rawRows),
-      rows:rawRows
+      rows:rawRows,
+      sheets:rawSheets&&typeof rawSheets==="object"?rawSheets:{}
     };
 
     const clone=document.documentElement.cloneNode(true);
@@ -3136,7 +3337,7 @@ function baixarHtmlComBaseEmbutida(){
     setStatus("✅ HTML atualizado gerado. Substitua o <strong>index.html</strong> no GitHub para o link abrir com esta base automaticamente.");
   }catch(e){
     console.error(e);
-    setStatus("❌ Erro ao gerar HTML atualizado: <strong>"+e.message+"</strong>");
+    setStatus("Erro ao gerar HTML atualizado: <strong>"+e.message+"</strong>");
   }
 }
 
@@ -3424,9 +3625,20 @@ function readText(file){return new Promise((resolve,reject)=>{const r=new FileRe
 function readBuffer(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.onerror=reject;r.readAsArrayBuffer(file)})}
 async function obterRows(file){
   const ext=file.name.split(".").pop().toLowerCase();
-  if(ext==="csv") return {rows:parseCSV(await readText(file)),origem:file.name};
-  if(ext==="zip"){const data=await readBuffer(file);const zip=await JSZip.loadAsync(data);const nomeCSV=Object.keys(zip.files).find(n=>n.toLowerCase().endsWith(".csv"));if(!nomeCSV)throw new Error("ZIP sem CSV.");const text=await zip.files[nomeCSV].async("string");return {rows:parseCSV(text),origem:nomeCSV}}
-  if(ext==="xlsx"||ext==="xls"){const data=await readBuffer(file);const wb=XLSX.read(data,{cellDates:true});let rows=[],origem="";for(const s of wb.SheetNames){const sheetRows=XLSX.utils.sheet_to_json(wb.Sheets[s],{defval:"",raw:false});if(sheetRows.length>rows.length){rows=sheetRows;origem=s}}return {rows,origem}}
+  if(ext==="csv") return {rows:parseCSV(await readText(file)),origem:file.name,sheets:{}};
+  if(ext==="zip"){const data=await readBuffer(file);const zip=await JSZip.loadAsync(data);const nomeCSV=Object.keys(zip.files).find(n=>n.toLowerCase().endsWith(".csv"));if(!nomeCSV)throw new Error("ZIP sem CSV.");const text=await zip.files[nomeCSV].async("string");return {rows:parseCSV(text),origem:nomeCSV,sheets:{}}}
+  if(ext==="xlsx"||ext==="xls"){
+    const data=await readBuffer(file);
+    const wb=XLSX.read(data,{cellDates:true});
+    let rows=[],origem="";
+    const sheets={};
+    for(const s of wb.SheetNames){
+      const sheetRows=XLSX.utils.sheet_to_json(wb.Sheets[s],{defval:"",raw:false});
+      sheets[s]=sheetRows;
+      if(sheetRows.length>rows.length){rows=sheetRows;origem=s}
+    }
+    return {rows,origem,sheets};
+  }
   throw new Error("Formato não aceito.");
 }
 
@@ -3448,8 +3660,8 @@ function renderValidacao(validation,baseLen){
   const el=$("validacaoBase"); if(!el) return;
   const items=[];
   if(validation.ok) items.push(`<div class="alert greenline">✅ Todas as colunas principais foram encontradas.</div>`);
-  else items.push(`<div class="alert redline">⚠️ Colunas ausentes: <strong>${validation.faltando.join(", ")}</strong>.</div>`);
-  items.push(`<div class="alert blueline">Linhas TERESINA / TSA-LUMAR_VT / MANUTENCAO encontradas: <strong>${baseLen}</strong>.</div>`);
+  else items.push(`<div class="alert redline">Colunas ausentes: <strong>${validation.faltando.join(", ")}</strong>.</div>`);
+  items.push(`<div class="alert blueline">Linhas TERESINA / TSA-LUMAR_VT / MANUTENÇÃO encontradas: <strong>${baseLen}</strong>.</div>`);
   items.push(`<div class="alert blueline">Colunas lidas: ${validation.cols.length}.</div>`);
   el.innerHTML=items.join("");
 }
@@ -3840,6 +4052,7 @@ function renderDashboard(summary){
   renderAlertas(summary);
   renderPlanoAcao(summary);
   renderPlanoAcaoDetalhado(summary);
+  if(typeof renderizarTabelaNR35==="function") renderizarTabelaNR35();
 }
 
 function resumoTecnicosParaRanking(rows){
@@ -4553,7 +4766,7 @@ function filtrarBasePrincipal(rows){
     const municipio=head(getField(r,["NM_MUNICIPIO","NM MUNICIPIO","MUNICIPIO"]));
     const unidade=head(getField(r,["UNIDADE_NEGOCIO","UNIDADE NEGOCIO"]));
     const grupo=head(getField(r,["GRUPO_ORDEM_SERVICO","GRUPO ORDEM SERVICO"]));
-    return municipio==="TERESINA"&&unidade==="TSA-LUMAR_VT"&&grupo==="MANUTENCAO";
+    return municipio==="TERESINA"&&unidade==="TSA-LUMAR_VT"&&["MANUTENCAO","MANUTENÇÃO"].includes(grupo);
   });
 }
 
@@ -4734,7 +4947,7 @@ function alternarBloqueioCertificado(){
   const novo=!certificadoBloqueado();
   localStorage.setItem(STORAGE_CERTIFICADO_BLOQUEADO,novo?"1":"0");
   aplicarBloqueioCertificado(novo);
-  if(typeof setStatus==="function") setStatus(novo?"🔒 Técnico Certificado bloqueado para edição.":"🔓 Técnico Certificado desbloqueado para edição.");
+  if(typeof setStatus==="function") setStatus(novo?"Técnico Certificado bloqueado para edição.":"🔓 Técnico Certificado desbloqueado para edição.");
 }
 function certBadge(ok,extraClass=""){
   return `<span class="cert-badge ${ok?"cert-sim":"cert-nao"} ${extraClass}">${ok?"SIM":"NÃO"}</span>`;
@@ -4744,7 +4957,67 @@ function normalizarPercentualCertificado(valor){
   if(!Number.isFinite(n)) return 0;
   return Math.max(0,Math.min(100,n));
 }
+function normalizarTextoCertificado(v){
+  return head(v).replace(/_/g," ");
+}
+function abaTecnicoCertificadoImportada(){
+  const sheets=rawSheets&&typeof rawSheets==="object"?rawSheets:{};
+  const alvo=["TECNICO CERTIFICADO","TECNICOS CERTIFICADOS"];
+  for(const [nome,rows] of Object.entries(sheets)){
+    if(alvo.includes(normalizarTextoCertificado(nome))&&Array.isArray(rows)) return rows;
+  }
+  return [];
+}
+function textoTecnicoLinhaCertificado(row){
+  return normalizarTextoCertificado(campoPrimeiroValor(row,[
+    ["LOGIN_TECNICO","LOGIN TECNICO","LOGIN"],
+    ["TECNICO","TÉCNICO","NOME","NOME_TECNICO","NOME TECNICO","COLABORADOR"]
+  ]));
+}
+function linhaImportadaTecnicoCertificado(login){
+  const key=loginKey(login);
+  const nome=normalizarTextoCertificado(nomeTecnico(key));
+  return abaTecnicoCertificadoImportada().find(row=>{
+    const texto=textoTecnicoLinhaCertificado(row);
+    return texto===key || texto.includes(key) || (nome&&texto.includes(nome));
+  })||null;
+}
+function valorImportadoTecnicoCertificado(login,campo){
+  const row=linhaImportadaTecnicoCertificado(login);
+  if(!row) return "";
+  if(campo==="t1"){
+    return campoPrimeiroValor(row,[
+      ["T1_DENTRO_DO_PRAZO","T1 DENTRO DO PRAZO","T1_DENTRO_PRAZO","T1 DENTRO PRAZO","TREINAMENTOS","TREINAMENTO"]
+    ]);
+  }
+  if(campo==="certidao"){
+    return campoPrimeiroValor(row,[
+      ["CERTIDAO_DE_ATENDIMENTO","CERTIDAO DE ATENDIMENTO","CERTIDÃO DE ATENDIMENTO","CERTIDAO_ATENDIMENTO","CERTIDÃO ATENDIMENTO"]
+    ]);
+  }
+  return "";
+}
+function normalizarStatusT1Certificado(valor){
+  const texto=normalizarTextoCertificado(valor);
+  if(!texto) return "";
+  const numero=normalizarPercentualCertificado(valor);
+  if(numero>0) return numero>=METAS_CERTIFICADO.t1?"Realizado":"Pendente";
+  if(["REALIZADO","SIM","OK","DENTRO DO PRAZO","CERTIFICADO"].some(v=>texto.includes(v))) return "Realizado";
+  if(["PENDENTE","NAO","NÃO","FORA DO PRAZO","NAO REALIZADO"].some(v=>texto.includes(v))) return "Pendente";
+  return "";
+}
+function normalizarValorCertidaoCertificado(valor){
+  const texto=normalizarTextoCertificado(valor);
+  if(["SIM","OK","CERTIFICADO"].some(v=>texto.includes(v))) return "100";
+  if(["NAO","NÃO","PENDENTE"].some(v=>texto.includes(v))) return "0";
+  const numero=normalizarPercentualCertificado(valor);
+  return valor!==""&&valor!==null&&valor!==undefined?String(numero):"";
+}
 function valorSistemaCertificado(dados,login,campo){
+  const importado=valorImportadoTecnicoCertificado(login,campo);
+  if(importado!==""&&importado!==null&&importado!==undefined){
+    return campo==="t1"?normalizarStatusT1Certificado(importado):normalizarValorCertidaoCertificado(importado);
+  }
   const key=loginKey(login);
   const valor=dados?.[key]?.[campo];
   return valor===0||valor?String(valor):"";
@@ -4884,6 +5157,7 @@ function atualizarLinhaCertificado(tr){
   const final=tr.querySelector(".certificado-final");
   const valorEl=tr.querySelector(".cert-valor-final");
   const ok=Object.values(flags).every(Boolean);
+  const certificadoPerformance=tr.dataset.performanceCertificado==="1";
   const login=tr.getAttribute("data-cert-login")||"";
   const ciclo=competenciaCertificado();
   const pagamento=calcularPagamentoCertificado(login,flags,ciclo,{salvar:true});
@@ -4891,7 +5165,10 @@ function atualizarLinhaCertificado(tr){
   if(final){
     final.textContent=ok?"SIM":"NÃO";
     final.classList.toggle("cert-sim",ok);
-    final.classList.toggle("cert-nao",!ok);
+    final.textContent=certificadoPerformance?"CERTIFICADO":"NÃO CERTIFICADO";
+    final.classList.toggle("cert-sim",certificadoPerformance);
+    final.classList.toggle("cert-nao",!certificadoPerformance);
+    final.classList.toggle("cert-nao",!certificadoPerformance);
   }
   if(valorEl){
     valorEl.innerHTML=htmlValorCertificado(pagamento);
@@ -4922,6 +5199,7 @@ function ativarInputsCertificado(){
       }
       atualizarLinhaCertificado(input.closest("tr"));
       if(currentSummary) renderResumoIndicadoresCertificado(currentSummary);
+      if(typeof renderizarTabelaNR35==="function") renderizarTabelaNR35();
     };
     input.addEventListener("input",atualizar);
     input.addEventListener("change",atualizar);
@@ -4948,6 +5226,7 @@ function ativarInputsCertificado(){
       }
       atualizarLinhaCertificado(select.closest("tr"));
       if(currentSummary) renderResumoIndicadoresCertificado(currentSummary);
+      if(typeof renderizarTabelaNR35==="function") renderizarTabelaNR35();
     };
     select.addEventListener("change",atualizar);
   });
@@ -4959,7 +5238,7 @@ async function exportarImagemTecnicoCertificado(){
   let shell=null;
   try{
     if(!window.html2canvas){
-      setStatus("❌ Biblioteca de imagem não carregada.");
+      setStatus("Biblioteca de imagem não carregada.");
       return;
     }
 
@@ -5015,7 +5294,7 @@ async function exportarImagemTecnicoCertificado(){
     a.click();
   }catch(e){
     console.error(e);
-    if(typeof setStatus==="function") setStatus("❌ Erro ao gerar imagem do Técnico Certificado: <strong>"+e.message+"</strong>");
+    if(typeof setStatus==="function") setStatus("Erro ao gerar imagem do Técnico Certificado: <strong>"+e.message+"</strong>");
   }finally{
     if(shell) shell.remove();
   }
@@ -5036,6 +5315,7 @@ function renderTecnicoCertificado(summary){
     const revOk=(Number(t.revPct)||0)<=LIMITE_ACOMP_REVISITA;
     const tec1Ok=(Number(t.tec1Pct)||0)>=LIMITE_ACOMP_TEC1 && (Number(t.tecBase)||0)>0;
     const prodOk=(Number(t.mediaContratos)||0)>=META_PRODUCAO;
+    const certificadoPerformance=!tecnicoEmAcompanhamento(t);
 
     const t1Html=inputSistemicoCertificado(t.login,"t1",METAS_CERTIFICADO.t1,dados);
     const certidaoHtml=inputSistemicoCertificado(t.login,"certidao",METAS_CERTIFICADO.certidao,dados);
@@ -5047,7 +5327,7 @@ function renderTecnicoCertificado(summary){
       certidao:normalizarPercentualCertificado(valorSistemaCertificado(dados,t.login,"certidao"))>=METAS_CERTIFICADO.certidao
     };
 
-    return `<tr data-cert-login="${escapeHTML(loginKey(t.login))}" data-rev-pct="${Number(t.revPct)||0}" data-tec1-pct="${Number(t.tec1Pct)||0}" data-tec-base="${Number(t.tecBase)||0}" data-producao="${Number(t.mediaContratos)||0}">
+    return `<tr data-cert-login="${escapeHTML(loginKey(t.login))}" data-performance-certificado="${certificadoPerformance?"1":"0"}" data-rev-pct="${Number(t.revPct)||0}" data-tec1-pct="${Number(t.tec1Pct)||0}" data-tec-base="${Number(t.tecBase)||0}" data-producao="${Number(t.mediaContratos)||0}">
       <td>${celulaTecnico(t.login)}</td>
       <td>${certBadge(revOk)}</td>
       <td>${certBadge(tec1Ok)}</td>
@@ -5106,7 +5386,8 @@ function historicoMesmoItem(h,item){
 function salvarUltimaBase(rows,fileName){
   try{
     const signature=assinaturaPlanilha(rows);
-    const payload=JSON.stringify({fileName,date:new Date().toISOString(),rows,signature});
+    const sheets=rawSheets&&typeof rawSheets==="object"?rawSheets:{};
+    const payload=JSON.stringify({fileName,date:new Date().toISOString(),rows,signature,sheets});
     localStorage.setItem(STORAGE_LAST,payload);
     localStorage.setItem("lumar_manutencao_ultima_base_v2",payload);
     return signature;
@@ -5130,7 +5411,7 @@ function encontrarUltimaBaseSalva(){
       const obj=JSON.parse(raw);
       const rows=obj?.rows||obj?.rawRows||obj?.dados||obj?.data||obj?.base||[];
       if(Array.isArray(rows)&&rows.length){
-        return {key,fileName:obj.fileName||obj.nomeArquivo||obj.name||"Base salva",rows,signature:obj.signature||assinaturaPlanilha(rows)};
+        return {key,fileName:obj.fileName||obj.nomeArquivo||obj.name||"Base salva",rows,sheets:obj.sheets||{},signature:obj.signature||assinaturaPlanilha(rows)};
       }
     }catch(e){console.warn("Falha ao ler chave",key,e);}
   }
@@ -5146,7 +5427,7 @@ function encontrarUltimaBaseSalva(){
         if(Array.isArray(rows)&&rows.length&&rows[0]&&typeof rows[0]==="object"){
           const cols=Object.keys(rows[0]).map(norm);
           const pareceBase=cols.includes("CONTRATO")||cols.includes("LOGIN_TECNICO")||cols.includes("LOGIN TECNICO");
-          if(pareceBase) return {key,fileName:obj.fileName||obj.nomeArquivo||key,rows,signature:obj.signature||assinaturaPlanilha(rows)};
+          if(pareceBase) return {key,fileName:obj.fileName||obj.nomeArquivo||key,rows,sheets:obj.sheets||{},signature:obj.signature||assinaturaPlanilha(rows)};
         }
       }catch(e){}
     }
@@ -5158,7 +5439,7 @@ function encontrarUltimaBaseSalva(){
 function abrirAbaDashboard(){
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
-  const btn=[...document.querySelectorAll(".tab-btn")].find(b=>b.dataset.tab==="dashboard");
+  const btn=[...document.querySelectorAll(".tab-btn")].find(b=>b.dataset.tab==="performance_tecnico");
   if(btn) btn.classList.add("active");
   if($("dashboard")) $("dashboard").classList.add("active");
 }
@@ -5166,12 +5447,13 @@ function abrirAbaDashboard(){
 function carregarUltimaBase(opcoes={}){
   const saved=encontrarUltimaBaseSalva();
   if(!saved||!saved.rows?.length){
-    setStatus("⚠️ Nenhuma última base salva neste navegador. Carregue uma planilha primeiro para criar o salvamento automático.");
+    setStatus("Nenhuma última base salva neste navegador. Carregue uma planilha primeiro para criar o salvamento automático.");
     return;
   }
 
   try{
     rawRows=saved.rows||[];
+    rawSheets=saved.sheets||{};
     currentFileName=saved.fileName||"Base salva";
     tecnicoAtivoLogin="";
 
@@ -5195,16 +5477,16 @@ function carregarUltimaBase(opcoes={}){
     salvarUltimaBase(rawRows,currentFileName);
     abrirAbaDashboard();
 
-    const prefixo=opcoes.auto?"🚀 Sistema aberto carregando a última planilha salva":"🔁 Última base carregada";
+    const prefixo=opcoes.auto?"Sistema aberto carregando a última planilha salva":"Última base carregada";
     setStatus(`${prefixo}: <strong>${currentFileName}</strong>.<br>Registros carregados: <strong>${processedRows.length}</strong>.`);
   }catch(err){
     console.error(err);
-    setStatus("❌ Não foi possível carregar a última base: <strong>"+err.message+"</strong>");
+    setStatus("Não foi possível carregar a última base: <strong>"+err.message+"</strong>");
   }
 }
 
 function salvarHistorico(opcoes={}){
-  if(!currentSummary){setStatus("⚠️ Carregue uma base antes de salvar no histórico.");return {salvo:false,repetida:false}}
+  if(!currentSummary){setStatus("Carregue uma base antes de salvar no histórico.");return {salvo:false,repetida:false}}
   const hist=lerHistoricoLocal();
   const signature=opcoes.signature||assinaturaPlanilha(rawRows);
   const item={
@@ -5223,14 +5505,14 @@ function salvarHistorico(opcoes={}){
   if(repetida){
     renderHistorico();
     if(!opcoes.silencioso){
-      setStatus(`⚠️ Planilha repetida: <strong>${esc(item.fileName)}</strong> já consta no histórico em <strong>${esc(repetida.date)}</strong>. Nenhum novo registro foi criado.`);
+      setStatus(`Planilha repetida: <strong>${esc(item.fileName)}</strong> já consta no histórico em <strong>${esc(repetida.date)}</strong>. Nenhum novo registro foi criado.`);
     }
     return {salvo:false,repetida:true,item:repetida,signature};
   }
   hist.unshift(item);
   salvarHistoricoLocal(hist);
   renderHistorico();
-  if(!opcoes.silencioso) setStatus("💾 Registro salvo no histórico local.");
+  if(!opcoes.silencioso) setStatus("Registro salvo no histórico local.");
   return {salvo:true,repetida:false,item,signature};
 }
 function setaTendencia(atual,anterior,melhorMaior=true){
@@ -5279,16 +5561,16 @@ window.carregarUltimaBase=carregarUltimaBase;
 window.carregarUltimaBaseFirebaseOuLocal=carregarUltimaBaseFirebaseOuLocal;
 
 async function carregarBase(){
-  const file=arquivoSelecionado||$("fileInput").files[0];if(!file){setStatus("⚠️ Selecione uma base primeiro.");return}
+  const file=arquivoSelecionado||$("fileInput").files[0];if(!file){setStatus("Selecione uma base primeiro.");return}
   try{
-    setStatus("⏳ Lendo arquivo <strong>"+file.name+"</strong>...");
-    const {rows,origem}=await obterRows(file);
-    if(!rows.length){setStatus("❌ Arquivo lido, mas sem linhas.");return}
-    rawRows=rows;currentFileName=origem||file.name;tecnicoAtivoLogin="";
+    setStatus("Lendo arquivo <strong>"+file.name+"</strong>...");
+    const {rows,origem,sheets}=await obterRows(file);
+    if(!rows.length){setStatus("Arquivo lido, mas sem linhas.");return}
+    rawRows=rows;rawSheets=sheets||{};currentFileName=origem||file.name;tecnicoAtivoLogin="";
     const validation=validarBase(rows);
     processedRows=filtrarBasePrincipal(rows);
     renderValidacao(validation,processedRows.length);
-    if(!processedRows.length){setStatus("⚠️ Não encontrei linhas com NM_MUNICIPIO = TERESINA, UNIDADE_NEGOCIO = TSA-LUMAR_VT e GRUPO_ORDEM_SERVICO = MANUTENCAO.");return;}
+    if(!processedRows.length){setStatus("Não encontrei linhas com NM_MUNICIPIO = TERESINA, UNIDADE_NEGOCIO = TSA-LUMAR_VT e GRUPO_ORDEM_SERVICO = MANUTENÇÃO.");return;}
     preencherFiltros(processedRows);
     const filtrado=aplicarFiltros(processedRows);
     lastRenderRows=filtrado;
@@ -5300,13 +5582,13 @@ async function carregarBase(){
     const salvaCompetenciaFirebase=await salvarBaseMensalNuvem(rows,currentFileName,signature);
     await atualizarSelectCompetencias();
     const z450=currentSummary.arr.find(t=>t.login==="Z450037");
-    const avisoRepetida=historicoResultado.repetida?`<br>⚠️ Planilha repetida: já estava no histórico em <strong>${esc(historicoResultado.item.date)}</strong>. Não criei novo registro.`:"";
+    const avisoRepetida=historicoResultado.repetida?`<br>Planilha repetida: já estava no histórico em <strong>${esc(historicoResultado.item.date)}</strong>. Não criei novo registro.`:"";
     const avisoFirebase=firebaseIndicadoresConfigurado()
-      ? (salvaFirebase&&salvaCompetenciaFirebase.salvo?`<br>☁️ Base salva no Firebase/Firestore como <strong>${esc(competencia.label)}</strong>.`:`<br>⚠️ Base carregada, mas não consegui salvar todo o histórico no Firebase. Verifique config/regras do Firestore.`)
-      : `<br>ℹ️ Firebase ainda não configurado. Salvando apenas neste navegador.`;
+      ? (salvaFirebase&&salvaCompetenciaFirebase.salvo?`<br>Base salva no Firebase/Firestore como <strong>${esc(competencia.label)}</strong>.`:`<br>Base carregada, mas não consegui salvar todo o histórico no Firebase. Verifique config/regras do Firestore.`)
+      : `<br>Firebase ainda não configurado. Salvando apenas neste navegador.`;
     const detalheProducaoZ450=z450?`${num3(z450.producao)} unidades ÷ ${z450.diasAtendimento} dias distintos`:"";
     setStatus(`✅ Base carregada.<br>Base manutenção: <strong>${processedRows.length}</strong> | Revisitas 10d: <strong>${currentSummary.totalRev}</strong>${z450?`<br>Conferência ${z450.nome}: <strong>${num3(z450.mediaContratos)}</strong> produção/dia (${detalheProducaoZ450}) e <strong>${z450.revisitas}</strong> revisitas 10d.`:""}${avisoRepetida}${avisoFirebase}`);
-  }catch(err){console.error(err);setStatus("❌ Erro ao carregar: <strong>"+err.message+"</strong>");}
+  }catch(err){console.error(err);setStatus("Erro ao carregar: <strong>"+err.message+"</strong>");}
 }
 function mensagemFiltrosAplicados(qtd){
   const ini=$("filtroPerformanceDataIni")?.value||"";
@@ -5319,7 +5601,7 @@ function mensagemFiltrosAplicados(qtd){
   return `✅ Filtros aplicados. ${partes.join(" · ")}.`;
 }
 async function reaplicarFiltros(){
-  if(!processedRows.length){setStatus("⚠️ Carregue uma base primeiro.");return}
+  if(!processedRows.length){setStatus("Carregue uma base primeiro.");return}
   const filtrado=aplicarFiltros(processedRows);lastRenderRows=filtrado;
   await renderDashboardComProducaoLocal(processarResumo(filtrado));setStatus(mensagemFiltrosAplicados(filtrado.length));
 }
@@ -5334,7 +5616,7 @@ function limparFiltros(){
 }
 function aplicarCicloPerformance20(){
   const ciclo=intervaloCiclo20PorBase(processedRows.length?processedRows:rawRows);
-  if(!ciclo){setStatus("⚠️ Não encontrei datas na base para montar o ciclo 20 a 20.");return;}
+  if(!ciclo){setStatus("Não encontrei datas na base para montar o ciclo 20 a 20.");return;}
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value=ciclo.inicio;
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value=ciclo.fim;
   reaplicarFiltros();
@@ -5346,7 +5628,7 @@ function limparDataPerformance(){
   reaplicarFiltros();
 }
 function limparTudo(){
-  arquivoSelecionado=null;$("fileInput").value="";rawRows=[];processedRows=[];currentSummary=null;currentFileName="";tecnicoAtivoLogin="";modalTecnicosLista=[];
+  arquivoSelecionado=null;$("fileInput").value="";rawRows=[];rawSheets={};processedRows=[];currentSummary=null;currentFileName="";tecnicoAtivoLogin="";modalTecnicosLista=[];
   setStatus("Nenhuma base carregada.");
   ["kpiBase","kpiTecnicos","balaoRevValor","balaoTec1Valor"].forEach(id=>{if($(id)) $(id).textContent="0";});
   if($("kpiRev")) $("kpiRev").textContent="0% / 0";
@@ -5437,7 +5719,7 @@ async function exportarImagem(){
   try{
     const canvas=await gerarCanvasExportacao();
     const a=document.createElement("a");a.href=canvas.toDataURL("image/png");a.download=nomeArquivoExportacao("png");a.click();
-  }catch(e){setStatus("❌ Erro ao exportar imagem: "+e.message);}
+  }catch(e){setStatus("Erro ao exportar imagem: "+e.message);}
 }
 async function exportarPDF(){
   try{
@@ -5451,7 +5733,7 @@ async function exportarPDF(){
     pdf.addImage(img,"PNG",margin,position,imgW,imgH);heightLeft-=pageH-(margin*2);
     while(heightLeft>0){pdf.addPage();position=margin-(imgH-heightLeft);pdf.addImage(img,"PNG",margin,position,imgW,imgH);heightLeft-=pageH-(margin*2);}
     pdf.save(nomeArquivoExportacao("pdf"));
-  }catch(e){setStatus("❌ Erro ao exportar PDF: "+e.message);}
+  }catch(e){setStatus("Erro ao exportar PDF: "+e.message);}
 }
 
 
@@ -6471,7 +6753,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   on("btnPerformanceLimparData","click",limparDataPerformance);
   on("filtroPerformanceDataIni","change",reaplicarFiltros);
   on("filtroPerformanceDataFim","change",reaplicarFiltros);
-  on("btnLimparHistorico","click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("🗑️ Histórico local limpo.");});
+  on("btnLimparHistorico","click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("?Histórico local limpo.");});
   on("btnCarregarCompetencia","click",carregarCompetenciaSelecionada);
   on("btnAtualizarCompetencias","click",atualizarSelectCompetencias);
   on("historicoCompetencia","change",()=>aplicarCompetenciaPerformance($("historicoCompetencia")?.value||"",true));
@@ -6503,7 +6785,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(fileInput){
     fileInput.addEventListener("change",e=>{
       arquivoSelecionado=e.target.files[0]||null;
-      if(arquivoSelecionado) setStatus("📁 Arquivo selecionado: <strong>"+arquivoSelecionado.name+"</strong>. Clique em <strong>Carregar Base</strong>.");
+      if(arquivoSelecionado) setStatus("Arquivo selecionado: <strong>"+arquivoSelecionado.name+"</strong>. Clique em <strong>Carregar Base</strong>.");
     });
   }
 
@@ -7237,7 +7519,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 </script>
 
-<script id="plantao-data" type="application/json">{"technicians": [{"id": "t1", "label": "Técnico 1", "name": "Matheus Henrique", "status": "Ativo", "start": "", "end": ""}, {"id": "t2", "label": "Técnico 2", "name": "Matheus Reis", "status": "Ativo", "start": "", "end": ""}, {"id": "t3", "label": "Técnico 3", "name": "Apolinário", "status": "Ativo", "start": "", "end": ""}, {"id": "t4", "label": "Técnico 4", "name": "José Francisco", "status": "Ativo", "start": "", "end": ""}, {"id": "t5", "label": "Técnico 5", "name": "Lailson", "status": "Ativo", "start": "", "end": ""}, {"id": "t6", "label": "Técnico 6", "name": "Alex", "status": "Ativo", "start": "", "end": ""}], "months": [{"key": "Maio", "title": "PLANTÕES – MAIO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-05-01", "type": "Feriado Nacional", "description": "Dia do Trabalho", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-03", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-10", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-05-17", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-24", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-31", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Junho", "title": "PLANTÕES – JUNHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-06-04", "type": "Feriado Nacional", "description": "Corpus Christi", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-07", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-06-14", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-06-21", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-28", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Julho", "title": "PLANTÕES – JULHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-07-05", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-07-12", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-07-19", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-07-26", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Agosto", "title": "PLANTÕES – AGOSTO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-08-02", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-09", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-08-16", "type": "Feriado Municipal", "description": "Aniversário de Teresina", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-08-23", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-30", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Setembro", "title": "PLANTÕES – SETEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-09-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-07", "type": "Feriado Nacional", "description": "Independência do Brasil", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-09-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-09-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-27", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Outubro", "title": "PLANTÕES – OUTUBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-10-04", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-11", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-12", "type": "Feriado Nacional", "description": "Nossa Sra. Aparecida", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-10-18", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-19", "type": "Feriado Estadual", "description": "Dia da Batalha do Jenipapo", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-25", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Novembro", "title": "PLANTÕES – NOVEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-11-01", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-02", "type": "Feriado Nacional", "description": "Finados", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-08", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-15", "type": "Feriado Nacional", "description": "Proclamação da República", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-20", "type": "Feriado Nacional", "description": "Consciência Negra", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-22", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-29", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Dezembro", "title": "PLANTÕES – DEZEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados.  🟡 Letra dourada = plantão  |  🟢 Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-12-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-08", "type": "Feriado Nacional", "description": "Nossa Sra. da Conceição", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-12-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-25", "type": "Feriado Nacional", "description": "Natal", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-27", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}]}</script>
+<script id="plantao-data" type="application/json">{"technicians": [{"id": "t1", "label": "Técnico 1", "name": "Matheus Henrique", "status": "Ativo", "start": "", "end": ""}, {"id": "t2", "label": "Técnico 2", "name": "Matheus Reis", "status": "Ativo", "start": "", "end": ""}, {"id": "t3", "label": "Técnico 3", "name": "Apolinário", "status": "Ativo", "start": "", "end": ""}, {"id": "t4", "label": "Técnico 4", "name": "José Francisco", "status": "Ativo", "start": "", "end": ""}, {"id": "t5", "label": "Técnico 5", "name": "Lailson", "status": "Ativo", "start": "", "end": ""}, {"id": "t6", "label": "Técnico 6", "name": "Alex", "status": "Ativo", "start": "", "end": ""}], "months": [{"key": "Maio", "title": "PLANTÕES – MAIO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-05-01", "type": "Feriado Nacional", "description": "Dia do Trabalho", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-03", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-10", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-05-17", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-05-24", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-05-31", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Junho", "title": "PLANTÕES – JUNHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-06-04", "type": "Feriado Nacional", "description": "Corpus Christi", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-07", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-06-14", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-06-21", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-06-28", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Julho", "title": "PLANTÕES – JULHO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-07-05", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-07-12", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-07-19", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-07-26", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}]}, {"key": "Agosto", "title": "PLANTÕES – AGOSTO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-08-02", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-09", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-08-16", "type": "Feriado Municipal", "description": "Aniversário de Teresina", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-08-23", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-08-30", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Setembro", "title": "PLANTÕES – SETEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-09-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-07", "type": "Feriado Nacional", "description": "Independência do Brasil", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-09-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-09-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-09-27", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Outubro", "title": "PLANTÕES – OUTUBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-10-04", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-11", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-12", "type": "Feriado Nacional", "description": "Nossa Sra. Aparecida", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-10-18", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-10-19", "type": "Feriado Estadual", "description": "Dia da Batalha do Jenipapo", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-10-25", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}]}, {"key": "Novembro", "title": "PLANTÕES – NOVEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-11-01", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-02", "type": "Feriado Nacional", "description": "Finados", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-08", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-15", "type": "Feriado Nacional", "description": "Proclamação da República", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-11-20", "type": "Feriado Nacional", "description": "Consciência Negra", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-11-22", "type": "Domingo", "description": "", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-11-29", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}, {"key": "Dezembro", "title": "PLANTÕES – DEZEMBRO 2026 | TERESINA / PIAUÍ", "note": "Domingos e feriados. Letra dourada = plantão  |  Letra verde = folga (Ter/Qua/Qui distribuídas, dias diferentes).", "rows": [{"date": "2026-12-06", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-08", "type": "Feriado Nacional", "description": "Nossa Sra. da Conceição", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-13", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}, {"date": "2026-12-20", "type": "Domingo", "description": "", "baseA": "t5", "baseB": "t6", "folgaAWeekday": 4, "folgaBWeekday": 2}, {"date": "2026-12-25", "type": "Feriado Nacional", "description": "Natal", "baseA": "t1", "baseB": "t2", "folgaAWeekday": 2, "folgaBWeekday": 3}, {"date": "2026-12-27", "type": "Domingo", "description": "", "baseA": "t3", "baseB": "t4", "folgaAWeekday": 3, "folgaBWeekday": 4}]}]}</script>
 <script>
 (function(){
   const STORAGE_PLANTOES="lumar_escala_plantoes_2026_editavel_v3";
@@ -7317,12 +7599,12 @@ document.addEventListener("DOMContentLoaded",()=>{
     return 2026;
   }
   function tituloPDFPlantaoMes(month){
-    return "ESCALA DE PLANTÃO - VISITA TECNICA";
+    return "ESCALA DE PLANTÃO - VISITA TÉCNICA";
   }
   function tituloImagemPlantaoMes(month){
     const mes=String(month?.key||"").toUpperCase();
     const ano=anoPlantaoMes(month);
-    return `ESCALA DE PLANTÃO - VISITA TECNICA - ${mes} ${ano}`;
+    return `ESCALA DE PLANTÃO - VISITA TÉCNICA - ${mes} ${ano}`;
   }
   function ajustarTituloPlantao(month){
     const titulo=tituloPlantaoMes(month)||"PLANTÕES – MAIO 2026 | TERESINA / PIAUÍ";
@@ -7537,11 +7819,11 @@ document.addEventListener("DOMContentLoaded",()=>{
       garantirConfigPlantao();
       localStorage.setItem(STORAGE_PLANTOES,JSON.stringify(plantaoState));
       publicarEstadoPlantoes();
-      if(typeof setStatus==="function") setStatus("💾 Escala de plantões salva neste navegador.");
+      if(typeof setStatus==="function") setStatus("Escala de plantões salva neste navegador.");
       return true;
     }catch(e){
       console.error("Plantões: falha ao salvar",e);
-      if(typeof setStatus==="function") setStatus("❌ Não foi possível salvar os plantões neste navegador.");
+      if(typeof setStatus==="function") setStatus("Não foi possível salvar os plantões neste navegador.");
       return false;
     }
   }
@@ -7962,7 +8244,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 
   function nomeArquivoPlantaoMes(month,ext){
-    const nome=String(month?.key||"plantao").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9_-]+/gi,"_").toLowerCase();
+    const nome=String(month?.key||"plantao").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9_-]+/gi,"_").toLowerCase();
     return `escala_plantoes_${nome}.${ext}`;
   }
 
@@ -8035,7 +8317,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       a.href=canvas.toDataURL("image/png");
       a.download=nomeArquivoPlantaoMes(month,"png");
       a.click();
-    }catch(e){ console.error(e); if(typeof setStatus==="function") setStatus("❌ Erro ao gerar imagem dos plantões: <strong>"+e.message+"</strong>"); }
+    }catch(e){ console.error(e); if(typeof setStatus==="function") setStatus("Erro ao gerar imagem dos plantões: <strong>"+e.message+"</strong>"); }
     finally{ if(shell) shell.remove(); }
   }
 
@@ -8062,7 +8344,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       heightLeft-=pageH-(margin*2);
       while(heightLeft>0){ pdf.addPage(); position=margin-(imgH-heightLeft); pdf.addImage(img,"PNG",margin,position,imgW,imgH); heightLeft-=pageH-(margin*2); }
       pdf.save(nomeArquivoPlantaoMes(month,"pdf"));
-    }catch(e){ console.error(e); if(typeof setStatus==="function") setStatus("❌ Erro ao gerar PDF dos plantões: <strong>"+e.message+"</strong>"); }
+    }catch(e){ console.error(e); if(typeof setStatus==="function") setStatus("Erro ao gerar PDF dos plantões: <strong>"+e.message+"</strong>"); }
     finally{ if(shell) shell.remove(); }
   }
 
@@ -8090,7 +8372,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       const folgaA=calc.folgaA;
       const folgaB=calc.folgaB;
       const folgaC=calc.folgaC;
-      let aviso=calc.aviso==="OK"?"✔ OK":(calc.aviso==="Redistribuído por status indisponível"?"🔄 Redistribuído (status indisponível)":"⚠ "+calc.aviso+"!");
+      let aviso=calc.aviso==="OK"?"✔ OK":(calc.aviso==="Redistribuído por status indisponível"?"🔄 Redistribuído (status indispon?vel)":"Aviso: "+calc.aviso+"!");
       let avisoClasse=calc.aviso==="OK"?"plantoes-aviso-ok":"plantoes-aviso-alerta";
       if(calc.aviso!=="OK"){
         if(calc.aviso==="Redistribuído por status indisponível") redistribuidos++;
@@ -8127,7 +8409,7 @@ document.addEventListener("DOMContentLoaded",()=>{
             const msg=`Folga não alterada: ${conflito.tecnico} já está de folga em ${conflito.data}. Escolha outro dia disponível.`;
             const feedback=$p("plantaoSalvarFeedback");
             if(feedback) feedback.textContent=msg;
-            if(typeof setStatus==="function") setStatus(`⚠️ ${msg}`);
+            if(typeof setStatus==="function") setStatus(`${msg}`);
             setTimeout(()=>{if(feedback&&feedback.textContent===msg) feedback.textContent="";},4200);
             renderTabelaPlantoes();
             return;
@@ -8184,9 +8466,9 @@ document.addEventListener("DOMContentLoaded",()=>{
         atualizarEstadoEdicaoPlantoes();
         if(!plantaoEdicaoGeralAtiva){
           salvarEdicaoPlantoesAutomaticamente();
-          if(typeof setStatus==="function") setStatus("🔒 Configuração de férias bloqueada e salva.");
+          if(typeof setStatus==="function") setStatus("Configuração de férias bloqueada e salva.");
         }else{
-          if(typeof setStatus==="function") setStatus("✏️ Configuração de férias liberada para edição.");
+          if(typeof setStatus==="function") setStatus("Configuração de férias liberada para edição.");
         }
       });
       atualizarEstadoEdicaoPlantoes();
@@ -8207,7 +8489,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(!month) return;
       if(mesJunho2026Plantao(month)){
         const msg="Plantões de Junho/2026 preservados. A redistribuição de folgas foi bloqueada para não mexer no mês atual.";
-        if(typeof setStatus==="function") setStatus(`⚠️ ${msg}`);
+        if(typeof setStatus==="function") setStatus(`${msg}`);
         const feedback=$p("plantaoSalvarFeedback");
         if(feedback) feedback.textContent=msg;
         return;
@@ -8230,7 +8512,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(!month) return;
       if(mesJunho2026Plantao(month)){
         const msg="Plantões de Junho/2026 preservados. A redistribuição foi bloqueada para não mexer no mês atual.";
-        if(typeof setStatus==="function") setStatus(`⚠️ ${msg}`);
+        if(typeof setStatus==="function") setStatus(`${msg}`);
         const feedback=$p("plantaoSalvarFeedback");
         if(feedback) feedback.textContent=msg;
         return;
@@ -8258,7 +8540,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       plantaoMesAtualIndex=Number($p("plantaoMes")?.value)||0;
       renderConfigPlantoes();
       renderTabelaPlantoes();
-      if(typeof setStatus==="function") setStatus("🔁 Escala de plantões restaurada conforme a planilha enviada.");
+      if(typeof setStatus==="function") setStatus("Escala de plantões restaurada conforme a planilha enviada.");
     });
   }
 
@@ -8797,33 +9079,6 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
