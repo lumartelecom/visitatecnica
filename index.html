@@ -611,6 +611,13 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 .historico-competencia-bar{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:14px 0;padding:12px;border:1px solid var(--border);border-radius:10px;background:#f7fbff}
 .historico-competencia-bar label{display:grid;gap:5px;min-width:240px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
 .historico-competencia-bar select{min-width:240px}
+.competencia-dashboard-bar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:0 0 14px;padding:12px;border:1px solid var(--border);border-radius:10px;background:#f7fbff}
+.competencia-dashboard-bar label{display:grid;gap:5px;min-width:220px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.competencia-dashboard-bar select{min-width:220px}
+.competencia-dashboard-info{font-size:11px;font-weight:800;color:#24426c;line-height:1.35;padding:8px 10px;border:1px solid #cfe0ff;border-radius:8px;background:#fff}
+.performance-date-filter .competencia-field{min-width:210px}
+.performance-date-filter .competencia-field select{min-width:210px}
+@media(max-width:620px){.competencia-dashboard-bar{display:grid;grid-template-columns:1fr}.competencia-dashboard-bar label,.competencia-dashboard-bar select,.performance-date-filter .competencia-field,.performance-date-filter .competencia-field select{width:100%;min-width:0}}
 .status-wrap-historico .status{margin:0}
 .trend-value{display:inline-flex;align-items:center;gap:6px;font-weight:800}
 .trend-arrow{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;font-size:12px;font-weight:900;line-height:1;border:1px solid transparent}
@@ -2123,6 +2130,14 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 
 <!-- DASHBOARD -->
 <section id="nr35" class="tab-panel active">
+  <div class="competencia-dashboard-bar">
+    <label for="filtroCompetenciaDashboard">Competência
+      <select id="filtroCompetenciaDashboard" aria-label="Selecionar competência do dashboard">
+        <option value="">Todas as competências</option>
+      </select>
+    </label>
+    <div class="competencia-dashboard-info" id="competenciaDashboardInfo">Produção, TEC1 e revisita com todas as datas da base.</div>
+  </div>
   <div class="card">
     <div class="section-title-line">
       <h2>Controle por Técnico</h2>
@@ -2527,6 +2542,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         </table>
       </div>
       <div class="performance-date-filter" aria-label="Filtro de data da Performance por Técnico">
+        <label class="competencia-field">Competência<select id="filtroCompetenciaPerformance" aria-label="Selecionar competência da Performance por Técnico"><option value="">Todas as competências</option></select></label>
         <label>De<input type="date" id="filtroPerformanceDataIni"></label>
         <label>Até<input type="date" id="filtroPerformanceDataFim"></label>
         <button id="btnPerformanceLimparData" class="secondary" type="button">Limpar data</button>
@@ -3342,12 +3358,14 @@ function aplicarBaseSalvaEmTela(saved,opcoes={}){
     }
 
     preencherFiltros(processedRows);
+    preencherCompetenciasPerformance(processedRows);
     renderValidacao(validation,processedRows.length);
     if(opcoes.competenciaKey) aplicarCompetenciaPerformance(opcoes.competenciaKey);
+    else aplicarCompetenciaPadraoPerformance(processedRows);
 
-    const filtrado=aplicarFiltros(processedRows);
-    lastRenderRows=filtrado;
-    currentSummary=processarResumo(filtrado);
+    const resultado=resumoPerformanceFiltrada(processedRows);
+    lastRenderRows=resultado.producaoRows;
+    currentSummary=resultado.summary;
     renderDashboardComProducaoLocal(currentSummary);
 
     salvarUltimaBase(rawRows,currentFileName);
@@ -3554,12 +3572,18 @@ function dataDateDeOrdem(ts){
   return isNaN(d.getTime())?null:d;
 }
 function limiteInicioProximaCompetencia(d){
-  const ultimoDiaMes=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-  return ultimoDiaMes===31?22:21;
+  return 21;
+}
+function dataRefCompetencia(d){
+  return new Date(d.getFullYear(),d.getMonth()+(d.getDate()>=limiteInicioProximaCompetencia(d)?1:0),1);
+}
+function keyCompetenciaPerformanceDeData(d){
+  const ref=dataRefCompetencia(d);
+  return `${ref.getFullYear()}-${String(ref.getMonth()+1).padStart(2,"0")}`;
 }
 function mesAnoCompetencia(d){
   const meses=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  const ref=new Date(d.getFullYear(),d.getMonth()+(d.getDate()>=limiteInicioProximaCompetencia(d)?1:0),1);
+  const ref=dataRefCompetencia(d);
   return `${meses[ref.getMonth()]}/${ref.getFullYear()}`;
 }
 function intervaloCompetenciaIndicador(d){
@@ -3568,14 +3592,40 @@ function intervaloCompetenciaIndicador(d){
   const dia=d.getDate();
   const inicioProximo=limiteInicioProximaCompetencia(d);
   const novoCiclo=dia>=inicioProximo;
-  const inicio=novoCiclo?new Date(ano,mes,inicioProximo):new Date(ano,mes-1,20);
-  const fim=novoCiclo?new Date(ano,mes+1,20):new Date(ano,mes,20);
+  const inicio=novoCiclo?new Date(ano,mes,inicioProximo):new Date(ano,mes-1,limiteInicioProximaCompetencia(new Date(ano,mes-1,1)));
+  const fim=novoCiclo?new Date(ano,mes+1,limiteInicioProximaCompetencia(new Date(ano,mes+1,1))-1):new Date(ano,mes,inicioProximo-1);
   return {inicio:dataISODeDate(inicio),fim:dataISODeDate(fim),competencia:mesAnoCompetencia(d)};
 }
 function intervaloCiclo20PorBase(rows){
   const datas=(Array.isArray(rows)?rows:[]).map(r=>dataParaOrdem(dataReferenciaPerformance(r))).filter(Boolean);
   if(!datas.length) return null;
   return intervaloCompetenciaIndicador(new Date(Math.max(...datas)));
+}
+function intervaloCompetenciaPorKey(key){
+  const m=String(key||"").match(/^(\d{4})-(\d{2})$/);
+  if(!m) return null;
+  const ano=Number(m[1]);
+  const mes=Number(m[2])-1;
+  return intervaloCompetenciaIndicador(new Date(ano,mes,1));
+}
+function formatarDataCurtaISO(iso){
+  const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}/${m[2]}`:"-";
+}
+function janelaRevisitaCompetencia(ciclo){
+  if(!ciclo?.fim) return null;
+  const fimCiclo=dataDateDeOrdem(dataInputParaOrdem(ciclo.fim));
+  if(!fimCiclo) return null;
+  const fimMes=new Date(fimCiclo.getFullYear(),fimCiclo.getMonth()+1,0);
+  const inicio=new Date(fimMes.getFullYear(),fimMes.getMonth(),Math.max(1,fimMes.getDate()-9));
+  return {inicio:dataISODeDate(inicio),fim:dataISODeDate(fimMes),inicioTs:inicio.getTime(),fimTs:fimMes.getTime()};
+}
+function textoCompetenciaDashboard(ciclo){
+  if(!ciclo){
+    return "Produção, TEC1 e revisita com todas as datas da base.";
+  }
+  const janela=janelaRevisitaCompetencia(ciclo);
+  return `Produção/TEC1: ${formatarDataCurtaISO(ciclo.inicio)} a ${formatarDataCurtaISO(ciclo.fim)} · Revisita 10d: ${formatarDataCurtaISO(janela?.inicio)} a ${formatarDataCurtaISO(janela?.fim)}`;
 }
 function competenciaFiltroPerformance(){
   const ini=dataInputParaOrdem($("filtroPerformanceDataIni")?.value||"");
@@ -3584,22 +3634,88 @@ function competenciaFiltroPerformance(){
   if(!ts) return "";
   return mesAnoCompetencia(new Date(ts));
 }
+function selectsCompetenciaPerformance(){
+  return ["filtroCompetenciaDashboard","filtroCompetenciaPerformance"].map(id=>$(id)).filter(Boolean);
+}
+function sincronizarSelectCompetenciaPerformance(key){
+  selectsCompetenciaPerformance().forEach(sel=>{sel.value=key||"";});
+}
+function listarCompetenciasPerformance(rows){
+  const mapa=new Map();
+  const adicionar=(key)=>{
+    const ciclo=intervaloCompetenciaPorKey(key);
+    if(ciclo) mapa.set(key,{key,label:ciclo.competencia,ciclo});
+  };
+  (Array.isArray(rows)?rows:[]).forEach(r=>{
+    const ts=dataParaOrdem(dataReferenciaPerformance(r));
+    if(!ts) return;
+    const d=new Date(ts);
+    adicionar(keyCompetenciaPerformanceDeData(d));
+    adicionar(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);
+  });
+  return [...mapa.values()].sort((a,b)=>a.key.localeCompare(b.key));
+}
+function preencherCompetenciasPerformance(rows){
+  const opcoes=listarCompetenciasPerformance(rows);
+  const html='<option value="">Todas as competências</option>'+opcoes.map(c=>`<option value="${c.key}">${c.label}</option>`).join("");
+  selectsCompetenciaPerformance().forEach(sel=>{
+    const valorAtual=sel.value;
+    sel.innerHTML=html;
+    if(valorAtual&&opcoes.some(c=>c.key===valorAtual)) sel.value=valorAtual;
+  });
+}
+function aplicarCompetenciaPadraoPerformance(rows){
+  const atual=$("filtroCompetenciaDashboard")?.value||$("filtroCompetenciaPerformance")?.value||"";
+  if(atual) return aplicarCompetenciaPerformance(atual,false);
+  const info=infoCompetenciaBase(rows);
+  if(info?.key) return aplicarCompetenciaPerformance(info.key,false);
+  return false;
+}
 function aplicarCompetenciaPerformance(key,reaplicar=false){
+  if(!key){
+    sincronizarSelectCompetenciaPerformance("");
+    if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value="";
+    if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value="";
+    limparCompetenciaPerformanceTitulo();
+    if($("competenciaDashboardInfo")) $("competenciaDashboardInfo").textContent=textoCompetenciaDashboard(null);
+    if(reaplicar&&processedRows.length) reaplicarFiltros();
+    return true;
+  }
   const m=String(key||"").match(/^(\d{4})-(\d{2})$/);
   if(!m) return false;
-  const ano=Number(m[1]);
-  const mes=Number(m[2])-1;
-  const ciclo=intervaloCompetenciaIndicador(new Date(ano,mes,1));
+  const ciclo=intervaloCompetenciaPorKey(key);
+  if(!ciclo) return false;
+  sincronizarSelectCompetenciaPerformance(key);
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value=ciclo.inicio;
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value=ciclo.fim;
   if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent=`Performance por Técnico - ${ciclo.competencia}`;
   if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent=`Competência selecionada: ${ciclo.competencia}`;
+  if($("competenciaDashboardInfo")) $("competenciaDashboardInfo").textContent=textoCompetenciaDashboard(ciclo);
   if(reaplicar&&processedRows.length) reaplicarFiltros();
   return true;
+}
+function marcarPeriodoManualPerformance(){
+  sincronizarSelectCompetenciaPerformance("");
+  const ini=$("filtroPerformanceDataIni")?.value||"";
+  const fim=$("filtroPerformanceDataFim")?.value||"";
+  if(!ini&&!fim){
+    limparCompetenciaPerformanceTitulo();
+    return;
+  }
+  const competencia=competenciaFiltroPerformance();
+  if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent=competencia?`Performance por Técnico - ${competencia}`:"Performance por Técnico";
+  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent=`Período manual: ${ini||"início"} até ${fim||"fim"}`;
+  const janela=intervaloRevisitaPerformanceAtual();
+  if($("competenciaDashboardInfo")){
+    $("competenciaDashboardInfo").textContent=janela
+      ? `Produção/TEC1: ${ini||"início"} a ${fim||"fim"} · Revisita 10d: ${formatarDataCurtaISO(janela.inicio)} a ${formatarDataCurtaISO(janela.fim)}`
+      : `Produção, TEC1 e revisita filtrados por período manual.`;
+  }
 }
 function limparCompetenciaPerformanceTitulo(){
   if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent="Performance por Técnico";
   if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent="Todas as competências";
+  if($("competenciaDashboardInfo")) $("competenciaDashboardInfo").textContent=textoCompetenciaDashboard(null);
 }
 
 const TECNICOS_NOMES={
@@ -3659,9 +3775,12 @@ function indicadorPerformanceHTML(t,campo,valor){
   return classe?`<span class="${classe}">${valor}</span>`:valor;
 }
 
+function totalBaseRevisitaTecnico(t){
+  return Number(t?.revBaseTotal ?? t?.total)||0;
+}
 function vtParaMetaRevisita(t){
   const rev=Number(t.revisitas)||0;
-  const total=Number(t.total)||0;
+  const total=totalBaseRevisitaTecnico(t);
   if(rev<=0||total<=0) return null;
   const percentual=rev/total*100;
   if(percentual<META_REVISITA) return null;
@@ -3682,7 +3801,7 @@ function celulaMetaRevisitaVT(qtd){
   return `<span class="meta-vt need">${qtd} VT</span>`;
 }
 function margemRevisitaTecnico(t){
-  const total=Number(t?.total)||0;
+  const total=totalBaseRevisitaTecnico(t);
   const rev=Number(t?.revisitas)||0;
   const limite=(Number(META_REVISITA)||0)/100;
   if(total<=0||limite<=0||limite>=1) return 0;
@@ -3772,7 +3891,7 @@ function renderValidacao(validation,baseLen){
   el.innerHTML=items.join("");
 }
 
-function aplicarFiltros(rows){
+function aplicarFiltros(rows,opcoes={}){
   const tecnico=$("filtroTecnico")?.value||"";
   const node=$("filtroNode")?.value||"";
   const status=$("filtroStatus")?.value||"";
@@ -3782,7 +3901,7 @@ function aplicarFiltros(rows){
   if(tecnico) filtrado=filtrado.filter(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))===tecnico);
   if(node) filtrado=filtrado.filter(r=>norm(getField(r,["NODE"]))===node);
   if(status==="revisita") filtrado=filtrado.filter(r=>ehRevisita(r));
-  if(dataIni||dataFim){
+  if(!opcoes.ignorarData&&(dataIni||dataFim)){
     filtrado=filtrado.filter(r=>{
       const ts=dataParaOrdem(dataReferenciaPerformance(r));
       if(!ts) return false;
@@ -3792,6 +3911,25 @@ function aplicarFiltros(rows){
     });
   }
   return filtrado;
+}
+function intervaloRevisitaPerformanceAtual(){
+  const fim=$("filtroPerformanceDataFim")?.value||"";
+  if(!fim) return null;
+  return janelaRevisitaCompetencia({fim});
+}
+function aplicarFiltrosRevisitaPerformance(rows){
+  let filtrado=aplicarFiltros(rows,{ignorarData:true});
+  const janela=intervaloRevisitaPerformanceAtual();
+  if(!janela) return filtrado;
+  return filtrado.filter(r=>{
+    const ts=dataParaOrdem(dataReferenciaPerformance(r));
+    return ts&&ts>=janela.inicioTs&&ts<=janela.fimTs;
+  });
+}
+function resumoPerformanceFiltrada(rows){
+  const producaoRows=aplicarFiltros(rows);
+  const revisitaRows=aplicarFiltrosRevisitaPerformance(rows);
+  return {producaoRows,revisitaRows,summary:processarResumo(producaoRows,{revisitaRows})};
 }
 function preencherFiltros(rows){
   const tecnicos=[...new Set(rows.map(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))).filter(Boolean))]
@@ -3807,24 +3945,29 @@ async function renderDashboardComProducaoLocal(summary){
   renderDashboard(summary);
 }
 
-function processarResumo(rows){
+function processarResumo(rows,opcoes={}){
   const tec={},nodes={},revisitas=[],tec1ForaPadrao=[];
-  const historicoContratos=montarHistoricoContratos(processedRows.length?processedRows:rows);
+  const revisitaRows=Array.isArray(opcoes.revisitaRows)?opcoes.revisitaRows:rows;
+  const historicoContratos=montarHistoricoContratos(processedRows.length?processedRows:[...rows,...revisitaRows]);
+  const obterTecnico=(login)=>{
+    if(!tec[login]) tec[login]={login,nome:nomeTecnico(login),producao:0,revisitas:0,total:0,revBaseTotal:0,tecOk:0,tecFora:0,tecBase:0,dias:new Set()};
+    return tec[login];
+  };
   rows.forEach(r=>{
     const login=loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))||"SEM_LOGIN";
     const contrato=norm(getField(r,["CONTRATO"]));
     const node=norm(getField(r,["NODE"]))||"SEM_NODE";
     if(!contrato) return;
-    if(!tec[login]) tec[login]={login,nome:nomeTecnico(login),producao:0,revisitas:0,total:0,tecOk:0,tecFora:0,tecBase:0,dias:new Set()};
-    tec[login].total++;
+    const item=obterTecnico(login);
+    item.total++;
 
     // Produção oficial: conta todos os atendimentos executados pelo login.
     // O denominador considera apenas DATA_AGENDA distintas marcadas como dia produtivo.
     const diaProdutivo=head(getField(r,["FG_DIA_PRODUTIVO","FG DIA PRODUTIVO"]))==="S";
     const diaAgenda=dataAgendaPrincipal(r);
     if(diaProdutivo){
-      tec[login].producao+=1;
-      if(diaAgenda) tec[login].dias.add(diaAgenda);
+      item.producao+=1;
+      if(diaAgenda) item.dias.add(diaAgenda);
     }
 
     nodes[node]=(nodes[node]||0)+1;
@@ -3832,7 +3975,7 @@ function processarResumo(rows){
     const tecDen=parseNumber(getField(r,["QTD_TOTAL_OS_TEC1","QTD TOTAL OS TEC1"]));
     if(tecDen>0){
       const fora=Math.max(0,tecDen-tecNum);
-      tec[login].tecOk+=tecNum;tec[login].tecBase+=tecDen;tec[login].tecFora+=fora;
+      item.tecOk+=tecNum;item.tecBase+=tecDen;item.tecFora+=fora;
       if(fora>0){
         tec1ForaPadrao.push({
           contrato,login,nome:nomeTecnico(login),node,
@@ -3844,8 +3987,16 @@ function processarResumo(rows){
         });
       }
     }
+  });
+  revisitaRows.forEach(r=>{
+    const login=loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))||"SEM_LOGIN";
+    const contrato=norm(getField(r,["CONTRATO"]));
+    const node=norm(getField(r,["NODE"]))||"SEM_NODE";
+    if(!contrato) return;
+    const item=obterTecnico(login);
+    item.revBaseTotal++;
     if(ehRevisita(r)){
-      tec[login].revisitas++;
+      item.revisitas++;
       revisitas.push({contrato,login,nome:nomeTecnico(login),node,qt:parseNumber(getField(r,["QT_REVISITA","QT REVISITA"])),tipo:norm(getField(r,["TIPO_SERVICO","TIPO SERVICO","TIPO_OS","TIPO OS"])),...dadosRevisita(r,contrato,historicoContratos)});
     }
   });
@@ -3854,7 +4005,7 @@ function processarResumo(rows){
     const diasAtendimento=t.dias?.size||0;
     const contratosExecutados=t.total;
     const mediaProducaoExata=diasAtendimento?t.producao/diasAtendimento:0;
-    const resumo={...t,contratosExecutados,diasAtendimento,mediaContratos:mediaProducaoExata,mediaProducaoExata,producaoFonte:"Base importada: atendimentos executados ÷ dias distintos",revPct:t.total?t.revisitas/t.total*100:0,tec1Pct:t.tecBase?t.tecOk/t.tecBase*100:0};
+    const resumo={...t,contratosExecutados,diasAtendimento,mediaContratos:mediaProducaoExata,mediaProducaoExata,producaoFonte:"Base importada: atendimentos executados ÷ dias distintos",revPct:t.revBaseTotal?t.revisitas/t.revBaseTotal*100:0,tec1Pct:t.tecBase?t.tecOk/t.tecBase*100:0};
     delete resumo.dias;
     resumo.vtMetaRevisita=vtParaMetaRevisita(resumo);
     resumo.vtMetaTec1=vtParaMetaTec1(resumo);
@@ -3870,8 +4021,9 @@ function processarResumo(rows){
   const totalRev=arr.reduce((a,t)=>a+t.revisitas,0);
   const totalOk=arr.reduce((a,t)=>a+t.tecOk,0);
   const totalTecBase=arr.reduce((a,t)=>a+t.tecBase,0);
+  const revBaseLen=arr.reduce((a,t)=>a+(Number(t.revBaseTotal)||0),0);
   const arrNode=Object.entries(nodes).map(([node,qtd])=>{return {node,qtd}}).sort((a,b)=>b.qtd-a.qtd);
-  return {arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen:rows.length,sourceRows:[...rows]};
+  return {arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen:rows.length,revBaseLen,sourceRows:[...rows],revisitaSourceRows:[...revisitaRows]};
 }
 
 function renderBars(id,items,labelKey,valueKey,suffix){
@@ -3951,7 +4103,7 @@ function montarPlanoAcaoItens(summary){
     const semRetorno=Number(t.vtMetaRevisita)||0;
     itens.push({
       nivel,classe:classePrioridadeAcao(nivel),prazo:prazoPrioridadeAcao(nivel),responsavel:t.nome,indicador:"Revisita 10d",
-      diagnostico:`${pct(t.revPct)} de revisita, ${t.revisitas} retorno(s) em ${t.contratosExecutados} contrato(s).`,
+      diagnostico:`${pct(t.revPct)} de revisita, ${t.revisitas} retorno(s) em ${totalBaseRevisitaTecnico(t)} contrato(s) da janela 10d.`,
       meta:`Reduzir para até ${pct(LIMITE_ACOMP_REVISITA)}${semRetorno?` com ${semRetorno} VT sem retorno`:""}.`,
       acao:"Revisar contratos reincidentes, validar causa raiz por serviço/node, conferir baixa e orientar técnico antes das próximas rotas.",
       score:t.revPct
@@ -4071,12 +4223,13 @@ function linhaMediaPerformance(arr){
   const soma=(campo)=>arr.reduce((s,t)=>s+(Number(t?.[campo])||0),0);
   const totalContratos=soma("contratosExecutados");
   const totalRev=soma("revisitas");
+  const totalRevBase=arr.reduce((s,t)=>s+totalBaseRevisitaTecnico(t),0);
   const totalTecOk=soma("tecOk");
   const totalTecBase=soma("tecBase");
   const mediaContratos=totalContratos/qtd;
   const mediaProd=soma("mediaContratos")/qtd;
   const mediaRevQtd=totalRev/qtd;
-  const revGeral=totalContratos?totalRev/totalContratos*100:0;
+  const revGeral=totalRevBase?totalRev/totalRevBase*100:0;
   const mediaMetaRev=arr.reduce((s,t)=>s+(Number(t.vtMetaRevisita)||0),0)/qtd;
   const mediaMargem=arr.reduce((s,t)=>s+margemRevisitaTecnico(t),0)/qtd;
   const mediaFora=soma("tecFora")/qtd;
@@ -4100,11 +4253,11 @@ function linhaMediaPerformance(arr){
 
 function renderDashboard(summary){
   currentSummary=summary;
-  const {arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen}=summary;
+  const {arr,arrNode,revisitas,tec1ForaPadrao,totalProducao,totalRev,totalOk,totalTecBase,baseLen,revBaseLen}=summary;
 
   if($("kpiBase")) $("kpiBase").textContent=baseLen;
   if($("kpiTecnicos")) $("kpiTecnicos").textContent=arr.length;
-  const mediaRev=baseLen?totalRev/baseLen*100:0;
+  const mediaRev=revBaseLen?totalRev/revBaseLen*100:0;
   if($("kpiRev")) $("kpiRev").textContent=`${pct(mediaRev)} / ${totalRev}`;
   if($("kpiTec1")) $("kpiTec1").textContent=`${pct(totalTecBase?totalOk/totalTecBase*100:0)} / ${(tec1ForaPadrao||[]).length}`;
   atualizarKpiLogOfensor(summary);
@@ -4252,7 +4405,7 @@ function abrirModalTecnicos(atualizarLista=true){
   const modal=$("modalTecnicos");
   const conteudo=$("modalTecnicosConteudo");
   if(!modal||!conteudo) return;
-  if(atualizarLista) modalTecnicosLista=[...(processedRows.length?processarResumo(processedRows).arr:(currentSummary?.arr||[]))];
+  if(atualizarLista) modalTecnicosLista=[...(currentSummary?.arr||(processedRows.length?resumoPerformanceFiltrada(processedRows).summary.arr:[]))];
   if(tecnicoAtivoLogin&&atualizarLista){
     modal.classList.add("active");
     modal.setAttribute("aria-hidden","false");
@@ -4810,14 +4963,16 @@ function fecharModalIndicador(){
 function aplicarTecnicoNoDashboard(login){
   if(!processedRows.length) return;
   tecnicoAtivoLogin=loginKey(login);
-  const filtrado=processedRows.filter(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))===loginKey(login));
+  const tecnicoRows=processedRows.filter(r=>loginKey(getField(r,["LOGIN_TECNICO","LOGIN TECNICO","TECNICO"]))===loginKey(login));
+  const filtrado=aplicarFiltros(tecnicoRows);
   lastRenderRows=filtrado;
-  renderDashboardComProducaoLocal(processarResumo(filtrado));
+  renderDashboardComProducaoLocal(processarResumo(filtrado,{revisitaRows:aplicarFiltrosRevisitaPerformance(tecnicoRows)}));
 }
 function limparFiltroTecnicoAtivo(){
   tecnicoAtivoLogin="";
-  lastRenderRows=[...processedRows];
-  renderDashboardComProducaoLocal(processarResumo(processedRows));
+  const resultado=resumoPerformanceFiltrada(processedRows);
+  lastRenderRows=resultado.producaoRows;
+  renderDashboardComProducaoLocal(resultado.summary);
   abrirModalTecnicos(false);
 }
 function abrirIndicadoresTecnico(login,aplicarFiltro=true){
@@ -4855,14 +5010,14 @@ async function exportarTecnico(login,tipo){
   exportOverride={tecnico:rotuloTecnico(login),node:"Todos os nodes",status:"Indicadores individuais",login};
   try{
     lastRenderRows=tecnicoRows;
-    await renderDashboardComProducaoLocal(processarResumo(tecnicoRows));
+    await renderDashboardComProducaoLocal(processarResumo(tecnicoRows,{revisitaRows:aplicarFiltrosRevisitaPerformance(tecnicoRows)}));
     if(tipo==="pdf") await exportarPDF();
     else await exportarImagem();
   }finally{
     exportOverride=null;
     lastRenderRows=rowsRestaurar.length?rowsRestaurar:[...processedRows];
     if(summaryRestaurar) renderDashboard(summaryRestaurar);
-    else await renderDashboardComProducaoLocal(processarResumo(lastRenderRows));
+    else await renderDashboardComProducaoLocal(processarResumo(lastRenderRows,{revisitaRows:aplicarFiltrosRevisitaPerformance(lastRenderRows)}));
   }
 }
 
@@ -5572,12 +5727,14 @@ function carregarUltimaBase(opcoes={}){
     }
 
     preencherFiltros(processedRows);
+    preencherCompetenciasPerformance(processedRows);
     renderValidacao(validation,processedRows.length);
     if(opcoes.competenciaKey) aplicarCompetenciaPerformance(opcoes.competenciaKey);
+    else aplicarCompetenciaPadraoPerformance(processedRows);
 
-    const filtrado=aplicarFiltros(processedRows);
-    lastRenderRows=filtrado;
-    currentSummary=processarResumo(filtrado);
+    const resultado=resumoPerformanceFiltrada(processedRows);
+    lastRenderRows=resultado.producaoRows;
+    currentSummary=resultado.summary;
     renderDashboardComProducaoLocal(currentSummary);
 
     salvarUltimaBase(rawRows,currentFileName);
@@ -5603,7 +5760,7 @@ function salvarHistorico(opcoes={}){
     competencia:opcoes.competencia||infoCompetenciaBase(rawRows),
     producao:currentSummary.totalProducao,
     revisitas:currentSummary.totalRev,
-    revPct:currentSummary.baseLen?currentSummary.totalRev/currentSummary.baseLen*100:0,
+    revPct:currentSummary.revBaseLen?currentSummary.totalRev/currentSummary.revBaseLen*100:0,
     tec1:currentSummary.totalTecBase?currentSummary.totalOk/currentSummary.totalTecBase*100:0,
     nodeTop:currentSummary.arrNode[0]?.node||"-"
   };
@@ -5678,9 +5835,11 @@ async function carregarBase(){
     renderValidacao(validation,processedRows.length);
     if(!processedRows.length){setStatus("Não encontrei linhas com NM_MUNICIPIO = TERESINA, UNIDADE_NEGOCIO = TSA-LUMAR_VT, GRUPO_ORDEM_SERVICO = MANUTENÇÃO e STATUS_JOB = complete.");return;}
     preencherFiltros(processedRows);
-    const filtrado=aplicarFiltros(processedRows);
-    lastRenderRows=filtrado;
-    await renderDashboardComProducaoLocal(processarResumo(filtrado));
+    preencherCompetenciasPerformance(processedRows);
+    aplicarCompetenciaPadraoPerformance(processedRows);
+    const resultado=resumoPerformanceFiltrada(processedRows);
+    lastRenderRows=resultado.producaoRows;
+    await renderDashboardComProducaoLocal(resultado.summary);
     const signature=salvarUltimaBase(rows,currentFileName);
     const competencia=await salvarBaseMensalLocal(rows,currentFileName,signature);
     const historicoResultado=salvarHistorico({silencioso:true,signature,competencia});
@@ -5703,13 +5862,15 @@ function mensagemFiltrosAplicados(qtd){
   const partes=[];
   if(ini||fim) partes.push(`Período: <strong>${ini||"início"}</strong> até <strong>${fim||"fim"}</strong>`);
   if(competencia) partes.push(`Competência do indicador: <strong>${competencia}</strong>`);
+  const janela=intervaloRevisitaPerformanceAtual();
+  if(janela) partes.push(`Revisita 10d: <strong>${janela.inicio}</strong> até <strong>${janela.fim}</strong>`);
   partes.push(`Registros no filtro: <strong>${Number(qtd)||0}</strong>`);
   return `✅ Filtros aplicados. ${partes.join(" · ")}.`;
 }
 async function reaplicarFiltros(){
   if(!processedRows.length){setStatus("Carregue uma base primeiro.");return}
-  const filtrado=aplicarFiltros(processedRows);lastRenderRows=filtrado;
-  await renderDashboardComProducaoLocal(processarResumo(filtrado));setStatus(mensagemFiltrosAplicados(filtrado.length));
+  const resultado=resumoPerformanceFiltrada(processedRows);lastRenderRows=resultado.producaoRows;
+  await renderDashboardComProducaoLocal(resultado.summary);setStatus(mensagemFiltrosAplicados(resultado.producaoRows.length));
 }
 function limparFiltros(){
   if($("filtroTecnico")) $("filtroTecnico").value="";
@@ -5717,6 +5878,7 @@ function limparFiltros(){
   if($("filtroStatus")) $("filtroStatus").value="";
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value="";
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value="";
+  sincronizarSelectCompetenciaPerformance("");
   limparCompetenciaPerformanceTitulo();
   reaplicarFiltros();
 }
@@ -5730,6 +5892,7 @@ function aplicarCicloPerformance20(){
 function limparDataPerformance(){
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value="";
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value="";
+  sincronizarSelectCompetenciaPerformance("");
   limparCompetenciaPerformanceTitulo();
   reaplicarFiltros();
 }
@@ -5755,6 +5918,8 @@ function limparTudo(){
   if($("acaoPrioridades")) $("acaoPrioridades").innerHTML='<div class="priority-card"><strong>Aguardando base</strong><span>Carregue a planilha para gerar prioridades.</span></div>';
   if($("tabelaPlanoAcao")) $("tabelaPlanoAcao").innerHTML='<tr><td colspan="7"><div class="empty">Aguardando base.</div></td></tr>';
   $("validacaoBase").innerHTML='<div class="empty">Aguardando importação.</div>';
+  selectsCompetenciaPerformance().forEach(sel=>{sel.innerHTML='<option value="">Todas as competências</option>';sel.value="";});
+  limparCompetenciaPerformanceTitulo();
 }
 
 function textoFiltroExportacao(){
@@ -5787,7 +5952,7 @@ function criarAreaExportacao(){
   const shell=document.createElement("div");
   shell.className="export-capture-shell";shell.id="exportCaptureTemp";
   const resumo=currentSummary||{};
-  const revPct=resumo.baseLen?resumo.totalRev/resumo.baseLen*100:0;
+  const revPct=resumo.revBaseLen?resumo.totalRev/resumo.revBaseLen*100:0;
   const tec1Pct=resumo.totalTecBase?resumo.totalOk/resumo.totalTecBase*100:0;
   shell.innerHTML=`<div class="export-report-header">
     <div><h1>Relatório de Manutenção</h1><p>Performance por Técnico, Contratos com Revisita e TEC1 fora do padrão</p></div>
@@ -6987,8 +7152,10 @@ document.addEventListener("DOMContentLoaded",()=>{
   on("btnLimpar","click",limparTudo);
   on("btnCarregarUltima","click",carregarUltimaBase);
   on("btnPerformanceLimparData","click",limparDataPerformance);
-  on("filtroPerformanceDataIni","change",reaplicarFiltros);
-  on("filtroPerformanceDataFim","change",reaplicarFiltros);
+  on("filtroCompetenciaDashboard","change",()=>aplicarCompetenciaPerformance($("filtroCompetenciaDashboard")?.value||"",true));
+  on("filtroCompetenciaPerformance","change",()=>aplicarCompetenciaPerformance($("filtroCompetenciaPerformance")?.value||"",true));
+  on("filtroPerformanceDataIni","change",()=>{marcarPeriodoManualPerformance();reaplicarFiltros();});
+  on("filtroPerformanceDataFim","change",()=>{marcarPeriodoManualPerformance();reaplicarFiltros();});
   on("btnLimparHistorico","click",()=>{localStorage.removeItem(STORAGE_HISTORY);renderHistorico();setStatus("?Histórico local limpo.");});
   on("btnCarregarCompetencia","click",carregarCompetenciaSelecionada);
   on("btnAtualizarCompetencias","click",atualizarSelectCompetencias);
