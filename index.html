@@ -1627,6 +1627,35 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   font-size:15px!important;
   letter-spacing:.09em!important;
 }
+#secPerformanceTecnico .performance-competencia-wrap{
+  display:flex;
+  justify-content:center;
+  margin:0 0 12px;
+}
+#secPerformanceTecnico .performance-competencia-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  max-width:100%;
+  padding:7px 16px;
+  border:1px solid rgba(255,255,255,.42);
+  border-radius:8px;
+  background:linear-gradient(135deg,#0f766e,#155fc4);
+  color:#fff;
+  box-shadow:0 9px 20px rgba(21,95,196,.18),inset 0 1px 0 rgba(255,255,255,.28);
+  cursor:default;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1.2;
+  pointer-events:none;
+  text-align:center;
+  text-transform:uppercase;
+  user-select:none;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
 #secPerformanceTecnico .performance-date-filter{
   display:flex;
   align-items:end;
@@ -1666,6 +1695,8 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   font-size:15px!important;
   letter-spacing:.09em!important;
 }
+#secPerformanceTecnico .performance-competencia-wrap{justify-content:flex-start}
+#secPerformanceTecnico .performance-competencia-pill{width:100%}
 #secPerformanceTecnico .performance-date-filter{justify-content:flex-start}
   #secPerformanceTecnico .performance-date-filter label{width:calc(50% - 6px)}
   #secPerformanceTecnico .performance-date-filter input[type=date]{width:100%}
@@ -2533,6 +2564,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     <div class="card plantoes-folga-card">
       <div class="section-title-line">
         <h2 id="tituloPerformanceTecnico">Performance por Técnico</h2>
+      </div>
+      <div class="performance-competencia-wrap" aria-live="polite">
+        <span id="competenciaPerformanceTecnico" class="performance-competencia-pill" aria-disabled="true">Competência: aguardando base</span>
       </div>
       <div id="indicadoresBrutoResultado">
       <div class="table-wrap">
@@ -3869,6 +3903,16 @@ function competenciaFiltroPerformance(){
   if(!ts) return "";
   return mesAnoCompetencia(new Date(ts));
 }
+function textoCompetenciaPadraoPerformance(){
+  if(rawRows?.length){
+    const info=infoCompetenciaBase(rawRows);
+    if(info?.label) return `Competência: ${info.label}`;
+  }
+  return "Competência: aguardando base";
+}
+function atualizarCompetenciaPerformance(texto){
+  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent=texto||textoCompetenciaPadraoPerformance();
+}
 function selectsCompetenciaPerformance(){
   return [];
 }
@@ -3914,7 +3958,7 @@ function aplicarCompetenciaPerformance(key,reaplicar=false){
   if($("filtroPerformanceDataIni")) $("filtroPerformanceDataIni").value=ciclo.inicio;
   if($("filtroPerformanceDataFim")) $("filtroPerformanceDataFim").value=ciclo.fim;
   if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent=`Performance por Técnico - ${ciclo.competencia}`;
-  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent=`Período selecionado: ${ciclo.competencia}`;
+  atualizarCompetenciaPerformance(`Competência: ${ciclo.competencia}`);
   if($("competenciaDashboardInfo")) $("competenciaDashboardInfo").textContent=textoCompetenciaDashboard(ciclo);
   if(reaplicar&&processedRows.length) reaplicarFiltros();
   return true;
@@ -3929,7 +3973,7 @@ function marcarPeriodoManualPerformance(){
   }
   const competencia=competenciaFiltroPerformance();
   if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent=competencia?`Performance por Técnico - ${competencia}`:"Performance por Técnico";
-  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent=`Período manual: ${ini||"início"} até ${fim||"fim"}`;
+  atualizarCompetenciaPerformance(competencia?`Competência: ${competencia} (manual)`:`Período manual: ${ini||"início"} até ${fim||"fim"}`);
   const janela=intervaloRevisitaPerformanceAtual();
   if($("competenciaDashboardInfo")){
     $("competenciaDashboardInfo").textContent=janela
@@ -3939,7 +3983,7 @@ function marcarPeriodoManualPerformance(){
 }
 function limparCompetenciaPerformanceTitulo(){
   if($("tituloPerformanceTecnico")) $("tituloPerformanceTecnico").textContent="Performance por Técnico";
-  if($("competenciaPerformanceTecnico")) $("competenciaPerformanceTecnico").textContent="";
+  atualizarCompetenciaPerformance();
   if($("competenciaDashboardInfo")) $("competenciaDashboardInfo").textContent=textoCompetenciaDashboard(null);
 }
 
