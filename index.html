@@ -2547,6 +2547,16 @@ function valorTreinamentoNR35(codigo) {
   return typeof valorSistemaCertificado === 'function' ? valorSistemaCertificado({}, codigo, 't1') : '';
 }
 
+function certificadoPerformanceTecnicoNR35(codigo) {
+  const key = loginKey(codigo);
+  const status = window.certificadosPerformancePorTecnico?.[key];
+  if (!status) return { label: 'NÃO CERTIFICADO', classe: 'cert-nao' };
+  return {
+    label: status.label,
+    classe: status.cor === 'green' ? 'cert-sim' : 'cert-nao'
+  };
+}
+
 function estadoIndicadorCertificacao(t,campo){
   if(!t) return {classe:'cert-nao',status:'SEM BASE'};
   if(indicadorFalhaCertificacao(t,campo)) return {classe:'cert-nao',status:'NÃO CERTIFICADO'};
@@ -2601,10 +2611,7 @@ function renderizarTabelaNR35() {
   ordem.forEach(codigo => {
     const dados = contatosPorTecnico[codigo];
     if(!dados) return;
-    const resumo = (window.currentSummary?.arr || currentSummary?.arr || []).find(t => String(t.login || '').toUpperCase() === codigo);
-    const temResumo = !!resumo;
-    const certificadoOk = temResumo ? !tecnicoNaoCertificado(resumo) : false;
-    const certificadoLabel = certificadoOk ? 'CERTIFICADO' : 'NÃO CERTIFICADO';
+    const certificadoPerformance = certificadoPerformanceTecnicoNR35(codigo);
     const certidao = valorCertidaoNR35(codigo);
     const treinamento = valorTreinamentoNR35(codigo);
     const treinamentoOk = String(treinamento || '').toLowerCase() === 'realizado';
@@ -2617,7 +2624,7 @@ function renderizarTabelaNR35() {
         ${dados.nome}<br><small style="color:var(--text-muted); font-weight:400;">${codigo}</small>
       </td>
       <td style="text-align:center;"><span class="${classe} clicavel" onclick="abrirModal('${codigo}')" style="cursor:pointer;">${formatarPercentualNR35(dados.pct_altura)}%</span></td>
-      <td style="text-align:center;"><button class="cert-badge cert-click ${certificadoOk ? 'cert-sim' : 'cert-nao'}" type="button" onclick="abrirModalResumoCertificacaoTecnico('${codigo}')">${certificadoLabel}</button></td>
+      <td style="text-align:center;"><button class="cert-badge cert-click ${certificadoPerformance.classe}" type="button" onclick="abrirModalResumoCertificacaoTecnico('${codigo}')">${certificadoPerformance.label}</button></td>
       <td style="text-align:center;">${certidao !== '' ? `<span class="cert-badge ${Number(String(certidao).replace(',', '.')) >= 90 ? 'cert-sim' : 'cert-nao'}">${String(certidao).replace('.', ',')}%</span>` : '<span class="cert-badge cert-nao">-</span>'}</td>
       <td style="text-align:center;"><span class="cert-badge ${treinamentoOk ? 'cert-sim' : 'cert-nao'}">${treinamento || '-'}</span></td>
     `;
@@ -3757,6 +3764,16 @@ function indicadoresBrutoCertificadoHTML(item){
   const [label,cor]=indicadoresBrutoStatusCertificado(item);
   return `<span class="badge ${cor}">${label}</span>`;
 }
+function indicadoresBrutoAtualizarCertificadosPerformance(indicadores){
+  const mapa={};
+  (Array.isArray(indicadores)?indicadores:[]).forEach(item=>{
+    const key=loginKey(item?.login);
+    if(!key) return;
+    const [label,cor]=indicadoresBrutoStatusCertificado(item);
+    mapa[key]={label,cor};
+  });
+  window.certificadosPerformancePorTecnico=mapa;
+}
 function indicadoresBrutoMargemRevisita(totalOS,revisitas){
   const total=Number(totalOS)||0;
   const rev=Number(revisitas)||0;
@@ -3772,6 +3789,7 @@ function indicadoresBrutoTecnicoHTML(login){
 function indicadoresBrutoRenderizar({indicadores,total,menorData,maiorData}){
   const tbody=$("tbodyIndicadoresBruto");
   if(!tbody) return;
+  indicadoresBrutoAtualizarCertificadosPerformance(indicadores);
   tbody.innerHTML=indicadores.map((item)=>`<tr>
     <td>${indicadoresBrutoTecnicoHTML(item.login)}</td>
     <td>${indicadoresBrutoFormatarInteiro(item.totalOS)}</td>
@@ -3805,6 +3823,7 @@ function indicadoresBrutoRenderizarLinhas(rows){
   const linhas=(Array.isArray(rows)?rows:[]).map(indicadoresBrutoMapearLinha);
   const resultado=indicadoresBrutoCalcular(linhas);
   if(!resultado.indicadores.length){
+    indicadoresBrutoAtualizarCertificadosPerformance([]);
     tbody.innerHTML='<tr><td colspan="9"><div class="empty">Carregue uma base pelo Histórico Local.</div></td></tr>';
     const box=$("indicadoresBrutoResultado");
     if(box) box.hidden=false;
