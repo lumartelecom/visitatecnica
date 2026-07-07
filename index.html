@@ -1811,21 +1811,23 @@ button:hover,.btn:hover{transform:translateY(-1px)}
   font-weight:900!important;
 }
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(1),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(1){width:24%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(1){width:20%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(2),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(2){width:13%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(2){width:12%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(3),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(3){width:11%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(3){width:10%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(4),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(4){width:12%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(4){width:10%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(5),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(5){width:12%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(5){width:10%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(6),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(6){width:11%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(6){width:10%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(7),
-#secPerformanceTecnico .indicadores-bruto-table td:nth-child(7){width:9%}
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(7){width:8%}
 #secPerformanceTecnico .indicadores-bruto-table th:nth-child(8),
 #secPerformanceTecnico .indicadores-bruto-table td:nth-child(8){width:8%}
+#secPerformanceTecnico .indicadores-bruto-table th:nth-child(9),
+#secPerformanceTecnico .indicadores-bruto-table td:nth-child(9){width:12%}
 #indicadoresBrutoResultado[hidden]{
   display:none!important;
 }
@@ -2276,7 +2278,9 @@ const contratosPorOsNR35 = {"2642076667":"2206210","2640649009":"1854340","26392
 const codBaixaPorOsNR35 = {"2642076667":"203","2640649009":"203","2639253514":"566","2641850622":"566","2641866360":"566","2639917566":"566","2641876260":"203","2641077690":"203","2641933499":"203","2641778182":"545","2639525460":"203","2639805258":"566","2639314589":"203","2639544618":"566","2639513579":"203","2639456418":"203","2641615889":"566","2639995090":"566","2641355037":"203","2641421479":"203","2639832180":"203","2641564231":"566","2640187499":"566","2641410130":"203","2639597649":"203","2639778729":"203","2641223884":"203","2639485667":"203","2639948100":"566","2639143725":"203","2639462707":"203","2641586943":"566","2641460944":"566","2639635305":"203","2639870957":"203","2641637333":"203","2639267104":"566","2640713483":"203","2640057990":"562","2641610457":"203","2641638996":"203","2640088792":"566","2641836693":"203","2638668344":"566","2641824937":"203","2639402903":"203","2639713087":"566","2640068138":"203","2641833982":"566","2640191517":"566","2641960893":"566","2639208109":"566","2640171762":"203","2640946751":"203","2639616584":"566","2639205049":"203","2638975222":"203","2641468885":"203","2641279852":"203","2641857023":"203","2640601894":"566","2639864264":"203","2641389371":"203","2640859631":"566","2640765288":"566","2640638681":"562","2640514998":"203","2639340016":"203","2640657446":"203","2639345404":"203","2641408654":"203","2640160962":"203","2641356634":"203","2640882402":"566","2640530200":"203","2641281215":"562","2642031309":"566","2640631527":"562","2642086220":"203","2641627073":"203","2641933039":"203","2641854424":"566","2640646871":"203","2641303401":"566","2641388099":"203","2640567479":"203","2641344327":"203","2641409622":"203","2641306000":"203","2640931351":"203","2640912440":"566","2641088636":"203","2641103959":"203","2640950969":"203","2640949765":"203","2640927604":"203"};
 
 const STORAGE_NR35_BASE="lumar_nr35_base_v1";
-const ORDEM_NR35=["Z132322","Z132323","Z164141","Z247088","Z367110","Z445950","Z450037"];
+const ORDEM_NR35=["Z367110","Z247088","Z164141","Z450037","Z132322","Z132323","Z445950"];
+const UNIDADE_NR35="TSA-LUMAR_VT";
+const TECNICOS_PERMITIDOS_NR35=new Set(ORDEM_NR35);
 const NOMES_NR35={
   Z132322:"Apolinario",
   Z132323:"Lailson",
@@ -2294,8 +2298,38 @@ function setStatusNR35(msg){
 function limparObjetoNR35(obj){
   Object.keys(obj).forEach(k=>delete obj[k]);
 }
+function normalizarFiltroNR35(v){
+  return textoNR35(v).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Z0-9]/g,"");
+}
+function payloadFiltradoNR35(payload){
+  const tecnicos={};
+  const osPermitidas=new Set();
+  ORDEM_NR35.forEach(codigo=>{
+    const dados=payload?.tecnicos?.[codigo];
+    if(!dados) return;
+    tecnicos[codigo]=dados;
+    (dados.contratos||[]).forEach(c=>{
+      if(c?.cod_os) osPermitidas.add(String(c.cod_os));
+    });
+  });
+  const filtrarMapa=(mapa)=>{
+    const out={};
+    Object.keys(mapa||{}).forEach(os=>{
+      if(osPermitidas.has(String(os))) out[os]=mapa[os];
+    });
+    return out;
+  };
+  return {
+    ...payload,
+    tecnicos,
+    contratosPorOs:filtrarMapa(payload?.contratosPorOs),
+    codBaixaPorOs:filtrarMapa(payload?.codBaixaPorOs)
+  };
+}
 function aplicarDadosNR35(payload,opcoes={}){
   if(!payload||!payload.tecnicos) return false;
+  payload=payloadFiltradoNR35(payload);
+  if(!Object.keys(payload.tecnicos).length) return false;
   limparObjetoNR35(contatosPorTecnico);
   limparObjetoNR35(contratosPorOsNR35);
   limparObjetoNR35(codBaixaPorOsNR35);
@@ -2325,6 +2359,47 @@ function valorCampoNR35(row,nomes){
   }
   return "";
 }
+function unidadeLinhaNR35(row){
+  return valorCampoNR35(row,[
+    "UNIDADE_NEGOCIO","UNIDADE NEGOCIO","UNIDADE_NEGÓCIO","UNIDADE NEGÓCIO",
+    "UNIDADE","UNIDADE_OPERACIONAL","UNIDADE OPERACIONAL","UNIDADE_ATENDIMENTO",
+    "UNIDADE ATENDIMENTO","BASE","EMPRESA"
+  ]);
+}
+function linhaEhUnidadeNR35(row){
+  const alvo=normalizarFiltroNR35(UNIDADE_NR35);
+  const campo=normalizarFiltroNR35(unidadeLinhaNR35(row));
+  if(campo) return campo===alvo||campo.includes(alvo);
+  return Object.values(row||{}).some(v=>{
+    const valor=normalizarFiltroNR35(v);
+    return valor===alvo||valor.includes(alvo);
+  });
+}
+function selecionarLinhasNR35(leitura){
+  const alvo=normalizarFiltroNR35(UNIDADE_NR35);
+  const sheets=leitura?.sheets&&typeof leitura.sheets==="object"?leitura.sheets:{};
+  const porAba=[];
+  Object.entries(sheets).forEach(([nome,linhas])=>{
+    if(normalizarFiltroNR35(nome).includes(alvo)&&Array.isArray(linhas)) porAba.push(...linhas);
+  });
+  if(porAba.length) return {rows:porAba,origem:"aba"};
+  const todas=Object.values(sheets).flatMap(linhas=>Array.isArray(linhas)?linhas:[]);
+  const base=todas.length?todas:(leitura?.rows||[]);
+  return {rows:base.filter(linhaEhUnidadeNR35),origem:"linhas"};
+}
+function codigoTecnicoNR35(row){
+  const direto=textoNR35(valorCampoNR35(row,[
+    "LOGIN_FIELD","LOGIN FIELD","LOGIN_TECNICO","LOGIN TECNICO","LOGIN_TÉCNICO",
+    "LOGIN TÉCNICO","LOGIN","TECNICO","TÉCNICO","COD_TECNICO","COD TECNICO",
+    "COD_TÉCNICO","COD TÉCNICO","MATRICULA","MATRÍCULA"
+  ])).toUpperCase();
+  if(TECNICOS_PERMITIDOS_NR35.has(direto)) return direto;
+  for(const valor of Object.values(row||{})){
+    const match=String(valor??"").toUpperCase().match(/\bZ\d{6}\b/);
+    if(match&&TECNICOS_PERMITIDOS_NR35.has(match[0])) return match[0];
+  }
+  return direto;
+}
 function textoNR35(v){
   return String(v??"").trim();
 }
@@ -2348,15 +2423,16 @@ function formatarPercentualNR35(valor){
   if(Number.isInteger(n)) return String(n);
   return String(Math.round(n*100)/100).replace(".",",");
 }
-function montarDadosNR35(rows,fileName){
+function montarDadosNR35(rows,fileName,opcoes={}){
   const tecnicos={};
   const contratosPorOs={};
   const codBaixaPorOs={};
   rows.forEach(row=>{
     const elegivel=textoNR35(valorCampoNR35(row,["ELEGIVEL","ELEGÍVEL"])).toUpperCase();
-    if(elegivel&&elegivel!=="SIM") return;
-    const codigo=textoNR35(valorCampoNR35(row,["LOGIN_FIELD","LOGIN FIELD","LOGIN_TECNICO","LOGIN TECNICO","TECNICO"])).toUpperCase();
-    if(!codigo) return;
+    if(elegivel!=="SIM") return;
+    if(!opcoes.unidadeConfirmada&&!linhaEhUnidadeNR35(row)) return;
+    const codigo=codigoTecnicoNR35(row);
+    if(!TECNICOS_PERMITIDOS_NR35.has(codigo)) return;
     const codOs=textoNR35(valorCampoNR35(row,["COD_OS","COD OS","ORDEM_SERVICO","ORDEM SERVICO","OS"]));
     const contrato=textoNR35(valorCampoNR35(row,["CONTRATO"]));
     const codBaixa=textoNR35(valorCampoNR35(row,["COD_BAIXA","COD BAIXA","CODIGO_BAIXA","CODIGO BAIXA"]));
@@ -2369,7 +2445,7 @@ function montarDadosNR35(rows,fileName){
       cod_baixa:codBaixa||codBaixaPorOsNR35[codOs]||"-",
       data:dataNR35(valorCampoNR35(row,["DATA","DT_AGENDA","DATA_AGENDA","DATA AGENDA"])),
       tipo:tipo||"-",
-      duracao:textoNR35(valorCampoNR35(row,["DURACAO","DURAÇÃO"]))||((horaValidaNR35(subiu)&&horaValidaNR35(desceu))?"0min":"N/A"),
+      duracao:textoNR35(valorCampoNR35(row,["DURACAO","DURAÇÃO"]))||(horaValidaNR35(subiu)?"0min":"N/A"),
       subiu:horaValidaNR35(subiu)?subiu:"-",
       desceu:horaValidaNR35(desceu)?desceu:"-"
     };
@@ -2381,14 +2457,14 @@ function montarDadosNR35(rows,fileName){
       tecnicos[codigo]={nome:NOMES_NR35[codigo]||codigo,codigo,total:0,com_altura:0,pct_altura:0,contratos:[]};
     }
     tecnicos[codigo].total++;
-    if(horaValidaNR35(item.subiu)&&horaValidaNR35(item.desceu)) tecnicos[codigo].com_altura++;
+    if(horaValidaNR35(item.subiu)) tecnicos[codigo].com_altura++;
     tecnicos[codigo].contratos.push(item);
   });
   Object.values(tecnicos).forEach(t=>{
     t.pct_altura=t.total?Math.round((t.com_altura/t.total*100)*100)/100:0;
     t.contratos.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
   });
-  return {fileName,date:new Date().toISOString(),tecnicos,contratosPorOs,codBaixaPorOs};
+  return payloadFiltradoNR35({fileName,date:new Date().toISOString(),tecnicos,contratosPorOs,codBaixaPorOs});
 }
 async function carregarBaseNR35(){
   const input=document.getElementById("fileInputNR35");
@@ -2396,13 +2472,18 @@ async function carregarBaseNR35(){
   if(!file){setStatusNR35("Selecione uma base NR35 primeiro.");return}
   try{
     setStatusNR35(`Lendo <strong>${file.name}</strong>...`);
-    const {rows}=await obterRows(file);
-    if(!rows.length){setStatusNR35("Arquivo NR35 lido, mas sem linhas.");return}
-    const payload=montarDadosNR35(rows,file.name);
+    const leitura=await obterRows(file);
+    if(!leitura.rows.length){setStatusNR35("Arquivo NR35 lido, mas sem linhas.");return}
+    const selecionadas=selecionarLinhasNR35(leitura);
+    if(!selecionadas.rows.length){
+      setStatusNR35(`Não encontrei <strong>${UNIDADE_NR35}</strong> nas abas ou linhas da planilha NR35.`);
+      return;
+    }
+    const payload=montarDadosNR35(selecionadas.rows,file.name,{unidadeConfirmada:true});
     const totalTecnicos=Object.keys(payload.tecnicos).length;
     const totalContratos=Object.values(payload.tecnicos).reduce((s,t)=>s+Number(t.total||0),0);
     if(!totalTecnicos||!totalContratos){
-      setStatusNR35("Não encontrei registros NR35 válidos na planilha.");
+      setStatusNR35(`Encontrei <strong>${selecionadas.rows.length}</strong> linha(s) de <strong>${UNIDADE_NR35}</strong>, mas nenhuma com <strong>ELEGIVEL = SIM</strong> para os técnicos permitidos.`);
       return;
     }
     aplicarDadosNR35(payload);
@@ -2413,7 +2494,7 @@ async function carregarBaseNR35(){
       salvaLocal=false;
       console.warn("Base NR35 carregada, mas não foi salva no navegador.",e);
     }
-    setStatusNR35(`Base NR35 carregada: <strong>${totalContratos}</strong> contratos em <strong>${totalTecnicos}</strong> técnico(s).${salvaLocal?"":" Não consegui salvar no navegador, mas ela está ativa nesta sessão."}`);
+    setStatusNR35(`Base NR35 carregada: <strong>${totalContratos}</strong> contratos em <strong>${totalTecnicos}</strong> técnico(s) de <strong>${UNIDADE_NR35}</strong>.${salvaLocal?"":" Não consegui salvar no navegador, mas ela está ativa nesta sessão."}`);
   }catch(err){
     console.error(err);
     setStatusNR35(`Erro ao carregar base NR35: <strong>${err.message}</strong>`);
@@ -2515,8 +2596,7 @@ function renderizarTabelaNR35() {
   const tbody = document.getElementById('tabelaNR35');
   tbody.innerHTML = '';
   
-  const extras = Object.keys(contatosPorTecnico).filter(codigo => !ORDEM_NR35.includes(codigo)).sort();
-  const ordem = [...ORDEM_NR35, ...extras];
+  const ordem = ORDEM_NR35;
   
   ordem.forEach(codigo => {
     const dados = contatosPorTecnico[codigo];
@@ -2581,9 +2661,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
                     <th>Margem de Rev.</th>
                     <th>TEC1</th>
                     <th>TEC1 FORA</th>
+                    <th>CERTIFICADO</th>
             </tr>
           </thead>
-          <tbody id="tbodyIndicadoresBruto"><tr><td colspan="8"><div class="empty">Carregue uma base pelo Histórico Local.</div></td></tr></tbody>
+          <tbody id="tbodyIndicadoresBruto"><tr><td colspan="9"><div class="empty">Carregue uma base pelo Histórico Local.</div></td></tr></tbody>
         </table>
       </div>
       </div>
@@ -3363,7 +3444,9 @@ function aplicarBaseSalvaEmTela(saved,opcoes={}){
     processedRows=filtrarBasePrincipal(rawRows);
 
     if(!processedRows.length){
-      processedRows=[...rawRows];
+      renderValidacao(validation,0);
+      setStatus("A base salva não possui linhas de <strong>TSA-LUMAR_VT</strong> dentro dos critérios da planilha.");
+      return false;
     }
 
     preencherFiltros(processedRows);
@@ -3664,6 +3747,16 @@ function indicadoresBrutoClasseRevisita(valor){
 function indicadoresBrutoClasseTec1(valor){
   return valor<INDICADORES_BRUTO_META_TEC1?"indicadores-bruto-metric-bad":"indicadores-bruto-metric-ok";
 }
+function indicadoresBrutoStatusCertificado(item){
+  const certificado=(Number(item?.nt)||0)>=INDICADORES_BRUTO_META_PRODUCAO
+    && (Number(item?.revisita)||0)<=INDICADORES_BRUTO_META_REVISITA
+    && (Number(item?.tec1)||0)>=INDICADORES_BRUTO_META_TEC1;
+  return certificado?["CERTIFICADO","green"]:["NÃO CERTIFICADO","red"];
+}
+function indicadoresBrutoCertificadoHTML(item){
+  const [label,cor]=indicadoresBrutoStatusCertificado(item);
+  return `<span class="badge ${cor}">${label}</span>`;
+}
 function indicadoresBrutoMargemRevisita(totalOS,revisitas){
   const total=Number(totalOS)||0;
   const rev=Number(revisitas)||0;
@@ -3688,7 +3781,10 @@ function indicadoresBrutoRenderizar({indicadores,total,menorData,maiorData}){
         <td>${indicadoresBrutoFormatarInteiro(indicadoresBrutoMargemRevisita(item.totalOS,item.revisitas))}</td>
         <td class="${indicadoresBrutoClasseTec1(item.tec1)}">${indicadoresBrutoFormatarPercentual(item.tec1)}</td>
         <td>${indicadoresBrutoFormatarInteiro(Math.max(0,item.tec1Total-item.tec1Padrao))}</td>
+        <td>${indicadoresBrutoCertificadoHTML(item)}</td>
   </tr>`).join("");
+  const certificados=indicadores.filter(item=>indicadoresBrutoStatusCertificado(item)[1]==="green").length;
+  const corTotalCertificado=certificados===indicadores.length?"green":"red";
   tbody.insertAdjacentHTML("beforeend",`<tr class="indicadores-bruto-total">
     <td>${indicadoresBrutoEsc(total.unidade)}</td>
     <td>${indicadoresBrutoFormatarInteiro(total.totalOS)}</td>
@@ -3698,6 +3794,7 @@ function indicadoresBrutoRenderizar({indicadores,total,menorData,maiorData}){
         <td>${indicadoresBrutoFormatarInteiro(indicadoresBrutoMargemRevisita(total.totalOS,total.revisitas))}</td>
         <td>${indicadoresBrutoFormatarPercentual(total.tec1)}</td>
         <td>${indicadoresBrutoFormatarInteiro(Math.max(0,total.tec1Total-total.tec1Padrao))}</td>
+        <td><span class="badge ${corTotalCertificado}">${certificados}/${indicadores.length}</span></td>
   </tr>`);
   const resultado=$("indicadoresBrutoResultado");
   if(resultado) resultado.hidden=false;
@@ -3708,7 +3805,7 @@ function indicadoresBrutoRenderizarLinhas(rows){
   const linhas=(Array.isArray(rows)?rows:[]).map(indicadoresBrutoMapearLinha);
   const resultado=indicadoresBrutoCalcular(linhas);
   if(!resultado.indicadores.length){
-    tbody.innerHTML='<tr><td colspan="8"><div class="empty">Carregue uma base pelo Histórico Local.</div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="9"><div class="empty">Carregue uma base pelo Histórico Local.</div></td></tr>';
     const box=$("indicadoresBrutoResultado");
     if(box) box.hidden=false;
     return;
@@ -5994,8 +6091,9 @@ function carregarUltimaBase(opcoes={}){
     processedRows=filtrarBasePrincipal(rawRows);
 
     if(!processedRows.length){
-      // Se a base salva já estiver filtrada ou vier de uma versão antiga, usa as linhas salvas mesmo assim.
-      processedRows=[...rawRows];
+      renderValidacao(validation,0);
+      setStatus("A última base salva não possui linhas de <strong>TSA-LUMAR_VT</strong> dentro dos critérios da planilha.");
+      return;
     }
 
     preencherFiltros(processedRows);
