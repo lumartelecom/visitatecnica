@@ -2278,7 +2278,7 @@ const contratosPorOsNR35 = {"2642076667":"2206210","2640649009":"1854340","26392
 const codBaixaPorOsNR35 = {"2642076667":"203","2640649009":"203","2639253514":"566","2641850622":"566","2641866360":"566","2639917566":"566","2641876260":"203","2641077690":"203","2641933499":"203","2641778182":"545","2639525460":"203","2639805258":"566","2639314589":"203","2639544618":"566","2639513579":"203","2639456418":"203","2641615889":"566","2639995090":"566","2641355037":"203","2641421479":"203","2639832180":"203","2641564231":"566","2640187499":"566","2641410130":"203","2639597649":"203","2639778729":"203","2641223884":"203","2639485667":"203","2639948100":"566","2639143725":"203","2639462707":"203","2641586943":"566","2641460944":"566","2639635305":"203","2639870957":"203","2641637333":"203","2639267104":"566","2640713483":"203","2640057990":"562","2641610457":"203","2641638996":"203","2640088792":"566","2641836693":"203","2638668344":"566","2641824937":"203","2639402903":"203","2639713087":"566","2640068138":"203","2641833982":"566","2640191517":"566","2641960893":"566","2639208109":"566","2640171762":"203","2640946751":"203","2639616584":"566","2639205049":"203","2638975222":"203","2641468885":"203","2641279852":"203","2641857023":"203","2640601894":"566","2639864264":"203","2641389371":"203","2640859631":"566","2640765288":"566","2640638681":"562","2640514998":"203","2639340016":"203","2640657446":"203","2639345404":"203","2641408654":"203","2640160962":"203","2641356634":"203","2640882402":"566","2640530200":"203","2641281215":"562","2642031309":"566","2640631527":"562","2642086220":"203","2641627073":"203","2641933039":"203","2641854424":"566","2640646871":"203","2641303401":"566","2641388099":"203","2640567479":"203","2641344327":"203","2641409622":"203","2641306000":"203","2640931351":"203","2640912440":"566","2641088636":"203","2641103959":"203","2640950969":"203","2640949765":"203","2640927604":"203"};
 
 const STORAGE_NR35_BASE="lumar_nr35_base_v1";
-const ORDEM_NR35=["Z367110","Z247088","Z164141","Z450037","Z132322","Z132323","Z445950"];
+const ORDEM_NR35=["Z132322","Z132323","Z164141","Z247088","Z367110","Z445950","Z450037"];
 const UNIDADE_NR35="TSA-LUMAR_VT";
 const TECNICOS_PERMITIDOS_NR35=new Set(ORDEM_NR35);
 const NOMES_NR35={
@@ -2297,6 +2297,14 @@ function setStatusNR35(msg){
 }
 function limparObjetoNR35(obj){
   Object.keys(obj).forEach(k=>delete obj[k]);
+}
+function dadosPadraoTecnicoNR35(codigo){
+  const key=loginKey(codigo);
+  return {nome:NOMES_NR35[key]||key,codigo:key,total:0,com_altura:0,pct_altura:0,contratos:[]};
+}
+function dadosTecnicoNR35(codigo){
+  const key=loginKey(codigo);
+  return contatosPorTecnico[key]||dadosPadraoTecnicoNR35(key);
 }
 function normalizarFiltroNR35(v){
   return textoNR35(v).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Z0-9]/g,"");
@@ -2502,12 +2510,18 @@ async function carregarBaseNR35(){
 }
 
 function abrirModal(codigo) {
-  const dados = contatosPorTecnico[codigo];
+  const dados = dadosTecnicoNR35(codigo);
   document.getElementById('modalTecnicoNome').textContent = dados.nome + ' (' + codigo + ')';
   
   const tbody = document.getElementById('tbodyContratos');
   tbody.innerHTML = '';
   
+  if(!dados.contratos.length){
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">Nenhum registro NR35 encontrado para este técnico na base carregada.</div></td></tr>';
+    document.getElementById('modalContratos').style.display = 'flex';
+    return;
+  }
+
   dados.contratos.forEach(c => {
     const tr = document.createElement('tr');
     const contrato = c.contrato || contratosPorOsNR35[String(c.cod_os || '')] || '-';
@@ -2556,6 +2570,16 @@ function certificadoPerformanceTecnicoNR35(codigo) {
     classe: status.cor === 'green' ? 'cert-sim' : 'cert-nao'
   };
 }
+function dadosPerformanceTecnicoNR35(codigo) {
+  return window.indicadoresPerformancePorTecnico?.[loginKey(codigo)] || null;
+}
+function estadoIndicadorPerformanceNR35(item,campo){
+  if(!item) return {classe:'cert-nao',status:'SEM BASE'};
+  if(campo==="producao" && (Number(item.nt)||0)<INDICADORES_BRUTO_META_PRODUCAO) return {classe:'cert-nao',status:'NÃO CERTIFICADO'};
+  if(campo==="revisita" && (Number(item.revisita)||0)>INDICADORES_BRUTO_META_REVISITA) return {classe:'cert-nao',status:'NÃO CERTIFICADO'};
+  if(campo==="tec1" && (Number(item.tec1)||0)<INDICADORES_BRUTO_META_TEC1) return {classe:'cert-nao',status:'NÃO CERTIFICADO'};
+  return {classe:'cert-sim',status:'OK'};
+}
 
 function estadoIndicadorCertificacao(t,campo){
   if(!t) return {classe:'cert-nao',status:'SEM BASE'};
@@ -2576,21 +2600,22 @@ function abrirModalResumoCertificacaoTecnico(codigo){
   const conteudo=$("modalIndicadorConteudo");
   if(!modal||!conteudo) return;
   const login=loginKey(codigo);
-  const resumo=(window.currentSummary?.arr || currentSummary?.arr || []).find(t=>loginKey(t.login)===login);
-  const [situacao,cor]=resumo?statusTecnico(resumo):["Não certificado","red"];
-  const linhas=resumo?[
-    linhaResumoCertificacao("Produção",`${num3(resumo.mediaContratos)} média/dia`,estadoIndicadorCertificacao(resumo,"producao"),`mín. ${num3(META_PRODUCAO)}`),
-    linhaResumoCertificacao("Revisita",pct(resumo.revPct),estadoIndicadorCertificacao(resumo,"revisita"),`até ${pct(META_REVISITA)}`),
-    linhaResumoCertificacao("TEC1",pct(resumo.tec1Pct),estadoIndicadorCertificacao(resumo,"tec1"),`mín. ${pct(META_TEC1)}`)
+  const performance=dadosPerformanceTecnicoNR35(login);
+  const [situacao]=performance?indicadoresBrutoStatusCertificado(performance):["NÃO CERTIFICADO","red"];
+  const linhas=performance?[
+    linhaResumoCertificacao("Produção",`${indicadoresBrutoFormatarNumero(performance.nt)} média/dia`,estadoIndicadorPerformanceNR35(performance,"producao"),`mín. ${indicadoresBrutoFormatarNumero(INDICADORES_BRUTO_META_PRODUCAO)}`),
+    linhaResumoCertificacao("Revisita",indicadoresBrutoFormatarPercentual(performance.revisita),estadoIndicadorPerformanceNR35(performance,"revisita"),`até ${indicadoresBrutoFormatarPercentual(INDICADORES_BRUTO_META_REVISITA)}`),
+    linhaResumoCertificacao("TEC1",indicadoresBrutoFormatarPercentual(performance.tec1),estadoIndicadorPerformanceNR35(performance,"tec1"),`mín. ${indicadoresBrutoFormatarPercentual(INDICADORES_BRUTO_META_TEC1)}`)
   ].join(""):`<tr><td colspan="4"><div class="empty">Carregue a base de performance para visualizar produção, revisita e TEC1 deste técnico.</div></td></tr>`;
+  const tec1Fora=performance?Math.max(0,(Number(performance.tec1Total)||0)-(Number(performance.tec1Padrao)||0)):"-";
 
   $("modalIndicadorTitulo").textContent=`Técnico Certificado - ${nomeTecnico(login)}`;
   $("modalIndicadorSub").textContent=TECNICOS_NOMES[login]?login:"Resumo de certificação";
   conteudo.innerHTML=`<div class="base-total-resumo">
       <span class="base-total-chip active">${situacao.toUpperCase()}</span>
-      <span class="base-total-chip">Contratos: ${resumo?resumo.contratosExecutados:"-"}</span>
-      <span class="base-total-chip">Revisitas: ${resumo?resumo.revisitas:"-"}</span>
-      <span class="base-total-chip">Fora TEC1: ${resumo?resumo.tecFora:"-"}</span>
+      <span class="base-total-chip">Visitas: ${performance?indicadoresBrutoFormatarInteiro(performance.totalOS):"-"}</span>
+      <span class="base-total-chip">Rev. 10 dias: ${performance?indicadoresBrutoFormatarInteiro(performance.rev10Dias):"-"}</span>
+      <span class="base-total-chip">TEC1 fora: ${performance?indicadoresBrutoFormatarInteiro(tec1Fora):"-"}</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -2609,8 +2634,7 @@ function renderizarTabelaNR35() {
   const ordem = ORDEM_NR35;
   
   ordem.forEach(codigo => {
-    const dados = contatosPorTecnico[codigo];
-    if(!dados) return;
+    const dados = dadosTecnicoNR35(codigo);
     const certificadoPerformance = certificadoPerformanceTecnicoNR35(codigo);
     const certidao = valorCertidaoNR35(codigo);
     const treinamento = valorTreinamentoNR35(codigo);
@@ -3766,13 +3790,16 @@ function indicadoresBrutoCertificadoHTML(item){
 }
 function indicadoresBrutoAtualizarCertificadosPerformance(indicadores){
   const mapa={};
+  const detalhes={};
   (Array.isArray(indicadores)?indicadores:[]).forEach(item=>{
     const key=loginKey(item?.login);
     if(!key) return;
     const [label,cor]=indicadoresBrutoStatusCertificado(item);
     mapa[key]={label,cor};
+    detalhes[key]={...item};
   });
   window.certificadosPerformancePorTecnico=mapa;
+  window.indicadoresPerformancePorTecnico=detalhes;
 }
 function indicadoresBrutoMargemRevisita(totalOS,revisitas){
   const total=Number(totalOS)||0;
