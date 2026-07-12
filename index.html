@@ -1410,7 +1410,7 @@ setInterval(_updateOfflineBanner, 5000);
     <span class="tab-ico">&#128663;</span>Ve&iacute;culos
   </button>
   <button class="tab-btn" onclick="showTab('ticketVeicular',this)" data-tab="ticketVeicular">
-    <span class="tab-ico">&#127915;</span>Criar Ticket
+    <span class="tab-ico">&#127915;</span>Abrir Ordem de Servi&ccedil;o
   </button>
   <button class="tab-btn" onclick="showTab('banco',this)">
     <span class="tab-ico">🗄️</span>Ferramentas
@@ -1457,6 +1457,7 @@ setInterval(_updateOfflineBanner, 5000);
       <button class="btn btn-orange" onclick="openHistModal('ferias')">🏖️ Inventário de Férias</button>
       <button class="btn btn-danger btn-sm" onclick="openLostTermModal()">🧾 Termo itens perdidos</button>
       <button class="btn btn-ghost btn-sm" onclick="exportHistCSV()" style="color:#2ecc71;border-color:#2ecc71">📊 Exportar XLSX</button>
+      <button class="btn btn-green btn-sm" onclick="forceLegacyPhotosToDrive()">Subir antigas para Drive</button>
       <select id="histSupF" onchange="syncSupFilter(this.value)" style="min-width:200px">
         <option value="">👔 Todos os supervisores</option>
       </select>
@@ -1479,7 +1480,7 @@ setInterval(_updateOfflineBanner, 5000);
       <div class="vehicle-fleet-actions">
         <button class="btn btn-cyan" onclick="openVehicleModal(null,'vistoria')">+ Realizar Vistoria</button>
         <button class="btn btn-ghost" onclick="openVehicleModal(null,'cadastro')">+ Cadastrar Ve&iacute;culo</button>
-        <button class="btn btn-green" onclick="forceVehiclePhotosUpload()">Reenviar fotos pendentes</button>
+        <button class="btn btn-green" onclick="forceLegacyPhotosToDrive()">Subir antigas para Drive</button>
       </div>
     </div>
     <div class="vehicle-fleet-filters">
@@ -1489,6 +1490,12 @@ setInterval(_updateOfflineBanner, 5000);
       </div>
       <select id="vehicleSupF" onchange="syncSupFilter(this.value)">
         <option value="">Todos os supervisores</option>
+      </select>
+      <select id="vehicleFrotaF" onchange="vehicleKpiFilter='';renderVehicles()">
+        <option value="">Todas as frotas</option>
+        <option>Frota Afonso</option>
+        <option>Frota Movida</option>
+        <option>Frota Mazzini</option>
       </select>
       <select id="vehicleTecF" onchange="renderVehicles()">
         <option value="">Todos os v&iacute;nculos</option>
@@ -1510,13 +1517,19 @@ setInterval(_updateOfflineBanner, 5000);
     <div class="empty" id="vehicleEmpty" style="display:none"><span>&#128663;</span><p>Nenhuma vistoria veicular registrada.</p></div>
   </div>
 
-  <!-- TICKETS VEICULARES -->
+  <!-- ORDENS DE SERVIÇO VEICULARES -->
   <div class="tab-panel" id="tab-ticketVeicular">
     <div class="toolbar" style="flex-wrap:wrap;gap:8px">
-      <button class="btn btn-orange" onclick="openVehicleTicketModal()">+ Novo Ticket</button>
-      <input type="text" id="ticketPlateF" placeholder="Pesquisar ticket por placa..." oninput="renderVehicleTickets()" style="min-width:210px;text-transform:uppercase">
+      <button class="btn btn-orange" onclick="openVehicleTicketModal()">+ Abrir O.S</button>
+      <input type="text" id="ticketPlateF" placeholder="Pesquisar O.S por placa..." oninput="renderVehicleTickets()" style="min-width:210px;text-transform:uppercase">
       <select id="ticketSupF" onchange="syncSupFilter(this.value)" style="min-width:200px">
         <option value="">Todos os supervisores</option>
+      </select>
+      <select id="ticketFrotaF" onchange="renderVehicleTickets()" style="min-width:170px">
+        <option value="">Todas as frotas</option>
+        <option>Frota Afonso</option>
+        <option>Frota Movida</option>
+        <option>Frota Mazzini</option>
       </select>
       <select id="ticketStatusF" onchange="renderVehicleTickets()" style="min-width:170px">
         <option value="">Todos os status</option>
@@ -1525,7 +1538,7 @@ setInterval(_updateOfflineBanner, 5000);
       <span id="ticketCount" style="font-size:11px;color:var(--mid);margin-left:auto;white-space:nowrap"></span>
     </div>
     <div class="ticket-grid" id="ticketGrid"></div>
-    <div class="empty" id="ticketEmpty" style="display:none"><span>&#127915;</span><p>Nenhum ticket de manuten&ccedil;&atilde;o registrado.</p></div>
+    <div class="empty" id="ticketEmpty" style="display:none"><span>&#127915;</span><p>Nenhuma ordem de servi&ccedil;o registrada.</p></div>
   </div>
 
   <!-- BANCO -->
@@ -1568,6 +1581,7 @@ setInterval(_updateOfflineBanner, 5000);
     </div>
     <div class="fg">
       <div><label>Empresa</label><input type="text" id="vEmpresa" value="Lumar Telecom"></div>
+      <div><label>Frota</label><select id="vFrota"><option value="">Selecione</option><option>Frota Afonso</option><option>Frota Movida</option><option>Frota Mazzini</option></select></div>
       <div><label>Respons&aacute;vel pela vistoria</label><input type="text" id="vResp"></div>
       <div><label>V&iacute;nculo do ve&iacute;culo</label><select id="vTipoVinculo" onchange="updateVehicleOwnerMode()"><option value="tecnico">T&eacute;cnico</option><option value="gestao">Gest&atilde;o</option><option value="reserva">Reserva</option></select></div>
       <div><label id="vTecLabel">Motorista / Condutor *</label><select id="vTec"></select></div>
@@ -1622,16 +1636,17 @@ setInterval(_updateOfflineBanner, 5000);
   </div>
 </div>
 
-<!-- MODAL TICKET MANUTENCAO VEICULAR -->
+<!-- MODAL ORDEM DE SERVIÇO VEICULAR -->
 <div class="modal-ov" id="vehicleTicketModal">
   <div class="modal" style="max-width:860px">
     <button class="modal-close" onclick="closeVehicleTicketModal()">&times;</button>
-    <h2 id="ticketMTitle">Novo Ticket de Manuten&ccedil;&atilde;o</h2>
+    <h2 id="ticketMTitle">Abrir Ordem de Servi&ccedil;o</h2>
     <div class="fg">
       <div class="full"><label>Pesquisar ve&iacute;culo por placa</label><input type="text" id="mtPlateSearch" placeholder="Digite a placa para localizar o ve&iacute;culo" oninput="filterTicketVehicleByPlate()" style="text-transform:uppercase"></div>
       <div class="full"><label>Ve&iacute;culo cadastrado *</label><select id="mtVehicle" onchange="fillTicketVehicleData()"></select></div>
       <div><label>Condutor</label><input type="text" id="mtTec" readonly></div>
       <div id="mtSupWrap"><label>Supervisor</label><select id="mtSup"></select></div>
+      <div><label>Frota</label><select id="mtFrota"><option value="">Selecione</option><option>Frota Afonso</option><option>Frota Movida</option><option>Frota Mazzini</option></select></div>
       <div><label>Placa</label><input type="text" id="mtPlaca" style="text-transform:uppercase"></div>
       <div><label>KM atual</label><input type="text" id="mtKm" placeholder="Ex.: 120000"></div>
       <div><label>Tipo de manuten&ccedil;&atilde;o *</label><select id="mtTipo"><option>Corretiva</option><option>Preventiva</option><option>Sinistro</option><option>Revis&atilde;o</option><option>Troca de &oacute;leo</option><option>Pneus</option><option>El&eacute;trica</option><option>Freios</option><option>Suspens&atilde;o</option></select></div>
@@ -1647,7 +1662,7 @@ setInterval(_updateOfflineBanner, 5000);
     </div>
     <div class="ma">
       <button class="btn btn-ghost" onclick="closeVehicleTicketModal()">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveVehicleTicket()">Salvar Ticket</button>
+      <button class="btn btn-orange" onclick="saveVehicleTicket()">Salvar O.S</button>
     </div>
   </div>
 </div>
@@ -3653,13 +3668,13 @@ function closeTM(){ document.getElementById('techModal').classList.remove('open'
 function saveTech(){
   const nome = document.getElementById('tNome').value.trim();
   if(!nome){ alert('Informe o nome.'); return; }
-  const obj = {id:editTechId||Date.now().toString(), nome, mat:document.getElementById('tMat').value.trim(), func:document.getElementById('tFunc').value, sup:document.getElementById('tSup').value, tel:document.getElementById('tTel').value.trim(), foto:pendingTechPh};
+  const obj = {id:editTechId||Date.now().toString(), nome, mat:document.getElementById('tMat').value.trim(), func:document.getElementById('tFunc').value, sup:document.getElementById('tSup').value, tel:document.getElementById('tTel').value.trim(), foto:pendingTechPh, updatedAt:Date.now()};
   if(editTechId){ const i=techs.findIndex(t=>t.id===editTechId); techs[i]=obj; }
   else techs.push(obj);
   auditLog(editTechId?'Técnico Editado':'Técnico Cadastrado',`Nome: ${obj.nome}`,`Função: ${obj.func||'—'}`);
   save(); closeTM(); renderTechs();
 }
-function delTech(id,e){ e.stopPropagation(); if(!confirm('Remover técnico?'))return; const td=techs.find(t=>t.id===id); auditLog('Técnico Excluído',`Nome: ${td?td.nome:id}`); techs=techs.filter(t=>t.id!==id); save(); renderTechs(); }
+function delTech(id,e){ e.stopPropagation(); if(!confirm('Remover técnico?'))return; const td=techs.find(t=>t.id===id); auditLog('Técnico Excluído',`Nome: ${td?td.nome:id}`); techs=techs.filter(t=>t.id!==id); markDeleted('techs', id); save(); renderTechs(); }
 function prevTechPhoto(inp){
   const f=inp.files[0]; if(!f)return;
   const r=new FileReader(); r.onload=d=>{ pendingTechPh=d.target.result; document.getElementById('techPhPrev').innerHTML=`<img src="${d.target.result}" style="width:64px;height:64px;object-fit:cover;border-radius:50%;margin-top:8px;border:2px solid var(--cyan)">`; }; r.readAsDataURL(f);
@@ -3862,7 +3877,7 @@ function vehicleIdentityKey(v){
 function vehicleSearchText(v){
   return [
     v.placa, v.modelo, v.ano, v.cor, v.tec, v.sup, v.resp, v.gestaoResp,
-    v.situacao, vehicleOwnerTypeLabel(inferVehicleOwnerType(v)), v.local
+    v.frota, v.situacao, vehicleOwnerTypeLabel(inferVehicleOwnerType(v)), v.local
   ].filter(Boolean).join(' ').toLowerCase();
 }
 function renderVehicleKpis(latestList){
@@ -3927,6 +3942,7 @@ function renderVehicles(){
   const supFilter = activeSupervisorFilter('vehicleSupF');
   fillVehicleTechFilter(supFilter);
   const tecFilter = (document.getElementById('vehicleTecF') || {}).value || '';
+  const frotaFilter = (document.getElementById('vehicleFrotaF') || {}).value || '';
   const statusFilter = (document.getElementById('vehicleStatusF') || {}).value || '';
   const search = ((document.getElementById('vehicleSearchF') || {}).value || '').toLowerCase().trim();
   const grid = document.getElementById('vehicleGrid');
@@ -3937,6 +3953,7 @@ function renderVehicles(){
   const list = (vehicles || [])
     .filter(v => !supFilter || v.sup === supFilter || techNames.includes(v.tec))
     .filter(v => !tecFilter || (tecFilter === '__gestao' ? inferVehicleOwnerType(v) === 'gestao' : tecFilter === '__reserva' ? inferVehicleOwnerType(v) === 'reserva' : v.tec === tecFilter))
+    .filter(v => !frotaFilter || (v.frota || '') === frotaFilter)
     .filter(v => !search || vehicleSearchText(v).includes(search))
     .sort((a,b)=>(b.ts||0)-(a.ts||0));
   const byVehicle = {};
@@ -3967,6 +3984,7 @@ function renderVehicles(){
         <div class="vehicle-meta-grid">
           <div><span>Condutor atual</span><strong>${escapeHtml(vehicleVisibleCondutor(v))}</strong></div>
           <div><span>Supervisor</span><strong>${escapeHtml(v.sup || '-')}</strong></div>
+          <div><span>Frota</span><strong>${escapeHtml(v.frota || '-')}</strong></div>
           <div><span>Vinculo</span><strong>${escapeHtml(vehicleOwnerTypeLabel(inferVehicleOwnerType(v)))}</strong></div>
           <div><span>Ultima vistoria</span><strong>${fmtDate(v.data)}${v.km ? ' - KM '+escapeHtml(v.km) : ''}</strong></div>
         </div>
@@ -4019,6 +4037,7 @@ function vehicleViewHtml(v){
   </div>`;
   const meta = [
     ['Empresa', v.empresa || 'Lumar Telecom'],
+    ['Frota', v.frota || '-'],
     ['Responsavel', v.resp || '-'],
     ['Vinculo', vehicleOwnerTypeLabel(inferVehicleOwnerType(v))],
     ['Situacao', v.situacao || 'Em uso'],
@@ -4099,6 +4118,7 @@ function viewVehicleHistory(vehicleKey){
 const VEHICLE_MAX_FOTOS = 5;
 const VEHICLE_LOCAL_PHOTOS_ONLY = false;
 const VEHICLE_PHOTO_LOCAL_FALLBACK = true;
+const VEHICLE_FROTAS = ['Frota Afonso','Frota Movida','Frota Mazzini'];
 let _vehiclePhotoDirHandle = null;
 
 // ── GOOGLE DRIVE — fotos de vistoria veicular ─────────────────────────
@@ -4127,6 +4147,31 @@ function dataUrlToBlob(dataUrl){
   const arr = new Uint8Array(bin.length);
   for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
   return new Blob([arr], {type:mime});
+}
+function blobToDataUrl(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Falha ao ler arquivo'));
+    reader.readAsDataURL(blob);
+  });
+}
+async function photoSourceToDataUrl(src){
+  if(isLocalDataPhoto(src)) return src;
+  if(!isCloudPhoto(src) || isDriveLink(src)) return null;
+  try {
+    const resp = await fetch(src, {mode:'cors'});
+    if(!resp.ok) return null;
+    const blob = await resp.blob();
+    if(!blob || !String(blob.type || '').startsWith('image/')) return null;
+    return await blobToDataUrl(blob);
+  } catch(e) {
+    console.warn('Não foi possível baixar foto antiga para reenviar ao Drive:', e);
+    return null;
+  }
+}
+function photoNeedsDriveMigration(src){
+  return typeof src === 'string' && !!src && !isDriveLink(src) && (isLocalDataPhoto(src) || isCloudPhoto(src));
 }
 async function saveVehiclePhotosToLocalFolder(vehicle, fotos){
   if(!VEHICLE_PHOTO_LOCAL_FALLBACK || !window.showDirectoryPicker) return [];
@@ -4160,18 +4205,19 @@ function stripVehiclePhotosForCloud(v){
   const fotos = Array.isArray(v.fotos) ? v.fotos : [];
   const cloudFotos = VEHICLE_LOCAL_PHOTOS_ONLY ? [] : sanitizePhotosForCloud(fotos);
   const pendingCount = fotos.filter(isLocalDataPhoto).length;
+  const pendingDriveCount = fotos.filter(photoNeedsDriveMigration).length;
   return {
     ...v,
     fotos: cloudFotos,
     fotosLocal: pendingCount && Array.isArray(v.fotosLocal) ? v.fotosLocal : [],
     fotosLocalCount: pendingCount,
     fotosLocalOnly: VEHICLE_LOCAL_PHOTOS_ONLY ? !!fotos.length : false,
-    fotosPendenteUpload: pendingCount > 0
+    fotosPendenteUpload: pendingDriveCount > 0
   };
 }
 function stripHistPhotosForCloud(h){
   if(!h || typeof h !== 'object') return h;
-  return { ...h, fotos: sanitizePhotosForCloud(h.fotos), fotosPendenteUpload: (h.fotos || []).some(isLocalDataPhoto) };
+  return { ...h, fotos: sanitizePhotosForCloud(h.fotos), fotosPendenteUpload: (h.fotos || []).some(photoNeedsDriveMigration) };
 }
 function mergeVehicleLocalPhotos(localList, incomingList){
   const localById = new Map((Array.isArray(localList) ? localList : []).map(v => [v && v.id, v]).filter(x => x[0]));
@@ -4202,6 +4248,18 @@ function vehiclePhotoStatusHtml(v){
   if(cloudCount) chips.push(`<span class="vehicle-history-chip" style="margin-left:6px">Fotos na nuvem: ${cloudCount}</span>`);
   if(pendingCount) chips.push(`<span class="vehicle-history-chip" style="margin-left:6px;border-color:rgba(245,197,24,.38);color:#f5c518;background:rgba(245,197,24,.10)">Fotos pendentes/local: ${pendingCount}</span>`);
   return chips.join('');
+}
+function histPhotoLinksHtml(h){
+  const fotos = Array.isArray(h && h.fotos) ? h.fotos : [];
+  if(!fotos.length && !(h && h.driveFolderUrl)) return '';
+  const folder = h && h.driveFolderUrl
+    ? `<a href="${escapeHtml(h.driveFolderUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--cyan);text-decoration:none;background:rgba(0,194,224,0.1);border:1px solid rgba(0,194,224,0.3);border-radius:4px;padding:3px 8px">📁 Pasta Drive</a>`
+    : '';
+  const links = fotos.map((f, i) => f
+    ? `<a href="${escapeHtml(f)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--cyan);text-decoration:none;background:rgba(0,194,224,0.1);border:1px solid rgba(0,194,224,0.3);border-radius:4px;padding:3px 8px">${isDriveLink(f) ? '📁' : '📷'} Foto ${i+1}</a>`
+    : ''
+  ).join('');
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${folder}${links}</div>`;
 }
 function vehicleOwnerTypeLabel(tipo){
   return tipo === 'gestao' ? 'Gestao' : tipo === 'reserva' ? 'Reserva' : 'Tecnico';
@@ -4403,6 +4461,7 @@ function openVehicleModal(id=null, modo='vistoria'){
   const curSup = localStorage.getItem('lm_cursup') || '';
   ['vResp','vGestaoResp','vLocal','vModelo','vPlaca','vAno','vCor','vKm','vKmOleo','vKmProxOleo','vObsGerais','vAssResp','vAssCond'].forEach(k => document.getElementById(k).value = '');
   document.getElementById('vTipoVinculo').value = 'tecnico';
+  document.getElementById('vFrota').value = '';
   const noPhotoEl = document.getElementById('vNoPhoto');
   if(noPhotoEl) noPhotoEl.checked = false;
   document.getElementById('vEmpresa').value = 'Lumar Telecom';
@@ -4418,6 +4477,7 @@ function openVehicleModal(id=null, modo='vistoria'){
     const tipoVinculo = inferVehicleOwnerType(v);
     document.getElementById('vTipoVinculo').value = tipoVinculo;
     document.getElementById('vEmpresa').value = v.empresa || 'Lumar Telecom';
+    document.getElementById('vFrota').value = v.frota || '';
     document.getElementById('vResp').value = v.resp || '';
     document.getElementById('vTec').value = tipoVinculo === 'tecnico' ? (v.tec || '') : '';
     document.getElementById('vGestaoResp').value = v.gestaoResp || (tipoVinculo === 'gestao' ? (v.tec || '') : '');
@@ -4505,6 +4565,7 @@ async function saveVehicle(){
     id: vehicleId,
     ts: Date.now(),
     empresa: document.getElementById('vEmpresa').value.trim(),
+    frota: document.getElementById('vFrota').value,
     resp: document.getElementById('vResp').value.trim(),
     vinculo,
     gestaoResp: vinculo === 'gestao' ? gestaoResp : '',
@@ -4530,7 +4591,7 @@ async function saveVehicle(){
     assCond: document.getElementById('vAssCond').value.trim(),
     fotosLocal: Array.isArray(anterior && anterior.fotosLocal) ? [...anterior.fotosLocal] : [],
     fotosLocalOnly: VEHICLE_LOCAL_PHOTOS_ONLY,
-    fotosPendenteUpload: fotosFinais.some(isLocalDataPhoto)
+    fotosPendenteUpload: fotosFinais.some(photoNeedsDriveMigration)
   };
   const fotosPendentesUpload = fotosFinais.filter(isLocalDataPhoto);
   if(fotosPendentesUpload.length && VEHICLE_PHOTO_LOCAL_FALLBACK){
@@ -4577,8 +4638,9 @@ function printVehicle(id){
     <div class="pp-hdr"><h2>FORMULARIO DE VISTORIA VEICULAR</h2><p>${escapeHtml(v.empresa || 'Lumar Telecom')}</p></div>
     <table class="pp-tbl"><tbody>
       <tr><td><b>Responsavel</b><br>${escapeHtml(v.resp||'')}</td><td><b>Condutor</b><br>${escapeHtml(vehicleVisibleCondutor(v))}</td><td><b>Data/Hora</b><br>${fmtDate(v.data)} ${escapeHtml(v.hora||'')}</td></tr>
-      <tr><td><b>Local</b><br>${escapeHtml(v.local||'')}</td><td><b>Supervisor</b><br>${escapeHtml(v.sup||'')}</td><td><b>KM Atual</b><br>${escapeHtml(v.km||'')}</td></tr>
-      <tr><td><b>KM Óleo</b><br>${escapeHtml(v.kmOleo||'')}</td><td><b>Próxima Troca Óleo</b><br>${escapeHtml(oilNext||'')}</td><td><b>Status Óleo</b><br>${escapeHtml(oil ? oil.label : '')}</td></tr>
+      <tr><td><b>Local</b><br>${escapeHtml(v.local||'')}</td><td><b>Supervisor</b><br>${escapeHtml(v.sup||'')}</td><td><b>Frota</b><br>${escapeHtml(v.frota||'')}</td></tr>
+      <tr><td><b>KM Atual</b><br>${escapeHtml(v.km||'')}</td><td><b>KM Óleo</b><br>${escapeHtml(v.kmOleo||'')}</td><td><b>Próxima Troca Óleo</b><br>${escapeHtml(oilNext||'')}</td></tr>
+      <tr><td><b>Status Óleo</b><br>${escapeHtml(oil ? oil.label : '')}</td><td></td><td></td></tr>
       <tr><td><b>Marca/Modelo</b><br>${escapeHtml(v.modelo||'')}</td><td><b>Placa</b><br>${escapeHtml(v.placa||'')}</td><td><b>Ano/Cor</b><br>${escapeHtml((v.ano||'')+' '+(v.cor||''))}</td></tr>
     </tbody></table>
     ${rows}
@@ -4615,9 +4677,15 @@ function ticketStatusClass(status, prioridade){
   if(status === 'Em andamento' || status === 'Aguardando peÃ§a' || status === 'Aguardando peça') return 'progress';
   return 'open';
 }
+function serviceOrderIsClosed(status){
+  const raw = String(status || '');
+  const s = String(status || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return s === 'concluido' || s === 'cancelado' || raw === 'ConcluÃ­do';
+}
 function renderVehicleTickets(){
   fillTicketSupOptions();
   const supFilter = activeSupervisorFilter('ticketSupF');
+  const frotaFilter = (document.getElementById('ticketFrotaF') || {}).value || '';
   const statusFilter = (document.getElementById('ticketStatusF') || {}).value || '';
   const plateFilter = ((document.getElementById('ticketPlateF') || {}).value || '').replace(/[^A-Z0-9]/gi,'').toUpperCase();
   const grid = document.getElementById('ticketGrid');
@@ -4627,6 +4695,7 @@ function renderVehicleTickets(){
   const techNames = supFilter ? techs.filter(t => t.sup === supFilter).map(t => t.nome) : techs.map(t => t.nome);
   const list = (vehicleTickets || [])
     .filter(t => !supFilter || t.sup === supFilter || techNames.includes(t.tec))
+    .filter(t => !frotaFilter || (t.frota || '') === frotaFilter)
     .filter(t => !statusFilter || t.status === statusFilter)
     .filter(t => !plateFilter || (t.placa || '').replace(/[^A-Z0-9]/gi,'').toUpperCase().includes(plateFilter))
     .sort((a,b)=>(b.ts||0)-(a.ts||0));
@@ -4637,26 +4706,29 @@ function renderVehicleTickets(){
     d.className = 'ticket-card';
     d.onclick = () => viewVehicleTicket(t.id);
     const cls = ticketStatusClass(t.status, t.prioridade);
+    const closed = serviceOrderIsClosed(t.status);
     d.innerHTML = `<h3>${escapeHtml(t.tipo || 'Manutencao veicular')}</h3>
       <p><strong>${escapeHtml(t.modelo || 'Veiculo nao informado')}</strong>${t.placa ? ' - Placa '+escapeHtml(t.placa) : ''}</p>
-      <p>Condutor: <strong>${escapeHtml(t.tec || '-')}</strong>${t.sup ? ' - Sup: '+escapeHtml(t.sup) : ''}</p>
+      <p>Condutor: <strong>${escapeHtml(t.tec || '-')}</strong>${t.sup ? ' - Sup: '+escapeHtml(t.sup) : ''}${t.frota ? ' - '+escapeHtml(t.frota) : ''}</p>
       <p>${fmtDate(t.data)}${t.prazo ? ' - Prazo '+fmtDate(t.prazo) : ''}${t.km ? ' - KM '+escapeHtml(t.km) : ''}</p>
       <div class="ticket-meta">
         <span class="ticket-pill ${cls}">${escapeHtml(t.status || 'Aberto')}</span>
         <span class="ticket-pill">${escapeHtml(t.prioridade || 'Normal')}</span>
+        ${t.frota ? `<span class="ticket-pill">${escapeHtml(t.frota)}</span>` : ''}
         ${t.valor ? `<span class="ticket-pill">${fmtMoney(t.valor)}</span>` : ''}
       </div>
       <p style="margin-top:8px;color:#fff;line-height:1.35">${escapeHtml((t.desc || '').slice(0,120))}${(t.desc || '').length > 120 ? '...' : ''}</p>
       <div class="vehicle-actions" onclick="event.stopPropagation()">
         <button class="btn btn-cyan btn-sm" onclick="viewVehicleTicket('${escapeHtml(t.id)}')">Ver</button>
         <button class="btn btn-ghost btn-sm" onclick="openVehicleTicketModal('${escapeHtml(t.id)}')">Editar</button>
+        ${!closed ? `<button class="btn btn-green btn-sm" onclick="closeServiceOrder('${escapeHtml(t.id)}',event)">Fechar O.S</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="printVehicleTicket('${escapeHtml(t.id)}')">Imprimir</button>
         ${canDeleteTicket ? `<button class="btn btn-danger btn-sm" onclick="deleteVehicleTicket('${escapeHtml(t.id)}',event)">Excluir</button>` : ''}
       </div>`;
     grid.appendChild(d);
   });
   if(empty) empty.style.display = list.length ? 'none' : 'block';
-  if(count) count.textContent = `${list.length} ticket${list.length!==1?'s':''}`;
+  if(count) count.textContent = `${list.length} O.S${list.length!==1?'':''}`;
 }
 function populateTicketVehicleSelect(selectedId='', plateSearch=''){
   const vehicleSel = document.getElementById('mtVehicle');
@@ -4693,7 +4765,7 @@ function openVehicleTicketModal(id=null, vehicleId=null){
   editingVehicleTicketId = id;
   const modal = document.getElementById('vehicleTicketModal');
   const title = document.getElementById('ticketMTitle');
-  if(title) title.textContent = id ? 'Editar Ticket de Manutencao' : 'Novo Ticket de Manutencao';
+  if(title) title.textContent = id ? 'Editar Ordem de Serviço' : 'Abrir Ordem de Serviço';
   const vehicleSel = document.getElementById('mtVehicle');
   const plateSearch = document.getElementById('mtPlateSearch');
   if(plateSearch) plateSearch.value = '';
@@ -4702,6 +4774,7 @@ function openVehicleTicketModal(id=null, vehicleId=null){
   supSel.innerHTML = '<option value="">Selecione</option>';
   sups.forEach(s => supSel.innerHTML += `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
   ['mtTec','mtPlaca','mtKm','mtOficina','mtValor','mtItens','mtDesc','mtObs'].forEach(k => document.getElementById(k).value = '');
+  document.getElementById('mtFrota').value = '';
   document.getElementById('mtTipo').value = 'Corretiva';
   document.getElementById('mtPrioridade').value = 'Normal';
   document.getElementById('mtStatus').value = 'Aberto';
@@ -4724,6 +4797,7 @@ function openVehicleTicketModal(id=null, vehicleId=null){
     const linkedVehicle = latestVehicleList().find(x => x.id === t.vehicleId);
     document.getElementById('mtTec').value = t.tec || '';
     document.getElementById('mtSup').value = linkedVehicle && inferVehicleOwnerType(linkedVehicle) !== 'tecnico' ? '' : (t.sup || '');
+    document.getElementById('mtFrota').value = t.frota || (linkedVehicle && linkedVehicle.frota) || '';
     document.getElementById('mtPlaca').value = t.placa || '';
     document.getElementById('mtKm').value = t.km || '';
     document.getElementById('mtTipo').value = t.tipo || 'Corretiva';
@@ -4761,6 +4835,7 @@ function fillTicketVehicleData(){
   if(plateSearch && v.placa) plateSearch.value = v.placa;
   document.getElementById('mtTec').value = v.tec || '';
   document.getElementById('mtSup').value = inferVehicleOwnerType(v) === 'tecnico' ? (v.sup || '') : '';
+  document.getElementById('mtFrota').value = v.frota || '';
   document.getElementById('mtPlaca').value = v.placa || '';
   document.getElementById('mtKm').value = v.km || '';
   updateTicketSupervisorMode(v);
@@ -4781,6 +4856,7 @@ function saveVehicleTicket(){
     tec: document.getElementById('mtTec').value.trim(),
     vinculo: vinculoVeiculo,
     sup: vinculoVeiculo === 'tecnico' ? document.getElementById('mtSup').value : '',
+    frota: document.getElementById('mtFrota').value || (v ? (v.frota || '') : ''),
     modelo: v ? (v.modelo || '') : '',
     placa: document.getElementById('mtPlaca').value.trim().toUpperCase(),
     km: document.getElementById('mtKm').value.trim(),
@@ -4797,17 +4873,37 @@ function saveVehicleTicket(){
   };
   const i = vehicleTickets.findIndex(x => x.id === obj.id);
   if(i >= 0) vehicleTickets[i] = obj; else vehicleTickets.push(obj);
-  auditLog(editingVehicleTicketId ? 'Ticket Veicular Editado' : 'Ticket Veicular Criado', `Veiculo: ${obj.modelo || '-'} Placa: ${obj.placa || '-'}`, `Status: ${obj.status}`);
+  auditLog(editingVehicleTicketId ? 'O.S Veicular Editada' : 'O.S Veicular Aberta', `Veiculo: ${obj.modelo || '-'} Placa: ${obj.placa || '-'}`, `Status: ${obj.status}`);
   save(); closeVehicleTicketModal(); renderVehicleTickets();
   if(typeof cloudSave === 'function') cloudSave(true);
 }
+function closeServiceOrder(id,e){
+  if(e) e.stopPropagation();
+  const t = vehicleTickets.find(x => x.id === id);
+  if(!t) return false;
+  if(serviceOrderIsClosed(t.status)){
+    toast('Esta O.S já está fechada.', 'info');
+    return false;
+  }
+  if(!confirm('Fechar esta O.S como concluída?')) return false;
+  t.status = 'Concluído';
+  t.fechadaEm = new Date().toISOString();
+  t.updatedAt = Date.now();
+  auditLog('O.S Veicular Fechada', `Veiculo: ${t.modelo || '-'} Placa: ${t.placa || '-'}`, `Fechada em: ${new Date(t.fechadaEm).toLocaleString('pt-BR')}`);
+  save();
+  renderVehicleTickets();
+  if(document.getElementById('invToolsModal')?.classList.contains('open')) viewVehicleTicket(id);
+  if(typeof cloudSave === 'function') cloudSave(true);
+  toast('O.S fechada com sucesso.', 'success');
+  return true;
+}
 function deleteVehicleTicket(id,e){
   if(e) e.stopPropagation();
-  if(currentRole() !== 'admin'){ toast('Somente o admin pode excluir tickets.', 'warn'); return false; }
-  if(!confirm('Remover este ticket de manutencao veicular?')) return false;
+  if(currentRole() !== 'admin'){ toast('Somente o admin pode excluir O.S.', 'warn'); return false; }
+  if(!confirm('Remover esta ordem de serviço veicular?')) return false;
   const t = vehicleTickets.find(x => x.id === id);
   vehicleTickets = vehicleTickets.filter(x => x.id !== id);
-  auditLog('Ticket Veicular Excluido', `Veiculo: ${t ? (t.modelo || '-') : id}`, `Placa: ${t ? (t.placa || '-') : '-'}`);
+  auditLog('O.S Veicular Excluida', `Veiculo: ${t ? (t.modelo || '-') : id}`, `Placa: ${t ? (t.placa || '-') : '-'}`);
   save(); renderVehicleTickets();
   window._allowVehicleTicketReductionUntil = Date.now() + 5000;
   if(typeof cloudSave === 'function') cloudSave(true);
@@ -4818,6 +4914,7 @@ function vehicleTicketViewHtml(t){
     ['Veiculo', `${t.modelo || '-'}${t.placa ? ' - Placa '+t.placa : ''}`],
     ['Condutor', t.tec || '-'],
     ['Supervisor', t.sup || '-'],
+    ['Frota', t.frota || '-'],
     ['KM', t.km || '-'],
     ['Tipo', t.tipo || '-'],
     ['Prioridade', t.prioridade || '-'],
@@ -4826,7 +4923,8 @@ function vehicleTicketViewHtml(t){
     ['Prazo', fmtDate(t.prazo)],
     ['Oficina', t.oficina || '-'],
     ['Valor estimado', t.valor ? fmtMoney(t.valor) : '-'],
-    ['Itens afetados', t.itens || '-']
+    ['Itens afetados', t.itens || '-'],
+    ['Fechada em', t.fechadaEm ? new Date(t.fechadaEm).toLocaleString('pt-BR') : '-']
   ];
   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:12px">
     ${meta.map(([k,val]) => `<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:9px 10px"><div style="font-size:9px;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;font-weight:800">${k}</div><div style="font-size:13px;color:#fff;font-weight:700;margin-top:3px">${escapeHtml(val)}</div></div>`).join('')}
@@ -4837,28 +4935,30 @@ function vehicleTicketViewHtml(t){
 function viewVehicleTicket(id){
   const t = vehicleTickets.find(x => x.id === id);
   if(!t) return;
-  document.getElementById('invToolsTitle').textContent = 'Ticket de Manutencao - ' + (t.placa || t.tec || 'Veiculo');
+  document.getElementById('invToolsTitle').textContent = 'Ordem de Serviço - ' + (t.placa || t.tec || 'Veiculo');
   document.getElementById('invToolsSubtitle').innerHTML = `${escapeHtml(t.tipo || '')} - ${escapeHtml(t.status || '')}`;
   const deleteBtn = currentRole() === 'admin' ? `<button class="btn btn-danger" onclick="if(deleteVehicleTicket('${escapeHtml(t.id)}',event)) closeInvTools()">Excluir</button>` : '';
+  const closeBtn = !serviceOrderIsClosed(t.status) ? `<button class="btn btn-green" onclick="closeServiceOrder('${escapeHtml(t.id)}',event)">Fechar O.S</button>` : '';
   document.getElementById('invToolsBody').innerHTML = `<div style="max-height:65vh;overflow-y:auto">${vehicleTicketViewHtml(t)}</div>
-    <div class="ma"><button class="btn btn-ghost" onclick="printVehicleTicket('${escapeHtml(t.id)}')">Imprimir</button><button class="btn btn-cyan" onclick="openVehicleTicketModal('${escapeHtml(t.id)}');closeInvTools()">Editar</button>${deleteBtn}</div>`;
+    <div class="ma"><button class="btn btn-ghost" onclick="printVehicleTicket('${escapeHtml(t.id)}')">Imprimir</button><button class="btn btn-cyan" onclick="openVehicleTicketModal('${escapeHtml(t.id)}');closeInvTools()">Editar</button>${closeBtn}${deleteBtn}</div>`;
   document.getElementById('invToolsModal').classList.add('open');
 }
 function printVehicleTicket(id){
   const t = vehicleTickets.find(x => x.id === id); if(!t) return;
   const html = `<div class="pp-page">
-    <div class="pp-hdr"><h2>TICKET DE MANUTENCAO VEICULAR</h2><p>${escapeHtml(t.status || 'Aberto')}</p></div>
+    <div class="pp-hdr"><h2>ORDEM DE SERVIÇO VEICULAR</h2><p>${escapeHtml(t.status || 'Aberto')}</p></div>
     <table class="pp-tbl"><tbody>
       <tr><td><b>Veiculo</b><br>${escapeHtml(t.modelo||'')}</td><td><b>Placa</b><br>${escapeHtml(t.placa||'')}</td><td><b>Condutor</b><br>${escapeHtml(t.tec||'')}</td></tr>
-      <tr><td><b>Supervisor</b><br>${escapeHtml(t.sup||'')}</td><td><b>KM</b><br>${escapeHtml(t.km||'')}</td><td><b>Tipo</b><br>${escapeHtml(t.tipo||'')}</td></tr>
-      <tr><td><b>Prioridade</b><br>${escapeHtml(t.prioridade||'')}</td><td><b>Solicitado em</b><br>${fmtDate(t.data)}</td><td><b>Prazo</b><br>${fmtDate(t.prazo)}</td></tr>
+      <tr><td><b>Supervisor</b><br>${escapeHtml(t.sup||'')}</td><td><b>Frota</b><br>${escapeHtml(t.frota||'')}</td><td><b>KM</b><br>${escapeHtml(t.km||'')}</td></tr>
+      <tr><td><b>Tipo</b><br>${escapeHtml(t.tipo||'')}</td><td><b>Prioridade</b><br>${escapeHtml(t.prioridade||'')}</td><td><b>Solicitado em</b><br>${fmtDate(t.data)}</td></tr>
+      <tr><td><b>Prazo</b><br>${fmtDate(t.prazo)}</td><td><b>Fechada em</b><br>${t.fechadaEm ? new Date(t.fechadaEm).toLocaleString('pt-BR') : ''}</td><td></td></tr>
       <tr><td><b>Oficina</b><br>${escapeHtml(t.oficina||'')}</td><td><b>Valor estimado</b><br>${t.valor ? fmtMoney(t.valor) : ''}</td><td><b>Itens afetados</b><br>${escapeHtml(t.itens||'')}</td></tr>
     </tbody></table>
     <h3>Descricao da solicitacao</h3><p style="min-height:90px;border:1px solid #ddd;padding:8px;font-size:11px">${escapeHtml(t.desc||'')}</p>
     <h3>Observacoes / retorno</h3><p style="min-height:70px;border:1px solid #ddd;padding:8px;font-size:11px">${escapeHtml(t.obs||'')}</p>
     <div class="sign-blk"><div class="sign-row"><div class="sign-box"><p>Solicitante</p><b>${escapeHtml(t.tec||'')}</b></div><div class="sign-box"><p>Responsavel pela manutencao</p><b></b></div></div></div>
   </div>`;
-  openPrintWindow(html, 'Ticket Manutencao - ' + (t.placa || t.tec || 'Veiculo'));
+  openPrintWindow(html, 'O.S Veicular - ' + (t.placa || t.tec || 'Veiculo'));
 }
 
 // ── TECH INVENTORY VIEW ───────────────────────────────────────────────
@@ -4922,13 +5022,7 @@ function openTechInv(t){
       const updHtml = h.atualizacoes && h.atualizacoes.length
         ? `<p style="font-size:10px;color:var(--cyan);margin-top:4px">🔄 Última atualização: ${h.atualizacoes[h.atualizacoes.length-1]}</p>`
         : '';
-      const fotosHtml = h.fotos && h.fotos.length
-        ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
-          h.fotos.map((f, i) => f
-            ? `<a href="${f}" target="_blank" style="font-size:11px;color:var(--cyan);text-decoration:none;background:rgba(0,194,224,0.1);border:1px solid rgba(0,194,224,0.3);border-radius:4px;padding:3px 8px">📷 Foto ${i+1}</a>`
-            : ''
-          ).join('') + '</div>'
-        : '';
+      const fotosHtml = histPhotoLinksHtml(h);
       html += `<div class="hist-card" style="${isFeriasSec?'border-color:rgba(255,107,0,0.55);background:rgba(255,107,0,0.08)':''}">
         <h4>${isFeriasSec?'🏖️ Inventário de Férias':'📋'} ${fmtDate(h.dt)} – ${h.local||'Sem local'}</h4>
         ${h.sup?`<p>👔 Supervisor: ${h.sup}</p>`:''}
@@ -5473,19 +5567,33 @@ async function saveHist(){
     alert('Este técnico não pertence ao supervisor selecionado.');
     return;
   }
-  // Faz upload das fotos base64 para Firebase Storage antes de salvar
+  const histId = editingHistId || Date.now().toString();
+  let driveFolderUrl = null;
+  // Faz upload das fotos base64 para o Google Drive antes de salvar.
+  // Se o Drive falhar, mantém o fallback antigo no Firebase/base64.
   let fotosFinais = [...pendingHistPh];
   const temBase64 = fotosFinais.some(f => f && f.startsWith('data:'));
   if (temBase64) {
     showCloudStatus('📷 Enviando fotos...', 'var(--cyan)');
-    toast('📷 Enviando fotos para a nuvem...', 'info', 3000);
-    const histId = editingHistId || Date.now().toString();
+    toast('📷 Enviando fotos do inventário para o Google Drive...', 'info', 3000);
     fotosFinais = [];
     for (let i = 0; i < pendingHistPh.length; i++) {
       const f = pendingHistPh[i];
       if (f && f.startsWith('data:')) {
-        const url = await uploadFotoStorage(histId, f, i);
-        fotosFinais.push(url || f); // fallback base64 se upload falhar
+        const driveResult = await uploadInventoryFotoDrive({
+          id: histId,
+          tec: tName,
+          data: document.getElementById('hDt').value,
+          sup: supSel,
+          local: document.getElementById('hLocal').value.trim()
+        }, f, i);
+        if(driveResult && driveResult.fileUrl){
+          fotosFinais.push(driveResult.fileUrl);
+          if(driveResult.folderUrl) driveFolderUrl = driveResult.folderUrl;
+        } else {
+          const url = await uploadFotoStorage(histId, f, i);
+          fotosFinais.push(url || f); // fallback base64 se upload falhar
+        }
       } else {
         fotosFinais.push(f);
       }
@@ -5493,8 +5601,6 @@ async function saveHist(){
     // Atualiza pendingHistPh com as URLs
     pendingHistPh = [...fotosFinais];
   }
-
-  const histId = editingHistId || Date.now().toString();
 
   if(editingHistId){
     const idx = hist.findIndex(h => h.id === editingHistId);
@@ -5511,8 +5617,11 @@ async function saveHist(){
         tipoInventario: currentHistTipo,
         obs: document.getElementById('hObs').value.trim(),
         fotos: fotosFinais,
+        driveFolderUrl: driveFolderUrl || prev.driveFolderUrl || '',
+        fotosPendenteUpload: fotosFinais.some(photoNeedsDriveMigration),
         invRows: normalizaInventarioCompra(currentInvRows),
-        atualizacoes: upds
+        atualizacoes: upds,
+        updatedAt: Date.now()
       };
     }
   } else {
@@ -5526,9 +5635,12 @@ async function saveHist(){
       tipoInventario: currentHistTipo,
       obs: document.getElementById('hObs').value.trim(),
       fotos: fotosFinais,
+      driveFolderUrl: driveFolderUrl || '',
+      fotosPendenteUpload: fotosFinais.some(photoNeedsDriveMigration),
       invRows: normalizaInventarioCompra(currentInvRows),
       criadoEm: new Date().toLocaleString('pt-BR'),
-      atualizacoes: []
+      atualizacoes: [],
+      updatedAt: Date.now()
     });
   }
 
@@ -5691,14 +5803,7 @@ function renderHist(){
           ▶ Ver ${h.invRows.length} ferramentas${highlight.length?` · <span style="color:var(--red)">${highlight.length} com ocorrência</span>`:''}
         </button>`;
       }
-      let fotosHtml = '';
-      if(h.fotos && h.fotos.length){
-        fotosHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
-          h.fotos.map((f, i) => f
-            ? `<a href="${f}" target="_blank" style="font-size:11px;color:var(--cyan);text-decoration:none;background:rgba(0,194,224,0.1);border:1px solid rgba(0,194,224,0.3);border-radius:4px;padding:3px 8px">📷 Foto ${i+1}</a>`
-            : ''
-          ).join('') + '</div>';
-      }
+      let fotosHtml = histPhotoLinksHtml(h);
       // Lista de atualizações — exibida apenas no modal do técnico
       let updHtml = '';
       card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;flex-wrap:wrap">
@@ -5717,7 +5822,7 @@ function renderHist(){
     grid.appendChild(section);
   });
 }
-function delHist(id){ const h=hist.find(x=>x.id===id); const locked=lockedSupervisor(); if(locked && h){ const techsDoSup=techs.filter(t=>t.sup===locked).map(t=>t.nome); if(h.sup!==locked && !techsDoSup.includes(h.tec)){ toast('Este inventário não pertence ao supervisor logado.','warn'); return; } } if(!confirm('Remover histórico?'))return; auditLog('Inventário Excluído', h?`Técnico: ${h.tec}`:id); hist=hist.filter(h=>h.id!==id); save(); rebuildItems(); renderHist(); renderTechs(); }
+function delHist(id){ const h=hist.find(x=>x.id===id); const locked=lockedSupervisor(); if(locked && h){ const techsDoSup=techs.filter(t=>t.sup===locked).map(t=>t.nome); if(h.sup!==locked && !techsDoSup.includes(h.tec)){ toast('Este inventário não pertence ao supervisor logado.','warn'); return; } } if(!confirm('Remover histórico?'))return; auditLog('Inventário Excluído', h?`Técnico: ${h.tec}`:id); hist=hist.filter(h=>h.id!==id); markDeleted('hist', id); save(); rebuildItems(); renderHist(); renderTechs(); }
 
 // Abre popup com a tabela completa de ferramentas de um inventário
 function openInvTools(id){
@@ -5804,7 +5909,7 @@ function saveLoan(){
     const permitido = filterLoansBySupervisor([{emp, rec, tipoE:document.getElementById('lTipoE').value, tipoR:document.getElementById('lTipoR').value}], locked).length > 0;
     if(!permitido){ alert('Este empréstimo não pertence ao supervisor logado.'); return; }
   }
-  loans.push({id:Date.now().toString(), ferr, emp, rec, tipoE:document.getElementById('lTipoE').value, tipoR:document.getElementById('lTipoR').value, dtS:document.getElementById('lDtS').value, dtR:document.getElementById('lDtR').value, obs:document.getElementById('lObs').value.trim(), status:'Ativo'});
+  loans.push({id:Date.now().toString(), ferr, emp, rec, tipoE:document.getElementById('lTipoE').value, tipoR:document.getElementById('lTipoR').value, dtS:document.getElementById('lDtS').value, dtR:document.getElementById('lDtR').value, obs:document.getElementById('lObs').value.trim(), status:'Ativo', updatedAt:Date.now()});
   auditLog('Empréstimo Criado',`${ferr}: ${emp}→${rec}`);
   save(); closeLM(); renderLoans();
 }
@@ -5855,8 +5960,8 @@ function renderLoans(){
     tbody.appendChild(tr);
   });
 }
-function returnLoan(id){ const l=loans.find(x=>x.id===id); if(!l)return; const locked=lockedSupervisor(); if(locked && !filterLoansBySupervisor([l], locked).length){ toast('Este empréstimo não pertence ao supervisor logado.','warn'); return; } auditLog('Empréstimo Devolvido',`${l.emp} → ${l.rec}`,`Ferramenta: ${l.ferr||'—'}`); l.status='Devolvido'; l.dtDev=new Date().toISOString().slice(0,10); save(); renderLoans(); }
-function delLoan(id){ const locked=lockedSupervisor(); const ld=loans.find(l=>l.id===id); if(locked && ld && !filterLoansBySupervisor([ld], locked).length){ toast('Este empréstimo não pertence ao supervisor logado.','warn'); return; } if(!confirm('Remover?'))return; auditLog('Empréstimo Excluído',ld?`${ld.ferr||'—'}: ${ld.emp}→${ld.rec}`:id); loans=loans.filter(l=>l.id!==id); save(); renderLoans(); }
+function returnLoan(id){ const l=loans.find(x=>x.id===id); if(!l)return; const locked=lockedSupervisor(); if(locked && !filterLoansBySupervisor([l], locked).length){ toast('Este empréstimo não pertence ao supervisor logado.','warn'); return; } auditLog('Empréstimo Devolvido',`${l.emp} → ${l.rec}`,`Ferramenta: ${l.ferr||'—'}`); l.status='Devolvido'; l.dtDev=new Date().toISOString().slice(0,10); l.updatedAt=Date.now(); save(); renderLoans(); }
+function delLoan(id){ const locked=lockedSupervisor(); const ld=loans.find(l=>l.id===id); if(locked && ld && !filterLoansBySupervisor([ld], locked).length){ toast('Este empréstimo não pertence ao supervisor logado.','warn'); return; } if(!confirm('Remover?'))return; auditLog('Empréstimo Excluído',ld?`${ld.ferr||'—'}: ${ld.emp}→${ld.rec}`:id); loans=loans.filter(l=>l.id!==id); markDeleted('loans', id); save(); renderLoans(); }
 
 function printLoans(){
   const lista = visibleLoans();
@@ -6125,7 +6230,7 @@ function saveDb(){
   const categoria = document.getElementById('dbCat').value;
   const iconManual = document.getElementById('dbIcon').value.trim();
   const baseIcone = {nome, categoria, icon:iconManual};
-  const obj = {...(prev || {}), id:editDbId||Date.now().toString(), nome, categoria, icon:(!iconManual || iconManual === '🔧') ? iconeFerramenta(baseIcone) : iconManual, valor:document.getElementById('dbVal').value, qtdPadrao, desc:document.getElementById('dbDesc').value.trim(), tiposTec:getDbTipoChecks()};
+  const obj = {...(prev || {}), id:editDbId||Date.now().toString(), nome, categoria, icon:(!iconManual || iconManual === '🔧') ? iconeFerramenta(baseIcone) : iconManual, valor:document.getElementById('dbVal').value, qtdPadrao, desc:document.getElementById('dbDesc').value.trim(), tiposTec:getDbTipoChecks(), updatedAt:Date.now()};
   if(editDbId){ const i=banco.findIndex(b=>b.id===editDbId); banco[i]=obj; }
   else banco.push(obj);
   saveBanco(); closeDB(); renderBanco();
@@ -6379,7 +6484,7 @@ function renderBanco(){
     grid.appendChild(div);
   });
 }
-function delDb(id){ if(!confirm('Remover do banco?'))return; banco=banco.filter(b=>b.id!==id); saveBanco(); renderBanco(); }
+function delDb(id){ if(!confirm('Remover do banco?'))return; banco=banco.filter(b=>b.id!==id); markDeleted('banco', id); saveBanco(); renderBanco(); }
 
 // ── FOTOS ─────────────────────────────────────────────────────────────
 const MAX_FOTOS = 3;
@@ -6407,6 +6512,9 @@ function compressImage(file, callback){
   };
   reader.readAsDataURL(file);
 }
+function compressImageAsync(file){
+  return new Promise(resolve => compressImage(file, resolve));
+}
 
 function prevPhotos(inp){
   const files = Array.from(inp.files);
@@ -6433,15 +6541,26 @@ function renderPP(){
   pendingHistPh.forEach((src, idx) => {
     const wrap = document.createElement('div');
     wrap.className = 'pp-wrap';
-    const img = document.createElement('img');
-    img.src = src;
-    img.onclick = () => openLB(src);
+    if(isDriveLink(src)){
+      const link = document.createElement('a');
+      link.href = src;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.title = 'Foto já salva no Drive — abrir';
+      link.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:80px;height:80px;color:var(--cyan);text-decoration:none;font-size:10px;text-align:center;border:2px solid var(--border);border-radius:8px;background:rgba(0,194,224,0.06)';
+      link.innerHTML = '<span style="font-size:20px">📁</span><span>No Drive</span>';
+      wrap.appendChild(link);
+    } else {
+      const img = document.createElement('img');
+      img.src = src;
+      img.onclick = () => openLB(src);
+      wrap.appendChild(img);
+    }
     const del = document.createElement('button');
     del.className = 'pp-del';
     del.title = 'Remover foto';
     del.innerHTML = '✕';
     del.onclick = (e) => { e.stopPropagation(); pendingHistPh.splice(idx, 1); renderPP(); markHistDirty(); };
-    wrap.appendChild(img);
     wrap.appendChild(del);
     el.appendChild(wrap);
   });
@@ -6483,9 +6602,21 @@ function renderFotoMgr(){
   fotos.forEach((src, idx) => {
     const item = document.createElement('div');
     item.className = 'foto-mgr-item';
-    const img = document.createElement('img');
-    img.src = src;
-    img.onclick = () => openLB(src);
+    if(isDriveLink(src)){
+      const link = document.createElement('a');
+      link.href = src;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.title = 'Abrir foto no Drive';
+      link.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:10px;border:2px solid var(--border);background:rgba(0,194,224,0.06);color:var(--cyan);text-decoration:none;font-size:11px;text-align:center';
+      link.innerHTML = '<span style="font-size:24px">📁</span><span>No Drive</span>';
+      item.appendChild(link);
+    } else {
+      const img = document.createElement('img');
+      img.src = src;
+      img.onclick = () => openLB(src);
+      item.appendChild(img);
+    }
     const del = document.createElement('button');
     del.className = 'foto-mgr-del';
     del.title = 'Remover esta foto';
@@ -6499,7 +6630,6 @@ function renderFotoMgr(){
       renderHist();
       toast('Foto removida.', 'info');
     };
-    item.appendChild(img);
     item.appendChild(del);
     grid.appendChild(item);
   });
@@ -6518,7 +6648,7 @@ function renderFotoMgr(){
   }
 }
 
-function addFotoMgr(inp){
+async function addFotoMgr(inp){
   const h = hist.find(x => x.id === _fotoMgrHistId);
   if(!h) return;
   if(!h.fotos) h.fotos = [];
@@ -6529,15 +6659,37 @@ function addFotoMgr(inp){
     inp.value = '';
     return;
   }
-  compressImage(file, b64 => {
-    h.fotos.push(b64);
+  inp.value = '';
+  try {
+    showCloudStatus('📷 Enviando foto...', 'var(--cyan)');
+    const b64 = await compressImageAsync(file);
+    const idx = h.fotos.length;
+    let fotoFinal = b64;
+    const driveResult = await uploadInventoryFotoDrive({
+      id: h.id,
+      tec: h.tec,
+      data: h.dt,
+      sup: h.sup,
+      local: h.local
+    }, b64, idx);
+    if(driveResult && driveResult.fileUrl){
+      fotoFinal = driveResult.fileUrl;
+      if(driveResult.folderUrl) h.driveFolderUrl = driveResult.folderUrl;
+    } else {
+      const url = await uploadFotoStorage(h.id, b64, idx);
+      fotoFinal = url || b64;
+    }
+    h.fotos.push(fotoFinal);
+    h.fotosPendenteUpload = h.fotos.some(photoNeedsDriveMigration);
     save();
     renderFotoMgr();
     renderHist();
     auditLog('Foto Adicionada', `Inventário de: ${h ? h.tec : '—'}`);
-    toast('Foto adicionada!', 'success');
-  });
-  inp.value = '';
+    toast(isLocalDataPhoto(fotoFinal) ? 'Foto adicionada localmente. Ela será reenviada quando a nuvem permitir.' : 'Foto adicionada e enviada para a nuvem!', isLocalDataPhoto(fotoFinal) ? 'warn' : 'success', 4500);
+  } catch(e) {
+    console.warn('Falha ao adicionar foto do inventário:', e);
+    toast('Falha ao adicionar foto. Tente novamente.', 'error', 4500);
+  }
 }
 
 // ── LIGHTBOX ─────────────────────────────────────────────────────────
@@ -7523,6 +7675,7 @@ const MAX_AUDIT = 500; // mantém os últimos 500 registros
 
 function auditLog(acao, detalhe, extra){
   const entry = {
+    id:      'aud_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     ts:      Date.now(),
     dt:      new Date().toLocaleString('pt-BR'),
     acao,
@@ -8039,7 +8192,7 @@ async function cloudSave(force = false) {
     showCloudStatus('🔄 Sincronizando...', 'var(--cyan)');
     renderSyncBar('Preparando sincronização...', 'syncing');
 
-    // Migra fotos base64 para Firebase Storage
+    // Migra fotos base64 de inventário para Drive/Storage
     const histComUrls = [];
     for (const h of (hist || [])) {
       const hasBase64 = (h.fotos || []).some(f => f && f.startsWith('data:'));
@@ -8078,12 +8231,6 @@ async function cloudSave(force = false) {
       if (oldSnap.exists) oldData = oldSnap.data();
     } catch(e) { console.warn('Não foi possível conferir dados antigos:', e); }
 
-    const allowTicketReduction = Number(window._allowVehicleTicketReductionUntil || 0) > Date.now();
-    if(oldData && Array.isArray(oldData.vehicleTickets) && Array.isArray(payload.vehicleTickets) && oldData.vehicleTickets.length > payload.vehicleTickets.length && !allowTicketReduction){
-      payload.vehicleTickets = mergeVehicleTicketLists(payload.vehicleTickets, oldData.vehicleTickets);
-      vehicleTickets = payload.vehicleTickets;
-    }
-
     const oldHist = Array.isArray(oldData?.hist) ? oldData.hist.length : 0;
     const newHist = Array.isArray(payload.hist) ? payload.hist.length : 0;
     const oldTechs = Array.isArray(oldData?.techs) ? oldData.techs.length : 0;
@@ -8097,8 +8244,47 @@ async function cloudSave(force = false) {
     }
     autoLocalJsonBackup('auto_ultimo_estado_local');
 
+    // ── Escrita transacional com merge registro-a-registro ───────────────
+    // Em vez de sobrescrever o documento inteiro (o que causava perda de
+    // dados quando dois dispositivos salvavam quase ao mesmo tempo), lê o
+    // estado mais recente da nuvem DENTRO da transação e mescla cada lista
+    // por id, usando updatedAt para decidir a versão mais nova e
+    // respeitando exclusões feitas neste dispositivo (deletedIds). O
+    // Firestore reexecuta a transação automaticamente se outro cliente
+    // escrever no meio do caminho.
+    const localTechs = payload.techs, localLoans = payload.loans, localHist = payload.hist;
+    const localBanco = payload.banco, localAudit = payload.audit, localTickets = payload.vehicleTickets;
+    pruneDeletedIds();
+    const docRef = db.collection('lumar').doc('dados');
+    await db.runTransaction(async (transaction) => {
+      const snap = await transaction.get(docRef);
+      const fresh = snap.exists ? snap.data() : null;
+      if (fresh) {
+        payload.techs = mergeEntityLists(localTechs, fresh.techs, deletedIds.techs);
+        payload.loans = mergeEntityLists(localLoans, fresh.loans, deletedIds.loans);
+        payload.hist  = mergeEntityLists(localHist,  fresh.hist,  deletedIds.hist);
+        payload.banco = mergeEntityLists(localBanco, fresh.banco, deletedIds.banco);
+        payload.audit = mergeAuditLists(localAudit, fresh.audit);
+        const allowTicketReduction = Number(window._allowVehicleTicketReductionUntil || 0) > Date.now();
+        if (Array.isArray(fresh.vehicleTickets) && Array.isArray(localTickets) && fresh.vehicleTickets.length > localTickets.length && !allowTicketReduction) {
+          payload.vehicleTickets = mergeVehicleTicketLists(localTickets, fresh.vehicleTickets);
+        } else {
+          payload.vehicleTickets = localTickets;
+        }
+      }
+      transaction.set(docRef, payload);
+    });
+
+    // Reflete o resultado do merge no estado local — este cliente não
+    // recebe seu próprio write de volta pelo listener de tempo real
+    // (é filtrado de propósito), então sem isso a tela ficaria mostrando
+    // uma versão desatualizada mesmo com a nuvem já correta.
+    techs = payload.techs; loans = payload.loans; hist = payload.hist;
+    banco = payload.banco; audit = payload.audit; vehicleTickets = payload.vehicleTickets;
+    if (_idb) idbSave(['techs','loans','hist','banco','audit','vehicleTickets']).catch(()=>{});
+    rebuildItems(); renderTechs(); renderHist(); renderLoans(); renderBanco(); renderVehicleTickets();
+
     _localSaveTs = payload.ts;
-    await db.collection('lumar').doc('dados').set(payload);
     localStorage.setItem('lm_last_sync_ok', String(Date.now()));
     showCloudStatus('✅ Sincronizado', 'var(--green)');
     renderSyncBar('Dados sincronizados com Firebase.', 'ok');
@@ -8243,10 +8429,11 @@ async function uploadVehicleFotoDrive(vehicleMeta, base64, index) {
       console.warn('Google Drive: configure VEHICLE_DRIVE_UPLOAD_URL e VEHICLE_DRIVE_SECRET no index.html.');
       return null;
     }
-    const ext = base64.startsWith('data:image/png') ? 'png' : 'jpg';
+    const ext = base64 && base64.startsWith('data:image/png') ? 'png' : 'jpg';
     const payload = {
       secret: VEHICLE_DRIVE_SECRET,
-      base64: base64,
+      base64: base64 || '',
+      sourceUrl: vehicleMeta.sourceUrl || '',
       ext: ext,
       placa: (vehicleMeta.placa || 'SEM-PLACA').toUpperCase(),
       data: vehicleMeta.data || new Date().toISOString().slice(0, 10),
@@ -8266,9 +8453,64 @@ async function uploadVehicleFotoDrive(vehicleMeta, base64, index) {
       console.warn('Upload foto veicular (Drive) falhou:', result && result.error);
       return null;
     }
-    return result;
+    return {
+      ...result,
+      fileUrl: result.fileUrl || result.url || result.webViewLink || result.link || '',
+      folderUrl: result.folderUrl || result.pastaUrl || result.folder || ''
+    };
   } catch(e) {
     console.warn('Upload foto veicular (Drive) falhou:', e);
+    return null;
+  }
+}
+
+async function uploadInventoryFotoDrive(histMeta, base64, index) {
+  try {
+    if (!VEHICLE_DRIVE_UPLOAD_URL || VEHICLE_DRIVE_UPLOAD_URL.indexOf('COLOQUE_AQUI') === 0) {
+      console.warn('Google Drive: configure VEHICLE_DRIVE_UPLOAD_URL e VEHICLE_DRIVE_SECRET no index.html.');
+      return null;
+    }
+    const nome = histMeta.tec || histMeta.nome || 'sem-tecnico';
+    const data = histMeta.data || new Date().toISOString().slice(0, 10);
+    const ext = base64 && base64.startsWith('data:image/png') ? 'png' : 'jpg';
+    const payload = {
+      secret: VEHICLE_DRIVE_SECRET,
+      tipo: 'inventario_ferramental',
+      modulo: 'inventario_ferramental',
+      base64: base64 || '',
+      sourceUrl: histMeta.sourceUrl || '',
+      ext: ext,
+      nome: nome,
+      tecnico: nome,
+      data: data,
+      supervisor: histMeta.sup || '',
+      local: histMeta.local || '',
+      registroId: histMeta.id || '',
+      indice: index + 1,
+      pastaNome: `${safeFolderName(nome)}_${safeFolderName(data)}`,
+      // Compatibilidade com o Apps Script existente de vistoria:
+      // ele organiza por placa/{data_condutor}; para inventário, usamos
+      // uma "placa" fixa e o nome do técnico como condutor.
+      placa: 'INVENTARIO-FERRAMENTAL',
+      condutor: nome
+    };
+    const resp = await fetch(VEHICLE_DRIVE_UPLOAD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if (!result || !result.ok) {
+      console.warn('Upload foto inventário (Drive) falhou:', result && result.error);
+      return null;
+    }
+    return {
+      ...result,
+      fileUrl: result.fileUrl || result.url || result.webViewLink || result.link || '',
+      folderUrl: result.folderUrl || result.pastaUrl || result.folder || ''
+    };
+  } catch(e) {
+    console.warn('Upload foto inventário (Drive) falhou:', e);
     return null;
   }
 }
@@ -8283,57 +8525,190 @@ async function deleteFotoStorage(histId, index) {
   } catch(e) {}
 }
 
-// Converte fotos base64 para Storage e retorna URLs
+// Converte fotos antigas/base64 para Drive, com Storage como fallback.
 async function migratePhotosToStorage(h) {
   if (!h.fotos || !h.fotos.length) return h;
   const newFotos = [];
+  let driveFolderUrl = h.driveFolderUrl || '';
   for (let i = 0; i < h.fotos.length; i++) {
     const f = h.fotos[i];
-    // Se já é URL (começa com https), mantém
-    if (f && f.startsWith('https')) {
+    if (f && isDriveLink(f)) {
       newFotos.push(f);
-    } else if (f && f.startsWith('data:')) {
-      // Base64 — faz upload para Storage
+    } else if (photoNeedsDriveMigration(f)) {
       showCloudStatus('📷 Enviando fotos...', 'var(--cyan)');
-      const url = await uploadFotoStorage(h.id, f, i);
-      newFotos.push(url || f);
+      const dataUrl = await photoSourceToDataUrl(f);
+      if(!dataUrl){
+        if(isCloudPhoto(f)){
+          const driveByUrl = await uploadInventoryFotoDrive({
+            id: h.id,
+            tec: h.tec,
+            data: h.dt,
+            sup: h.sup,
+            local: h.local,
+            sourceUrl: f
+          }, null, i);
+          if(driveByUrl && driveByUrl.fileUrl){
+            newFotos.push(driveByUrl.fileUrl);
+            if(driveByUrl.folderUrl) driveFolderUrl = driveByUrl.folderUrl;
+            continue;
+          }
+        }
+        newFotos.push(f);
+        continue;
+      }
+      const driveResult = await uploadInventoryFotoDrive({
+        id: h.id,
+        tec: h.tec,
+        data: h.dt,
+        sup: h.sup,
+        local: h.local
+      }, dataUrl, i);
+      if(driveResult && driveResult.fileUrl){
+        newFotos.push(driveResult.fileUrl);
+        if(driveResult.folderUrl) driveFolderUrl = driveResult.folderUrl;
+      } else {
+        let url = null;
+        if(isCloudPhoto(f)){
+          const driveByUrl = await uploadInventoryFotoDrive({
+            id: h.id,
+            tec: h.tec,
+            data: h.dt,
+            sup: h.sup,
+            local: h.local,
+            sourceUrl: f
+          }, null, i);
+          if(driveByUrl && driveByUrl.fileUrl){
+            newFotos.push(driveByUrl.fileUrl);
+            if(driveByUrl.folderUrl) driveFolderUrl = driveByUrl.folderUrl;
+            continue;
+          }
+        }
+        url = isLocalDataPhoto(f) ? await uploadFotoStorage(h.id, dataUrl, i) : f;
+        newFotos.push(url || f);
+      }
+    } else {
+      newFotos.push(f);
     }
   }
-  return { ...h, fotos: newFotos };
+  return { ...h, fotos: newFotos, driveFolderUrl, fotosPendenteUpload: newFotos.some(photoNeedsDriveMigration) };
 }
 
 async function migrateVehiclePhotosToStorage(v) {
   if (!v.fotos || !v.fotos.length) return v;
   const newFotos = [];
+  let driveFolderUrl = v.driveFolderUrl || '';
   for (let i = 0; i < v.fotos.length; i++) {
     const f = v.fotos[i];
-    if (f && f.startsWith('https')) {
+    if (f && isDriveLink(f)) {
       newFotos.push(f);
-    } else if (f && f.startsWith('data:')) {
-      showCloudStatus('📷 Enviando fotos veiculares...', 'var(--cyan)');
-      const url = await uploadVehicleFotoStorage(v.id, f, i);
-      newFotos.push(url || f);
+    } else if (photoNeedsDriveMigration(f)) {
+      showCloudStatus('📷 Enviando fotos veiculares para o Drive...', 'var(--cyan)');
+      const dataUrl = await photoSourceToDataUrl(f);
+      if(!dataUrl){
+        if(isCloudPhoto(f)){
+          const driveByUrl = await uploadVehicleFotoDrive({
+            placa: v.placa || 'SEM-PLACA',
+            data: v.data || new Date().toISOString().slice(0, 10),
+            tec: v.tec || 'sem-condutor',
+            sourceUrl: f
+          }, null, i);
+          if(driveByUrl && driveByUrl.fileUrl){
+            newFotos.push(driveByUrl.fileUrl);
+            if(driveByUrl.folderUrl) driveFolderUrl = driveByUrl.folderUrl;
+            continue;
+          }
+        }
+        newFotos.push(f);
+        continue;
+      }
+      const driveResult = await uploadVehicleFotoDrive({
+        placa: v.placa || 'SEM-PLACA',
+        data: v.data || new Date().toISOString().slice(0, 10),
+        tec: v.tec || 'sem-condutor'
+      }, dataUrl, i);
+      if(driveResult && driveResult.fileUrl){
+        newFotos.push(driveResult.fileUrl);
+        if(driveResult.folderUrl) driveFolderUrl = driveResult.folderUrl;
+      } else {
+        let url = null;
+        if(isCloudPhoto(f)){
+          const driveByUrl = await uploadVehicleFotoDrive({
+            placa: v.placa || 'SEM-PLACA',
+            data: v.data || new Date().toISOString().slice(0, 10),
+            tec: v.tec || 'sem-condutor',
+            sourceUrl: f
+          }, null, i);
+          if(driveByUrl && driveByUrl.fileUrl){
+            newFotos.push(driveByUrl.fileUrl);
+            if(driveByUrl.folderUrl) driveFolderUrl = driveByUrl.folderUrl;
+            continue;
+          }
+        }
+        url = isLocalDataPhoto(f) ? await uploadVehicleFotoStorage(v.id, dataUrl, i) : f;
+        newFotos.push(url || f);
+      }
+    } else {
+      newFotos.push(f);
     }
   }
-  return { ...v, fotos: newFotos, fotosPendenteUpload: newFotos.some(isLocalDataPhoto), fotosLocalOnly: false };
+  return { ...v, fotos: newFotos, driveFolderUrl, fotosPendenteUpload: newFotos.some(photoNeedsDriveMigration), fotosLocalOnly: false };
 }
 
-async function forceVehiclePhotosUpload(){
-  const pendentes = (vehicles || []).filter(v => (v.fotos || []).some(isLocalDataPhoto));
+async function forceHistPhotosUpload(){
+  const pendentes = (hist || []).filter(h => (h.fotos || []).some(photoNeedsDriveMigration));
   if(!pendentes.length){
-    toast('Nenhuma foto veicular pendente para reenviar.', 'info', 3500);
+    toast('Nenhuma foto de inventário antiga pendente para subir ao Drive.', 'info', 3500);
     return;
   }
   try {
     showCloudStatus('📷 Reenviando fotos...', 'var(--cyan)');
-    renderSyncBar('Reenviando fotos pendentes para o Firebase Storage...', 'syncing');
+    renderSyncBar('Reenviando fotos pendentes do inventário para o Google Drive...', 'syncing');
+    let totalPendentes = 0;
+    let totalEnviadas = 0;
+    for(const h of pendentes){
+      const antes = (h.fotos || []).filter(photoNeedsDriveMigration).length;
+      totalPendentes += antes;
+      const migrado = await migratePhotosToStorage(h);
+      const depois = (migrado.fotos || []).filter(photoNeedsDriveMigration).length;
+      totalEnviadas += Math.max(0, antes - depois);
+      const idx = hist.findIndex(x => x.id === h.id);
+      if(idx >= 0) hist[idx] = migrado;
+    }
+    if(_idb) await idbSave(['hist']);
+    await cloudSave(true);
+    renderHist();
+    renderTechs();
+    const restantes = (hist || []).reduce((acc, h) => acc + ((h.fotos || []).filter(photoNeedsDriveMigration).length), 0);
+    if(restantes){
+      toast(`${totalEnviadas} foto(s) de inventário enviada(s) ao Drive. ${restantes} ainda ficaram fora do Drive.`, 'warn', 6500);
+      showCloudStatus('⚠️ Fotos ainda pendentes', 'var(--yellow)');
+    } else {
+      toast(`${totalEnviadas || totalPendentes} foto(s) de inventário enviada(s) ao Drive.`, 'success', 4500);
+      showCloudStatus('✅ Fotos na nuvem', 'var(--green)');
+    }
+  } catch(e) {
+    console.warn('Falha ao reenviar fotos de inventário:', e);
+    toast('Falha ao reenviar fotos de inventário. Verifique conexão e Drive/Firebase.', 'error', 6500);
+    showCloudStatus('⚠️ Falha no reenvio', 'var(--yellow)');
+  }
+}
+
+async function forceVehiclePhotosUpload(){
+  const pendentes = (vehicles || []).filter(v => (v.fotos || []).some(photoNeedsDriveMigration));
+  if(!pendentes.length){
+    toast('Nenhuma foto veicular antiga pendente para subir ao Drive.', 'info', 3500);
+    return;
+  }
+  try {
+    showCloudStatus('📷 Reenviando fotos...', 'var(--cyan)');
+    renderSyncBar('Reenviando fotos antigas de vistoria para o Google Drive...', 'syncing');
     let totalPendentes = 0;
     let totalEnviadas = 0;
     for(const v of pendentes){
-      const antes = (v.fotos || []).filter(isLocalDataPhoto).length;
+      const antes = (v.fotos || []).filter(photoNeedsDriveMigration).length;
       totalPendentes += antes;
       const migrado = await migrateVehiclePhotosToStorage(v);
-      const depois = (migrado.fotos || []).filter(isLocalDataPhoto).length;
+      const depois = (migrado.fotos || []).filter(photoNeedsDriveMigration).length;
       totalEnviadas += Math.max(0, antes - depois);
       const idx = vehicles.findIndex(x => x.id === v.id);
       if(idx >= 0) vehicles[idx] = migrado;
@@ -8341,19 +8716,115 @@ async function forceVehiclePhotosUpload(){
     if(_idb) await idbSave(['vehicles']);
     await cloudSave(true);
     renderVehicles();
-    const restantes = (vehicles || []).reduce((acc, v) => acc + ((v.fotos || []).filter(isLocalDataPhoto).length), 0);
+    const restantes = (vehicles || []).reduce((acc, v) => acc + ((v.fotos || []).filter(photoNeedsDriveMigration).length), 0);
     if(restantes){
-      toast(`${totalEnviadas} foto(s) reenviada(s). ${restantes} ainda pendente(s). Confira regras/conexão do Firebase.`, 'warn', 6500);
+      toast(`${totalEnviadas} foto(s) de vistoria enviada(s) ao Drive. ${restantes} ainda ficaram fora do Drive.`, 'warn', 6500);
       showCloudStatus('⚠️ Fotos ainda pendentes', 'var(--yellow)');
     } else {
-      toast(`${totalEnviadas || totalPendentes} foto(s) reenviada(s) para a nuvem.`, 'success', 4500);
+      toast(`${totalEnviadas || totalPendentes} foto(s) de vistoria enviada(s) ao Drive.`, 'success', 4500);
       showCloudStatus('✅ Fotos na nuvem', 'var(--green)');
     }
   } catch(e) {
     console.warn('Falha ao reenviar fotos veiculares:', e);
-    toast('Falha ao reenviar fotos pendentes. Verifique conexão e regras do Firebase.', 'error', 6500);
+    toast('Falha ao reenviar fotos de vistoria para o Drive. Verifique conexão e permissões.', 'error', 6500);
     showCloudStatus('⚠️ Falha no reenvio', 'var(--yellow)');
   }
+}
+
+async function forceLegacyPhotosToDrive(){
+  const invPendentes = (hist || []).reduce((acc, h) => acc + ((h.fotos || []).filter(photoNeedsDriveMigration).length), 0);
+  const vistPendentes = (vehicles || []).reduce((acc, v) => acc + ((v.fotos || []).filter(photoNeedsDriveMigration).length), 0);
+  const total = invPendentes + vistPendentes;
+  if(!total){
+    toast('Nenhuma foto antiga pendente para subir ao Drive.', 'info', 3500);
+    return;
+  }
+  if(!confirm(`Subir ${total} foto(s) antiga(s) para o Google Drive?\n\nInventários: ${invPendentes}\nVistorias: ${vistPendentes}`)) return;
+  try {
+    showCloudStatus('📷 Subindo antigas...', 'var(--cyan)');
+    renderSyncBar('Subindo fotos antigas de inventários e vistorias para o Google Drive...', 'syncing');
+    if(invPendentes) await forceHistPhotosUpload();
+    if(vistPendentes) await forceVehiclePhotosUpload();
+    const invRestantes = (hist || []).reduce((acc, h) => acc + ((h.fotos || []).filter(photoNeedsDriveMigration).length), 0);
+    const vistRestantes = (vehicles || []).reduce((acc, v) => acc + ((v.fotos || []).filter(photoNeedsDriveMigration).length), 0);
+    const restantes = invRestantes + vistRestantes;
+    if(restantes){
+      toast(`Migração concluída parcialmente. ${restantes} foto(s) ainda ficaram fora do Drive.`, 'warn', 7000);
+      renderSyncBar(`${restantes} foto(s) ainda ficaram fora do Drive. Verifique conexão/permissões das URLs antigas.`, 'err');
+    } else {
+      toast('Fotos antigas de inventários e vistorias enviadas para o Drive.', 'success', 5000);
+      renderSyncBar('Fotos antigas enviadas para o Google Drive.', 'ok');
+    }
+  } catch(e) {
+    console.warn('Falha ao subir fotos antigas para o Drive:', e);
+    toast('Falha ao subir fotos antigas para o Drive.', 'error', 6500);
+    renderSyncBar('Falha ao subir fotos antigas para o Drive.', 'err');
+  }
+}
+
+// ── EXCLUSÕES (TOMBSTONES) ──────────────────────────────────────────────
+// Sem isso, o merge por id "reviveria" um registro apagado por este
+// dispositivo assim que outro dispositivo sincronizasse com dados antigos.
+// Guarda por 7 dias o id de tudo que foi apagado localmente, pra o merge
+// saber que a ausência é intencional, não um estado desatualizado.
+const DELETION_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+let deletedIds = { techs: [], loans: [], hist: [], banco: [] };
+function loadDeletedIds(){
+  try {
+    const raw = localStorage.getItem('lm_deleted_ids');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      Object.keys(deletedIds).forEach(k => { deletedIds[k] = Array.isArray(parsed[k]) ? parsed[k] : []; });
+    }
+  } catch(e){ console.warn('Falha ao carregar lista de exclusões:', e); }
+}
+function persistDeletedIds(){
+  try { localStorage.setItem('lm_deleted_ids', JSON.stringify(deletedIds)); }
+  catch(e){ console.warn('Falha ao salvar lista de exclusões:', e); }
+}
+function pruneDeletedIds(){
+  const cutoff = Date.now() - DELETION_RETENTION_MS;
+  Object.keys(deletedIds).forEach(k => {
+    deletedIds[k] = (deletedIds[k] || []).filter(d => d && d.deletedAt >= cutoff);
+  });
+}
+function markDeleted(entity, id){
+  if(!deletedIds[entity]) deletedIds[entity] = [];
+  deletedIds[entity] = deletedIds[entity].filter(d => d.id !== id);
+  deletedIds[entity].push({ id, deletedAt: Date.now() });
+  pruneDeletedIds();
+  persistDeletedIds();
+}
+loadDeletedIds();
+
+// ── MERGE GENÉRICO POR ID (techs, loans, hist, banco) ───────────────────
+// Junta a lista local com a lista da nuvem: pra cada id, fica a versão com
+// o updatedAt mais recente; ids marcados como apagados neste dispositivo
+// (deletedList) são removidos do resultado mesmo que existam na nuvem.
+function mergeEntityLists(localList, cloudList, deletedList){
+  const deletedSet = new Set((deletedList || []).map(d => d.id));
+  const map = new Map();
+  (Array.isArray(cloudList) ? cloudList : []).forEach(item => { if(item && item.id) map.set(item.id, item); });
+  (Array.isArray(localList) ? localList : []).forEach(item => {
+    if(!item || !item.id) return;
+    const existing = map.get(item.id);
+    if(!existing || Number(item.updatedAt || 0) >= Number(existing.updatedAt || 0)) map.set(item.id, item);
+  });
+  deletedSet.forEach(id => map.delete(id));
+  return Array.from(map.values());
+}
+
+// ── MERGE DO LOG DE AUDITORIA ────────────────────────────────────────────
+// Log é só-inserção (nunca editado/apagado individualmente), então o merge
+// é uma união por id, ordenada por data e cortada no limite máximo.
+function mergeAuditLists(localList, cloudList){
+  const map = new Map();
+  [...(Array.isArray(cloudList) ? cloudList : []), ...(Array.isArray(localList) ? localList : [])].forEach(entry => {
+    if(!entry) return;
+    const key = entry.id || (entry.ts + '|' + entry.acao + '|' + entry.detalhe);
+    if(!map.has(key)) map.set(key, entry);
+  });
+  return Array.from(map.values()).sort((a,b) => (b.ts||0) - (a.ts||0)).slice(0, MAX_AUDIT);
 }
 
 function mergeVehicleTicketLists(localList, cloudList){
@@ -8370,8 +8841,8 @@ function mergeVehicleTicketLists(localList, cloudList){
 async function forceVehicleTicketsCloudSync(){
   try {
     const localTickets = Array.isArray(vehicleTickets) ? vehicleTickets : [];
-    if(!localTickets.length){ toast('Nenhum ticket local para reenviar.', 'info'); return; }
-    showCloudStatus('Reenviando tickets...', 'var(--cyan)');
+    if(!localTickets.length){ toast('Nenhuma O.S local para reenviar.', 'info'); return; }
+    showCloudStatus('Reenviando O.S...', 'var(--cyan)');
     const db = await _initFirebase();
     if(!db){ toast('Sem conexao com Firebase. Tente novamente com internet.', 'warn'); return; }
     const snap = await db.collection('lumar').doc('dados').get();
@@ -8380,10 +8851,10 @@ async function forceVehicleTicketsCloudSync(){
     if(_idb) await idbSave(['vehicleTickets']);
     await cloudSave(true);
     renderVehicleTickets();
-    toast('Tickets reenviados para a nuvem. Abra/atualize os outros dispositivos.', 'success', 4500);
+    toast('O.S reenviadas para a nuvem. Abra/atualize os outros dispositivos.', 'success', 4500);
   } catch(e) {
-    console.warn('Falha ao reenviar tickets:', e);
-    toast('Falha ao reenviar tickets para a nuvem.', 'error', 4500);
+    console.warn('Falha ao reenviar O.S:', e);
+    toast('Falha ao reenviar O.S para a nuvem.', 'error', 4500);
   }
 }
 async function bootApp(){
@@ -8529,7 +9000,7 @@ async function bootApp(){
     setTimeout(() => {
       try {
         cloudSave(true);
-        if(typeof toast === 'function') toast('Tickets antigos reenviados para a nuvem.', 'success', 3500);
+        if(typeof toast === 'function') toast('O.S antigas reenviadas para a nuvem.', 'success', 3500);
       } catch(e) {}
     }, 800);
   }
