@@ -2451,7 +2451,7 @@ document.addEventListener('DOMContentLoaded', renderizarTabelaNR35);
         <div class="dias-kpi dias-kpi-principal dias-kpi-realizado"><span>Produção Realizada</span><strong id="diasTotalFeito">-</strong></div>
         <div class="dias-kpi dias-kpi-principal dias-kpi-pendente"><span>Faltam para a Meta</span><strong id="diasFaltaMeta">-</strong></div>
         <button class="dias-kpi dias-kpi-operacao dias-kpi-click capacidade-kpi dias-kpi-capacidade" id="cardCapacidadeDias" type="button" aria-label="Ver capacidade disponível da equipe"><span>Capacidade da Equipe</span><strong id="diasUteisRestantes">-</strong></button>
-        <div class="dias-kpi dias-kpi-operacao dias-kpi-equipe"><span>Técnicos Ativos</span><strong id="diasMetaDia">7</strong></div>
+        <button class="dias-kpi dias-kpi-operacao dias-kpi-click dias-kpi-equipe" id="cardTecnicosAtivosDias" type="button" aria-label="Ver técnicos ativos"><span>Técnicos Ativos</span><strong id="diasMetaDia">7</strong></button>
         <div class="dias-kpi dias-kpi-contexto dias-kpi-competencia"><span>Mês de Referência</span><strong id="diasCompetencia">-</strong><small id="diasCompetenciaSub">Mês selecionado</small></div>
       </div>
       <div class="dias-progress" title="Progresso da meta"><span id="diasProgresso" style="width:0%"></span></div>
@@ -2465,8 +2465,20 @@ document.addEventListener('DOMContentLoaded', renderizarTabelaNR35);
     </div>
     <div class="table-wrap dias-table-wrap">
       <table>
-        <thead><tr><th>Técnico</th><th>Capacidade estipulada em dias</th><th>Produções diárias (DT)</th></tr></thead>
-        <tbody id="diasTabelaTecnicos"><tr><td colspan="3"><div class="empty">Aguardando leitura da planilha de controle.</div></td></tr></tbody>
+        <thead><tr><th>Técnico</th><th>Capacidade estipulada em dias</th><th>Produções diárias (DT)</th><th>Dias efetivamente trabalhados</th></tr></thead>
+        <tbody id="diasTabelaTecnicos"><tr><td colspan="4"><div class="empty">Aguardando leitura da planilha de controle.</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card dias-table-card" id="diasCardContingencia" style="display:none">
+    <div class="section-title-line">
+      <h2>Equipe de Contingência</h2>
+      <span class="section-caption">Colaboradores fora do quadro oficial que produziram em VT no período (apoio operacional). A produção deles já entra nos totais da equipe acima; aqui é só pra dar visibilidade separada.</span>
+    </div>
+    <div class="table-wrap dias-table-wrap">
+      <table>
+        <thead><tr><th>Colaborador</th><th>Produções diárias (DT)</th><th>Dias efetivamente trabalhados</th></tr></thead>
+        <tbody id="diasTabelaContingencia"><tr><td colspan="3"><div class="empty">Aguardando leitura da planilha de controle.</div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -5531,7 +5543,7 @@ const DIAS_SHEET_CONFIG={
   tecnicosDiasMaio:7,
   metaMaio2026:175,
   minimoDiarioMaio:5,
-  excluirTecnicosDias:["MAZZINI","MAGDIEL","META","ENTREGUE"],
+  excluirTecnicosDias:["MAZZINI","META","ENTREGUE"],
   meses:[
     {num:0,nome:"Janeiro",label:"JANEIRO",tabs:["VT Janeiro 2026","VT JANEIRO 2026","VT, Janeiro 2026","VT, JANEIRO 2026"]},
     {num:1,nome:"Fevereiro",label:"FEVEREIRO",tabs:["VT Fevereiro 2026","VT FEVEREIRO 2026"]},
@@ -5559,7 +5571,7 @@ let diasAtualizacaoPendente=false;
 let diasAtualizacaoIntervalo=null;
 const CADASTRO_TECNICOS_DIAS=[
   {escalaId:"t6",planilha:["ALEX"],exibicao:"Alex",escala:["Alex"],statusPadrao:"Ativo"},
-  {escalaId:"t1",planilha:["GEOVANIO"],exibicao:"Matheus Henrique",escala:["Matheus Henrique"],statusPadrao:"Ativo"},
+  {escalaId:"t1",planilha:["GEOVANIO","MATHEUS HENRIQUE"],exibicao:"Matheus Henrique",escala:["Matheus Henrique"],statusPadrao:"Ativo"},
   {escalaId:"t_izidoro",planilha:["IZIDORO","IZIDORO PEREIRA"],exibicao:"Izidoro",escala:["Izidoro Pereira","Izidoro"],statusPadrao:"Técnico noturno"},
   {escalaId:"t4",planilha:["JOSE FRANCISCO"],exibicao:"José Francisco",escala:["José Francisco"],statusPadrao:"Ativo"},
   {escalaId:"",planilha:["KLEYTON"],exibicao:"Kleyton",escala:["Kleyton"],statusPadrao:"Ativo"},
@@ -5567,6 +5579,19 @@ const CADASTRO_TECNICOS_DIAS=[
   {escalaId:"t2",planilha:["MATEUS REIS","MATHEUS REIS"],exibicao:"Matheus Reis",escala:["Matheus Reis"],statusPadrao:"Ativo"},
   {escalaId:"t3",planilha:["APOLINARIO"],exibicao:"Apolinário",escala:["Apolinário"],statusPadrao:"Ativo"}
 ];
+
+// Pessoal de apoio/contingência: aparece produzindo na planilha (cobrindo VT), mas não faz
+// parte do quadro oficial (não entra na base TOA, não tem plantão fixo). Confirmar grafia
+// exata do nome na planilha se "Adryel"/"Jeferson" não aparecerem depois de carregar.
+const CADASTRO_CONTINGENCIA_DIAS=[
+  {planilha:["MAGDIEL"],exibicao:"Magdiel"},
+  {planilha:["ADRYEL"],exibicao:"Adryel"},
+  {planilha:["JEFERSON","JEFFERSON"],exibicao:"Jefferson Luiz"}
+];
+function cadastroContingenciaDias(nome){
+  const alvo=head(nome);
+  return CADASTRO_CONTINGENCIA_DIAS.find(c=>(c.planilha||[]).some(n=>alvo.includes(head(n))))||null;
+}
 
 function setDiasText(id,valor){const el=$(id); if(el){ if("value" in el) el.value=String(valor).replace(/\./g,""); else el.textContent=valor; }}
 function formatNumeroDias(v,casas=0){
@@ -5899,15 +5924,16 @@ function contarDiasMetaTecnico(row,idx,header,mesInfo){
   let dias=0;
   let producao=0;
   let ultimoDiaComValor=0;
+  const diasTrabalhados=[];
   idx.dayIndices.forEach(i=>{
     const dia=Number(header[i]);
     if(!dia || !ehDiaTrabalhoDias(DIAS_SHEET_CONFIG.anoPadrao,mesInfo.num,dia,mesInfo)) return;
     const valor=parseNumeroDias(row[i]);
     if(valor>0) ultimoDiaComValor=Math.max(ultimoDiaComValor,dia);
     producao+=valor;
-    if(valor>=minimo) dias++;
+    if(valor>=minimo){ dias++; diasTrabalhados.push({dia,valor}); }
   });
-  return {dias,producao,ultimoDiaComValor,minimo};
+  return {dias,producao,ultimoDiaComValor,minimo,diasTrabalhados};
 }
 function contarDiasValidosEquipe(linhas,idx,header,mesInfo){
   const minimo=DIAS_SHEET_CONFIG.minimoDiarioMaio||5;
@@ -5995,17 +6021,19 @@ function extrairDadosDias(matriz,mesInfo){
     const nome=norm(row[idx.tecnico]);
     if(!nome || head(nome).includes("TOTAL_DO_DIA") || head(nome).includes("TOTAL_GERAL")) return;
     if(tecnicoExcluidoDias(nome)) return;
+    const contingenciaInfo=cadastroContingenciaDias(nome);
     const calc=contarDiasMetaTecnico(row,idx,header,mesInfo);
     ultimoDiaTecnicos=Math.max(ultimoDiaTecnicos,calc.ultimoDiaComValor);
     const totalPlanilha=parseNumeroDias(row[idx.total]);
     const total=calc.producao>0?calc.producao:totalPlanilha;
     const dt=parseNumeroDias(row[idx.dt]);
     const pd=dt>0?total/dt:parseNumeroDias(row[idx.pd]);
-    const nomeExibicao=nomeExibicaoTecnicoDias(nome);
-    const diasPrevistos=contarDiasPrevistosTecnicoDias(nomeExibicao,mesInfo);
+    const nomeExibicao=contingenciaInfo?contingenciaInfo.exibicao:nomeExibicaoTecnicoDias(nome);
+    const diasPrevistos=contingenciaInfo?null:contarDiasPrevistosTecnicoDias(nomeExibicao,mesInfo);
     const contabilizado=dt>0;
-    tecnicoRowsControle.push({nome:nomeExibicao,nomePlanilha:nome,total,dt,pd,totalPlanilha,diasPrevistos,contabilizado});
-    if(contabilizado) tecnicoRows.push({nome:nomeExibicao,nomePlanilha:nome,total,dt,pd,totalPlanilha,diasPrevistos,contabilizado});
+    const diasTrabalhadosNums=calc.diasTrabalhados||[];
+    tecnicoRowsControle.push({nome:nomeExibicao,nomePlanilha:nome,total,dt,pd,totalPlanilha,diasPrevistos,contabilizado,diasTrabalhadosNums,contingencia:!!contingenciaInfo});
+    if(contabilizado) tecnicoRows.push({nome:nomeExibicao,nomePlanilha:nome,total,dt,pd,totalPlanilha,diasPrevistos,contabilizado,diasTrabalhadosNums,contingencia:!!contingenciaInfo});
   });
   const totaisDia=(totalRow?idx.dayIndices.map(i=>parseNumeroDias(totalRow[i])):[]);
   const totalPelosDias=totaisDia.reduce((a,b)=>a+(Number(b)||0),0);
@@ -6252,23 +6280,47 @@ function renderDiasErro(msg){
   setDiasText("diasUteisRestantes","-");
   setDiasText("diasMetaDia",String(DIAS_SHEET_CONFIG.loginsAtivos||7));
   setDiasText("diasCompetencia","-");
-  if($("diasTabelaTecnicos")) $("diasTabelaTecnicos").innerHTML=`<tr><td colspan="3"><div class="empty">Não foi possível carregar os técnicos da planilha.<br><small>${esc(detalhe)}</small></div></td></tr>`;
+  if($("diasTabelaTecnicos")) $("diasTabelaTecnicos").innerHTML=`<tr><td colspan="4"><div class="empty">Não foi possível carregar os técnicos da planilha.<br><small>${esc(detalhe)}</small></div></td></tr>`;
   const mesInfo=mesDiasSelecionado();
   const tentativas=urlsDiasPlanilha(mesInfo).map(u=>esc(u.nome)).join(", ");
 }
 function renderTabelaTecnicosDias(dados,mesInfo){
   const tbody=$("diasTabelaTecnicos");
   if(!tbody) return;
-  const rows=(Array.isArray(dados?.tecnicoRowsControle)?dados.tecnicoRowsControle:[]).filter(t=>t.contabilizado);
+  const rows=(Array.isArray(dados?.tecnicoRowsControle)?dados.tecnicoRowsControle:[]).filter(t=>t.contabilizado&&!t.contingencia);
   if(!rows.length){
-    tbody.innerHTML='<tr><td colspan="3"><div class="empty">Nenhum técnico com DT preenchido na planilha de controle.</div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="4"><div class="empty">Nenhum técnico com DT preenchido na planilha de controle.</div></td></tr>';
     return;
   }
   tbody.innerHTML=rows.map(t=>{
+    const qtdRealizados=Array.isArray(t.diasTrabalhadosNums)?t.diasTrabalhadosNums.length:0;
     return `<tr>
       <td><strong>${esc(t.nome)}</strong></td>
       <td><button class="dias-capacidade-tecnico" type="button" data-tecnico="${esc(t.nome)}">${formatNumeroDias(t.diasPrevistos,0)} dias</button></td>
       <td>${formatNumeroDias(t.dt,0)}</td>
+      <td><button class="dias-capacidade-tecnico dias-realizados-tecnico" type="button" data-tecnico="${esc(t.nome)}">${formatNumeroDias(qtdRealizados,0)} dias</button></td>
+    </tr>`;
+  }).join("");
+}
+// Equipe de Contingência: gente que produziu (VT) sem fazer parte do quadro oficial.
+// A produção deles já está somada nos totais/meta da equipe (mesma origem: coluna DT),
+// só ficam separados aqui pra dar visibilidade de quanto veio de fora do quadro.
+function renderTabelaContingenciaDias(dados,mesInfo){
+  const card=$("diasCardContingencia");
+  const tbody=$("diasTabelaContingencia");
+  if(!tbody) return;
+  const rows=(Array.isArray(dados?.tecnicoRowsControle)?dados.tecnicoRowsControle:[]).filter(t=>t.contabilizado&&t.contingencia);
+  if(card) card.style.display=rows.length?"":"none";
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="3"><div class="empty">Nenhum lançamento de contingência neste mês.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML=rows.map(t=>{
+    const qtdRealizados=Array.isArray(t.diasTrabalhadosNums)?t.diasTrabalhadosNums.length:0;
+    return `<tr>
+      <td><strong>${esc(t.nome)}</strong> <span class="badge yellow">Contingência</span></td>
+      <td>${formatNumeroDias(t.dt,0)}</td>
+      <td><button class="dias-capacidade-tecnico dias-realizados-tecnico" type="button" data-tecnico="${esc(t.nome)}">${formatNumeroDias(qtdRealizados,0)} dias</button></td>
     </tr>`;
   }).join("");
 }
@@ -6284,6 +6336,50 @@ function abrirModalCapacidadeTecnicoDias(nome){
   $("modalIndicadorSub").textContent=`${total} dia(s) previstos em ${mesInfo.nome}/${DIAS_SHEET_CONFIG.anoPadrao}, considerando plantões, folgas compensatórias, férias e viradas de mês.`;
   conteudo.innerHTML=`<div class="base-total-resumo"><span class="base-total-chip active">Total: ${formatNumeroDias(total,0)} dias</span><span class="base-total-chip">Mês: ${esc(mesInfo.nome)}</span></div>
     <div class="table-wrap"><table><thead><tr><th>Data</th><th>Situação</th><th>Conta na capacidade</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden","false");
+}
+
+const NOMES_DIA_SEMANA_DIAS=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+// Dias EFETIVAMENTE trabalhados (produção real lançada na planilha, coluna a coluna),
+// diferente de detalhesDiasPrevistosTecnicoDias (que é a capacidade PLANEJADA pela escala).
+function detalhesDiasRealizadosTecnicoDias(nome,mesInfo){
+  const linha=(diasDadosAtuais?.tecnicoRowsControle||[]).find(t=>t.nome===nome);
+  const nums=Array.isArray(linha?.diasTrabalhadosNums)?linha.diasTrabalhadosNums:[];
+  const ano=DIAS_SHEET_CONFIG.anoPadrao;
+  const dias=nums.map(item=>{
+    const data=new Date(ano,mesInfo.num,item.dia);
+    const feriado=ehFeriadoTeresinaData(data);
+    const fimDeSemana=data.getDay()===0||data.getDay()===6;
+    let tipo="Normal";
+    if(feriado) tipo="Feriado";
+    else if(fimDeSemana) tipo="Fim de semana";
+    return {dia:item.dia,valor:item.valor,dataISO:dataISO(ano,mesInfo.num,item.dia),dataBR:dataBR(data),diaSemana:NOMES_DIA_SEMANA_DIAS[data.getDay()],tipo};
+  }).sort((a,b)=>a.dia-b.dia);
+  return {
+    dias,
+    totalDias:dias.length,
+    totalFimDeSemana:dias.filter(d=>d.tipo==="Fim de semana").length,
+    totalFeriados:dias.filter(d=>d.tipo==="Feriado").length
+  };
+}
+function abrirModalDiasRealizadosDias(nome){
+  const modal=$("modalIndicadorDetalhe");
+  const conteudo=$("modalIndicadorConteudo");
+  const mesInfo=diasMesInfoAtual||mesDiasSelecionado();
+  if(!modal||!conteudo||!mesInfo) return;
+  const resumo=detalhesDiasRealizadosTecnicoDias(nome,mesInfo);
+  const linhas=resumo.dias.length
+    ? resumo.dias.map(item=>`<tr><td>${esc(item.dataBR)}</td><td>${esc(item.diaSemana)}</td><td>${esc(item.tipo)}</td><td>${formatNumeroDias(item.valor,1)}</td></tr>`).join("")
+    : '<tr><td colspan="4"><div class="empty">Nenhum dia com produção lançada neste mês.</div></td></tr>';
+  $("modalIndicadorTitulo").textContent=`Dias efetivamente trabalhados - ${nome}`;
+  $("modalIndicadorSub").textContent=`${resumo.totalDias} dia(s) com produção lançada em ${mesInfo.nome}/${DIAS_SHEET_CONFIG.anoPadrao}, sendo ${resumo.totalFimDeSemana} em fim de semana e ${resumo.totalFeriados} em feriado.`;
+  conteudo.innerHTML=`<div class="base-total-resumo">
+      <span class="base-total-chip active">Total: ${formatNumeroDias(resumo.totalDias,0)} dias</span>
+      <span class="base-total-chip">Fim de semana: ${formatNumeroDias(resumo.totalFimDeSemana,0)}</span>
+      <span class="base-total-chip">Feriado: ${formatNumeroDias(resumo.totalFeriados,0)}</span>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Dia da semana</th><th>Tipo</th><th>Produção (DT)</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
   modal.classList.add("active");
   modal.setAttribute("aria-hidden","false");
 }
@@ -6347,7 +6443,7 @@ function renderDiasTrabalhados(dados,mesInfo,fonte){
   setDiasText("diasTotalFeito",formatNumeroDias(dados.totalJaFeito,0));
   setDiasText("diasFaltaMeta",formatNumeroDias(dados.falta,0));
   setDiasText("diasUteisRestantes",formatNumeroDias(dados.capacidadeEquipeMes,0));
-  setDiasText("diasMetaDia",String(dados.tecnicoRows?.length||0));
+  setDiasText("diasMetaDia",String((dados.tecnicoRows||[]).filter(t=>!t.contingencia).length));
   setDiasText("diasCompetencia",`${mesInfo.label}-26`);
   setDiasText("diasCompetenciaSub",`${dataBR(inicio)} a ${dataBR(fim)}`);
   const barra=$("diasProgresso");
@@ -6398,6 +6494,30 @@ function abrirModalCapacidadeDias(){
   modal.classList.add("active");
   modal.setAttribute("aria-hidden","false");
   renderModalCapacidadeMes(mesPadrao.num);
+}
+function statusCadastroTecnicoDias(nome){
+  return CADASTRO_TECNICOS_DIAS.find(c=>c.exibicao===nome)?.statusPadrao||"Ativo";
+}
+function abrirModalTecnicosAtivosDias(){
+  const modal=$("modalIndicadorDetalhe");
+  const conteudo=$("modalIndicadorConteudo");
+  const mesInfo=diasMesInfoAtual||mesDiasSelecionado();
+  if(!modal||!conteudo||!mesInfo) return;
+  const todos=(diasDadosAtuais?.tecnicoRowsControle||[]).filter(t=>t.contabilizado);
+  const rows=[...todos.filter(t=>!t.contingencia),...todos.filter(t=>t.contingencia)];
+  const linhas=rows.length
+    ? rows.map(t=>{
+        const qtd=Array.isArray(t.diasTrabalhadosNums)?t.diasTrabalhadosNums.length:0;
+        const status=t.contingencia?"Ativo / Contingência":statusCadastroTecnicoDias(t.nome);
+        return `<tr><td><strong>${esc(t.nome)}</strong></td><td>${esc(status)}</td><td>${formatNumeroDias(qtd,0)} dias</td></tr>`;
+      }).join("")
+    : '<tr><td colspan="3"><div class="empty">Nenhum técnico com DT preenchido neste mês.</div></td></tr>';
+  $("modalIndicadorTitulo").textContent="Técnicos Ativos";
+  $("modalIndicadorSub").textContent=`${rows.length} pessoa(s) com produção lançada em ${mesInfo.nome}/${DIAS_SHEET_CONFIG.anoPadrao}, incluindo quadro oficial e contingência.`;
+  conteudo.innerHTML=`<div class="base-total-resumo"><span class="base-total-chip active">Total: ${formatNumeroDias(rows.length,0)}</span><span class="base-total-chip">Mês: ${esc(mesInfo.nome)}</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Status</th><th>Dias já trabalhados</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden","false");
 }
 function mesInfoPlantaoVigenteDias(fallbackMesInfo){
   try{
@@ -6467,8 +6587,9 @@ function atualizarCardCapacidadeSelecionada(){
   capacidadeMesSelecionado=Number(mesInfo.num);
   const capacidade=detalhesCapacidadeMes(mesInfo,1);
   setDiasText("diasUteisRestantes",formatNumeroDias(capacidade.total||0,0));
-  setDiasText("diasMetaDia",String(Array.isArray(diasDadosAtuais?.tecnicoRows)?diasDadosAtuais.tecnicoRows.length:equipeAtivaMesDias(mesInfo)));
+  setDiasText("diasMetaDia",String(Array.isArray(diasDadosAtuais?.tecnicoRows)?diasDadosAtuais.tecnicoRows.filter(t=>!t.contingencia).length:equipeAtivaMesDias(mesInfo)));
   if(diasDadosAtuais) renderTabelaTecnicosDias(diasDadosAtuais,mesInfo);
+  if(diasDadosAtuais) renderTabelaContingenciaDias(diasDadosAtuais,mesInfo);
 }
 function preencherSelectCapacidadeInline(sincronizarComMesAvaliado=false){
   const sel=$("capacidadeMesSelectTopo");
@@ -6485,6 +6606,8 @@ function preencherSelectCapacidadeInline(sincronizarComMesAvaliado=false){
 function inicializarDiasTrabalhados(){
   const cardCapacidade=$("cardCapacidadeDias");
   if(cardCapacidade&&!cardCapacidade.dataset.bound){cardCapacidade.dataset.bound="1";cardCapacidade.addEventListener("click",abrirModalCapacidadeDias);}
+  const cardTecnicosAtivos=$("cardTecnicosAtivosDias");
+  if(cardTecnicosAtivos&&!cardTecnicosAtivos.dataset.bound){cardTecnicosAtivos.dataset.bound="1";cardTecnicosAtivos.addEventListener("click",abrirModalTecnicosAtivosDias);}
   const capacidadeTopo=$("capacidadeMesSelectTopo");
   if(capacidadeTopo&&!capacidadeTopo.dataset.bound){capacidadeTopo.dataset.bound="1";capacidadeTopo.addEventListener("change",()=>{capacidadeMesSelecionado=Number(capacidadeTopo.value);atualizarCardCapacidadeSelecionada();});}
   preencherSelectDias();
@@ -6502,8 +6625,18 @@ function inicializarDiasTrabalhados(){
   if(tabelaTecnicos&&!tabelaTecnicos.dataset.bound){
     tabelaTecnicos.dataset.bound="1";
     tabelaTecnicos.addEventListener("click",e=>{
+      const btnRealizados=e.target.closest(".dias-realizados-tecnico");
+      if(btnRealizados){ abrirModalDiasRealizadosDias(btnRealizados.dataset.tecnico||""); return; }
       const btn=e.target.closest(".dias-capacidade-tecnico");
       if(btn) abrirModalCapacidadeTecnicoDias(btn.dataset.tecnico||"");
+    });
+  }
+  const tabelaContingencia=$("diasTabelaContingencia");
+  if(tabelaContingencia&&!tabelaContingencia.dataset.bound){
+    tabelaContingencia.dataset.bound="1";
+    tabelaContingencia.addEventListener("click",e=>{
+      const btnRealizados=e.target.closest(".dias-realizados-tecnico");
+      if(btnRealizados) abrirModalDiasRealizadosDias(btnRealizados.dataset.tecnico||"");
     });
   }
   if(!inicializarDiasTrabalhados._plantaoListener){
