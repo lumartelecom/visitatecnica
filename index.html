@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -2068,6 +2069,232 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 
 
 </style>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CENTRO DE PERFORMANCE — camada visual premium (aditiva)
+     Não remove nem sobrescreve a lógica/IDs existentes; apenas
+     reorganiza navegação (sidebar) e adiciona os novos painéis.
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+:root{
+  --accent:#e30613;
+  --accent-dark:#a90410;
+  --accent-light:#fdeced;
+  --accent-glow:rgba(227,6,19,.18);
+  --nav-w:264px;
+  --ink-0:#0b1220;
+  --ink-1:#141d2e;
+  --surface-2:#f4f7fb;
+  --pos:#0d9968;
+  --pos-light:#e3f8ef;
+  --warn:#d97706;
+  --warn-light:#fef3d9;
+  --neg:#dc2626;
+  --neg-light:#fee2e2;
+  --radius-xl:16px;
+  --shadow-lift:0 10px 30px rgba(15,25,45,.10),0 2px 8px rgba(15,25,45,.06);
+  --shadow-pop:0 18px 44px rgba(15,25,45,.16),0 4px 12px rgba(15,25,45,.08);
+}
+body{background:
+  radial-gradient(1100px 520px at 100% -10%, rgba(227,6,19,.05), transparent 60%),
+  radial-gradient(900px 480px at -10% 0%, rgba(26,95,191,.06), transparent 55%),
+  var(--bg);
+}
+
+/* ─── HEADER refinement ─── */
+.site-header{background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 62%,#22335c 100%);border-bottom:2px solid var(--accent)}
+.header-badge{background:linear-gradient(120deg,var(--accent),var(--accent-dark));border-color:transparent;color:#fff}
+
+/* ─── APP SHELL ─── */
+.app-shell{max-width:1620px;margin:0 auto;display:flex;align-items:flex-start;gap:0}
+.side-nav{width:var(--nav-w);flex-shrink:0;position:sticky;top:62px;height:calc(100vh - 62px);overflow-y:auto;background:linear-gradient(180deg,var(--ink-0),var(--ink-1));border-right:1px solid rgba(255,255,255,.06);scrollbar-width:thin;padding-bottom:24px}
+.side-nav::-webkit-scrollbar{width:6px}
+.side-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:6px}
+.side-nav-scroll{padding:18px 12px 8px}
+.nav-group{margin-bottom:18px}
+.nav-group-title{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.34);padding:0 10px 8px}
+.nav-item{width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;border-radius:9px;padding:10px 12px;margin-bottom:2px;color:rgba(255,255,255,.66);font-size:13px;font-weight:600;text-align:left;box-shadow:none;letter-spacing:.01em;justify-content:flex-start}
+.nav-item .nav-ico{width:18px;height:18px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:14px;opacity:.85}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.active{background:linear-gradient(120deg,var(--accent),var(--accent-dark));color:#fff;box-shadow:0 8px 20px var(--accent-glow)}
+.nav-item .nav-badge{margin-left:auto;background:rgba(255,255,255,.14);color:#fff;font-size:10px;font-weight:800;border-radius:20px;padding:2px 7px;font-family:'IBM Plex Mono',monospace}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.28)}
+
+.main-col{flex:1;min-width:0}
+.app-shell .container{max-width:1356px;margin:0;padding:20px 28px 48px}
+
+/* Toolbar (loader + status), agora fixo no topo do conteúdo, visível em qualquer aba */
+.app-toolbar .import-bar{padding:10px 28px;max-width:1356px}
+.app-toolbar .status-wrap{padding:8px 28px 0;max-width:1356px}
+
+@media(max-width:980px){
+  .app-shell{flex-direction:column}
+  .side-nav{position:sticky;top:62px;width:100%;height:auto;max-height:none;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);z-index:60}
+  .side-nav-scroll{display:flex;flex-direction:row;gap:16px;overflow-x:auto;padding:10px 12px}
+  .nav-group{display:flex;align-items:center;gap:4px;margin-bottom:0;flex-shrink:0}
+  .nav-group-title{display:none}
+  .nav-item{flex-direction:column;gap:4px;padding:8px 12px;font-size:11px;white-space:nowrap}
+  .app-shell .container{padding:16px 14px 40px}
+}
+
+/* ─── Page header used inside new panels ─── */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.page-head h1{font-size:21px;font-weight:800;color:var(--navy);letter-spacing:-.01em}
+.page-head .page-sub{font-size:12.5px;color:var(--text-muted);margin-top:3px}
+.page-actions{display:flex;gap:8px;flex-wrap:wrap}
+.page-pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:11.5px;font-weight:700;color:var(--text-muted)}
+
+/* ─── Smart KPI cards (Dashboard Executivo) ─── */
+.exec-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.exec-kpi{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:16px 18px;box-shadow:var(--shadow-lift);overflow:hidden;transition:transform .15s,box-shadow .15s}
+.exec-kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+.exec-kpi .exec-kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.exec-kpi .exec-kpi-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0}
+.exec-kpi .exec-kpi-label{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.exec-kpi .exec-kpi-value{font-size:25px;font-weight:800;color:var(--text);font-family:'IBM Plex Mono',monospace;line-height:1}
+.exec-kpi .exec-kpi-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px}
+.exec-kpi .exec-kpi-sub{font-size:11px;color:var(--text-muted);font-weight:600}
+.exec-kpi .spark-canvas{width:76px;height:26px;flex-shrink:0}
+.trend-pill{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;border-radius:20px;padding:2px 8px;font-family:'IBM Plex Mono',monospace}
+.trend-pill.up{background:var(--pos-light);color:var(--pos)}
+.trend-pill.down{background:var(--neg-light);color:var(--neg)}
+.trend-pill.flat{background:var(--surface-2);color:var(--text-muted)}
+.exec-kpi.ico-indigo .exec-kpi-ico{background:linear-gradient(135deg,var(--indigo),#3730a3)}
+.exec-kpi.ico-blue .exec-kpi-ico{background:linear-gradient(135deg,var(--blue),#123f80)}
+.exec-kpi.ico-cyan .exec-kpi-ico{background:linear-gradient(135deg,var(--cyan),#0e6478)}
+.exec-kpi.ico-green .exec-kpi-ico{background:linear-gradient(135deg,var(--green),#0a7c54)}
+.exec-kpi.ico-orange .exec-kpi-ico{background:linear-gradient(135deg,var(--orange),#b8460b)}
+.exec-kpi.ico-red .exec-kpi-ico{background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+.exec-kpi.ico-violet .exec-kpi-ico{background:linear-gradient(135deg,var(--violet),#5b21b6)}
+.exec-kpi.ico-navy .exec-kpi-ico{background:linear-gradient(135deg,var(--navy),#08132a)}
+@media(max-width:1150px){.exec-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.exec-kpi-grid{grid-template-columns:1fr}}
+
+/* ─── Semáforo da equipe ─── */
+.semaphore-board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.semaphore-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--shadow-sm);display:flex;align-items:flex-start;gap:12px}
+.semaphore-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:3px;box-shadow:0 0 0 4px rgba(0,0,0,.03)}
+.semaphore-dot.green{background:var(--pos);box-shadow:0 0 0 4px var(--pos-light)}
+.semaphore-dot.yellow{background:var(--warn);box-shadow:0 0 0 4px var(--warn-light)}
+.semaphore-dot.red{background:var(--neg);box-shadow:0 0 0 4px var(--neg-light)}
+.semaphore-card strong{display:block;font-size:12.5px;color:var(--text);margin-bottom:3px}
+.semaphore-card span{font-size:11.5px;color:var(--text-muted);line-height:1.45}
+@media(max-width:900px){.semaphore-board{grid-template-columns:1fr}}
+
+/* ─── Insights automáticos ─── */
+.insight-list{display:flex;flex-direction:column;gap:8px}
+.insight-item{display:flex;gap:10px;align-items:flex-start;background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--text);line-height:1.5}
+.insight-item.pos{border-left-color:var(--pos)}
+.insight-item.warn{border-left-color:var(--warn)}
+.insight-item.neg{border-left-color:var(--neg)}
+.insight-item .insight-ico{font-size:14px;flex-shrink:0;line-height:1.4}
+.insight-item b{color:var(--navy)}
+
+/* ─── Grid 2/3 col util ─── */
+.grid-2c{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.grid-3c{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1100px){.grid-2c,.grid-3c{grid-template-columns:1fr}}
+
+/* ─── Chart boxes ─── */
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow-sm)}
+.chart-box canvas{max-width:100%}
+.chart-box-body{position:relative;height:230px}
+.chart-box-body.tall{height:300px}
+.chart-legend-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--text-muted);font-weight:700}
+.chart-legend-row span{display:inline-flex;align-items:center;gap:5px}
+.chart-legend-row i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+/* ─── Ranking board ─── */
+.rank-board{display:flex;flex-direction:column;gap:6px}
+.rank-board-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
+.rank-board-item .rbi-pos{width:24px;height:24px;border-radius:7px;background:var(--navy);color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'IBM Plex Mono',monospace}
+.rank-board-item:nth-child(1) .rbi-pos{background:linear-gradient(135deg,#f5c451,#d69e1f)}
+.rank-board-item:nth-child(2) .rbi-pos{background:linear-gradient(135deg,#c7ccd6,#9aa3b2)}
+.rank-board-item:nth-child(3) .rbi-pos{background:linear-gradient(135deg,#d99a63,#b06a30)}
+.rank-board-item .rbi-main{flex:1;min-width:0}
+.rank-board-item .rbi-name{font-size:12.5px;font-weight:700;color:var(--text)}
+.rank-board-item .rbi-sub{font-size:10.5px;color:var(--text-muted)}
+.rank-board-item .rbi-val{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;color:var(--navy);flex-shrink:0}
+
+/* ─── Team cards (Página da Equipe) ─── */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.team-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);position:relative;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.team-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}
+.team-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-right:84px}
+.team-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.team-avatar img{width:100%;height:100%;object-fit:cover}
+.team-card-head>div{min-width:0}
+.team-card-name{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-card-login{font-size:10.5px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-status-badge{position:absolute;top:14px;right:14px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 7px;border-radius:20px;white-space:nowrap}
+.team-status-badge.ok{background:var(--pos-light);color:var(--pos)}
+.team-status-badge.warn{background:var(--warn-light);color:var(--warn)}
+.team-status-badge.ferias{background:var(--blue-light);color:var(--blue)}
+.team-mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.team-mini-stats div{background:var(--surface-2);border-radius:8px;padding:6px 4px;text-align:center}
+.team-mini-stats span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:700}
+.team-mini-stats strong{display:block;font-size:12.5px;font-family:'IBM Plex Mono',monospace;color:var(--navy)}
+.team-card-foot{margin-top:10px;font-size:10.5px;color:var(--text-muted);display:flex;justify-content:space-between;gap:6px}
+.team-edit-btn{position:absolute;bottom:12px;right:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;width:24px;height:24px;font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
+.team-edit-btn:hover{color:var(--blue);border-color:var(--blue)}
+
+/* ─── Heatmap (barras de intensidade por técnico) ─── */
+.heatmap-wrap{display:flex;flex-direction:column;gap:7px}
+.heatmap-row{display:flex;align-items:center;gap:10px}
+.heatmap-row-label{width:120px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.heatmap-bar-bg{flex:1;height:20px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.heatmap-bar{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:10px;font-weight:800;color:#fff;transition:width .3s}
+
+/* ─── Timeline ─── */
+.timeline{position:relative;padding-left:18px}
+.timeline:before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding-bottom:14px}
+.timeline-item:before{content:"";position:absolute;left:-18px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid var(--surface)}
+.timeline-item.pos:before{background:var(--pos)}
+.timeline-item.neg:before{background:var(--neg)}
+.timeline-item .ti-date{font-size:10px;color:var(--text-muted);font-weight:700;font-family:'IBM Plex Mono',monospace}
+.timeline-item .ti-text{font-size:12px;color:var(--text);margin-top:2px}
+
+/* ─── Individual dashboard (modal técnico) ─── */
+.indiv-hero{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.indiv-avatar{width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.indiv-avatar img{width:100%;height:100%;object-fit:cover}
+.indiv-hero-info h3{font-size:16px;color:var(--navy);font-weight:800}
+.indiv-hero-info div{font-size:11.5px;color:var(--text-muted)}
+.indiv-rank-chip{margin-left:auto;background:var(--navy);color:#fff;border-radius:10px;padding:8px 14px;text-align:center}
+.indiv-rank-chip strong{display:block;font-size:16px;font-family:'IBM Plex Mono',monospace}
+.indiv-rank-chip span{font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.75}
+.indiv-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.indiv-stat{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.indiv-stat span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;margin-bottom:4px}
+.indiv-stat strong{font-size:16px;font-family:'IBM Plex Mono',monospace;color:var(--navy)}
+.indiv-compare{margin-bottom:6px}
+.indiv-compare-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:6px}
+.indiv-compare-row .icr-label{width:92px;flex-shrink:0;color:var(--text-muted);font-weight:700}
+.indiv-compare-row .icr-bar{flex:1;height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.indiv-compare-row .icr-bar i{display:block;height:100%;border-radius:6px}
+.indiv-compare-row .icr-val{width:52px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:800;flex-shrink:0}
+@media(max-width:640px){.indiv-stat-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ─── Editor de perfil do técnico (mini-modal) ─── */
+.mini-modal-overlay{position:fixed;inset:0;background:rgba(11,18,32,.55);display:none;align-items:center;justify-content:center;z-index:900;padding:16px}
+.mini-modal-overlay.open{display:flex}
+.mini-modal{background:var(--surface);border-radius:var(--radius-xl);padding:20px;width:100%;max-width:360px;box-shadow:var(--shadow-pop)}
+.mini-modal h3{font-size:14px;margin-bottom:12px;color:var(--navy)}
+.mini-modal label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin:10px 0 4px}
+.mini-modal input{width:100%}
+.mini-modal .mini-modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+
+/* ─── Gestor: pendências / agenda ─── */
+.gestor-list{display:flex;flex-direction:column;gap:8px}
+.gestor-list-item{display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px}
+.gestor-agenda-day{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;font-size:12px}
+.gestor-agenda-day.hoje{border-color:var(--accent);background:var(--accent-light)}
+
+/* ─── Empty state polish ─── */
+.exec-empty{background:var(--surface);border:1px dashed var(--border-strong);border-radius:var(--radius-xl);padding:40px 24px;text-align:center;color:var(--text-muted)}
+.exec-empty strong{display:block;color:var(--navy);font-size:14px;margin-bottom:6px}
+</style>
 </head>
 <body>
 
@@ -2085,17 +2312,181 @@ button:hover,.btn:hover{transform:translateY(-1px)}
 </header>
 
 
-<div class="container">
-
-<div class="tabs">
-  <button class="tab-btn" data-tab="nr35">Dashboard NR35</button>
-  <button class="tab-btn active" data-tab="performance_tecnico">Performance por Técnico</button>
-  <button class="tab-btn" data-tab="acao">Plano de Ação</button>
-  <button class="tab-btn" data-tab="dias">Dias Trabalhados</button>
-  <button class="tab-btn" data-tab="plantoes">Plantões</button>
-  <button class="tab-btn" data-tab="historico">Histórico Local</button>
-  <button class="tab-btn" data-tab="tecnicoCertificado">Técnico Certificado</button>
+<div class="app-toolbar">
+  <!-- STATUS + CARGA DE BASE (visível em qualquer aba) -->
+  <div class="status-wrap">
+    <div class="status" id="status">Nenhuma base carregada.</div>
+  </div>
+  <div class="import-bar historico-import-bar" id="historicoActions">
+    <input type="file" id="fileInput" accept=".csv,.zip,.xlsx,.xls">
+    <button id="btnCarregar" type="button">Carregar Base</button>
+    <button id="btnLimpar" type="button" class="secondary">Limpar</button>
+  </div>
 </div>
+
+<div class="app-shell">
+  <aside class="side-nav" id="sideNav">
+    <div class="side-nav-scroll">
+      <div class="nav-group">
+        <div class="nav-group-title">Centro de Performance</div>
+        <button class="tab-btn nav-item active" data-tab="executivo"><span class="nav-ico">▣</span>Dashboard Executivo</button>
+        <button class="tab-btn nav-item" data-tab="inteligencia"><span class="nav-ico">◈</span>Inteligência</button>
+        <button class="tab-btn nav-item" data-tab="ranking"><span class="nav-ico">🏆</span>Ranking Inteligente</button>
+        <button class="tab-btn nav-item" data-tab="evolucao"><span class="nav-ico">📈</span>Evolução &amp; Comparativos</button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Equipe</div>
+        <button class="tab-btn nav-item" data-tab="equipe"><span class="nav-ico">👥</span>Equipe</button>
+        <button class="tab-btn nav-item" data-tab="performance_tecnico"><span class="nav-ico">☰</span>Tabela Detalhada</button>
+        <button class="tab-btn nav-item" data-tab="acao"><span class="nav-ico">✔</span>Plano de Ação</button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operação</div>
+        <button class="tab-btn nav-item" data-tab="dias"><span class="nav-ico">📅</span>Dias Trabalhados</button>
+        <button class="tab-btn nav-item" data-tab="plantoes"><span class="nav-ico">🕑</span>Plantões</button>
+        <button class="tab-btn nav-item" data-tab="nr35"><span class="nav-ico">⛑</span>NR35</button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Gestão</div>
+        <button class="tab-btn nav-item" data-tab="gestor"><span class="nav-ico">🧭</span>Painel do Gestor</button>
+        <button class="tab-btn nav-item" data-tab="tecnicoCertificado"><span class="nav-ico">🎖</span>Técnico Certificado</button>
+        <button class="tab-btn nav-item" data-tab="historico"><span class="nav-ico">🗂</span>Histórico Local</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-col">
+  <main class="container">
+
+<!-- ═══════════ DASHBOARD EXECUTIVO ═══════════ -->
+<section id="executivo" class="tab-panel active">
+  <div class="page-head">
+    <div>
+      <h1>Dashboard Executivo</h1>
+      <div class="page-sub">Visão consolidada da equipe de manutenção — atualizado com a última base carregada.</div>
+    </div>
+    <div class="page-actions" id="execHeaderActions"></div>
+  </div>
+  <div class="exec-kpi-grid" id="execKpiGrid">
+    <div class="exec-empty"><strong>Aguardando base</strong>Carregue a planilha acima para gerar o dashboard executivo.</div>
+  </div>
+  <div class="grid-2c">
+    <div class="chart-box">
+      <h2>Evolução da Produção</h2>
+      <div class="chart-box-body"><canvas id="execChartEvolucao"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h2>Composição da Equipe</h2>
+      <div class="chart-box-body"><canvas id="execChartComposicao"></canvas></div>
+      <div id="execComposicaoLegenda" class="chart-legend-row"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DASHBOARD INTELIGENTE ═══════════ -->
+<section id="inteligencia" class="tab-panel">
+  <div class="page-head">
+    <div>
+      <h1>Dashboard Inteligente</h1>
+      <div class="page-sub">Semáforo automático, leitura executiva e previsão de fechamento do mês.</div>
+    </div>
+  </div>
+  <div class="semaphore-board" id="semaphoreBoard"></div>
+  <div class="grid-2c">
+    <div class="chart-box">
+      <h2>Resumo Executivo</h2>
+      <div class="insight-list" id="insightList"></div>
+    </div>
+    <div class="chart-box">
+      <h2>Previsão de Fechamento</h2>
+      <div id="forecastBox"></div>
+    </div>
+  </div>
+  <div class="grid-2c" style="margin-top:16px">
+    <div class="chart-box">
+      <h2>Pontos Positivos</h2>
+      <div class="insight-list" id="insightPositivos"></div>
+    </div>
+    <div class="chart-box">
+      <h2>Pontos Críticos &amp; Riscos</h2>
+      <div class="insight-list" id="insightCriticos"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ RANKING INTELIGENTE ═══════════ -->
+<section id="ranking" class="tab-panel">
+  <div class="page-head">
+    <div>
+      <h1>Ranking Inteligente</h1>
+      <div class="page-sub">Comparativos de desempenho por múltiplos critérios.</div>
+    </div>
+  </div>
+  <div class="grid-3c" id="rankingGrid"></div>
+</section>
+
+<!-- ═══════════ EVOLUÇÃO & COMPARATIVOS ═══════════ -->
+<section id="evolucao" class="tab-panel">
+  <div class="page-head">
+    <div>
+      <h1>Evolução &amp; Comparativos</h1>
+      <div class="page-sub">Histórico consolidado das bases salvas nesta instalação.</div>
+    </div>
+  </div>
+  <div class="grid-3c" id="comparativosGrid" style="margin-bottom:16px"></div>
+  <div class="grid-2c">
+    <div class="chart-box">
+      <h2>Produção — Últimos períodos</h2>
+      <div class="chart-box-body tall"><canvas id="evoChartProducao"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h2>TEC1 x Revisita — Últimos períodos</h2>
+      <div class="chart-box-body tall"><canvas id="evoChartIndicadores"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ EQUIPE ═══════════ -->
+<section id="equipe" class="tab-panel">
+  <div class="page-head">
+    <div>
+      <h1>Equipe</h1>
+      <div class="page-sub">Clique em um técnico para abrir o dashboard individual.</div>
+    </div>
+  </div>
+  <div class="team-grid" id="teamGrid"></div>
+</section>
+
+<!-- ═══════════ PAINEL DO GESTOR ═══════════ -->
+<section id="gestor" class="tab-panel">
+  <div class="page-head">
+    <div>
+      <h1>Painel do Gestor</h1>
+      <div class="page-sub">Resumo geral, alertas, agenda e mapa de calor da equipe.</div>
+    </div>
+  </div>
+  <div class="exec-kpi-grid" id="gestorKpiGrid" style="grid-template-columns:repeat(4,1fr)"></div>
+  <div class="grid-2c">
+    <div class="chart-box">
+      <h2>Precisa de Acompanhamento</h2>
+      <div class="gestor-list" id="gestorAtencao"></div>
+    </div>
+    <div class="chart-box">
+      <h2>Merece Reconhecimento</h2>
+      <div class="gestor-list" id="gestorDestaques"></div>
+    </div>
+  </div>
+  <div class="grid-2c" style="margin-top:16px">
+    <div class="chart-box">
+      <h2>Agenda da Semana (Plantões)</h2>
+      <div id="gestorAgenda"></div>
+    </div>
+    <div class="chart-box">
+      <h2>Mapa de Calor da Equipe</h2>
+      <div class="heatmap-wrap"><div id="gestorHeatmap"></div></div>
+    </div>
+  </div>
+</section>
 
 <!-- DASHBOARD -->
 <section id="nr35" class="tab-panel">
@@ -2271,7 +2662,7 @@ function renderizarTabelaNR35() {
 
 document.addEventListener('DOMContentLoaded', renderizarTabelaNR35);
 </script>
-<section id="performance_tecnico" class="tab-panel active">
+<section id="performance_tecnico" class="tab-panel">
 
   <!-- KPIs -->
   <section class="kpis">
@@ -2571,26 +2962,19 @@ document.addEventListener('DOMContentLoaded', renderizarTabelaNR35);
 
 <!-- HISTÓRICO -->
 <section id="historico" class="tab-panel">
-  <div class="export-row">
-  </div>
-  <!-- STATUS -->
-  <div class="status-wrap status-wrap-historico">
-    <div class="status" id="status">Nenhuma base carregada.</div>
+  <div class="page-head">
+    <div>
+      <h1>Histórico Local</h1>
+      <div class="page-sub">Cada carga fica arquivada por competência mensal. Selecione um mês para reabrir os indicadores anteriores. <strong>Seta verde</strong> indica melhora e <strong>seta vermelha</strong> indica piora em relação ao registro anterior. Use a barra fixa no topo para carregar uma nova base.</div>
+    </div>
   </div>
   <div class="card">
-    <h2>Histórico Local</h2>
-    <p class="small-note">Cada carga fica arquivada por competência mensal. Selecione um mês para reabrir os indicadores anteriores. <strong>Seta verde</strong> indica melhora e <strong>seta vermelha</strong> indica piora em relação ao registro anterior.</p>
     <div class="historico-competencia-bar">
       <label for="historicoCompetencia">Competência arquivada
         <select id="historicoCompetencia"><option value="">Nenhuma competência salva</option></select>
       </label>
       <button id="btnCarregarCompetencia" type="button" class="primary">Carregar competência</button>
       <button id="btnAtualizarCompetencias" type="button" class="secondary">Atualizar lista</button>
-    </div>
-    <div class="import-bar historico-import-bar" id="historicoActions">
-      <input type="file" id="fileInput" accept=".csv,.zip,.xlsx,.xls">
-      <button id="btnCarregar" type="button">Carregar Base</button>
-      <button id="btnLimpar" type="button" class="secondary">Limpar</button>
     </div>
     <div class="table-wrap" style="margin-top:14px">
       <table>
@@ -2675,8 +3059,8 @@ document.addEventListener('DOMContentLoaded', renderizarTabelaNR35);
   </div>
 </section>
 
-
-
+  </main>
+  </div>
 </div>
 
 <div class="fade-modal" id="modalTecnicos" aria-hidden="true">
@@ -3914,6 +4298,10 @@ function renderDashboard(summary){
   renderAlertas(summary);
   renderPlanoAcao(summary);
   renderPlanoAcaoDetalhado(summary);
+  if(typeof renderCentroPerformance==="function"){
+    const abaAtiva=document.querySelector(".tab-panel.active")?.id||"executivo";
+    renderCentroPerformance(abaAtiva);
+  }
 }
 
 function resumoTecnicosParaRanking(rows){
@@ -4601,7 +4989,17 @@ function abrirIndicadoresTecnico(login,aplicarFiltro=true){
   $("btnModalVoltar").addEventListener("click",limparFiltroTecnicoAtivo);
   $("btnModalPdf").addEventListener("click",()=>exportarTecnico(login,"pdf"));
   $("btnModalImagem").addEventListener("click",()=>exportarTecnico(login,"imagem"));
+  if(typeof renderIndividualDashboardExtra==="function") renderIndividualDashboardExtra(t,login);
 }
+function abrirDashboardIndividual(login){
+  const modal=$("modalTecnicos");
+  if(!modal) return;
+  modalTecnicosLista=[...(processedRows.length?processarResumo(processedRows).arr:(currentSummary?.arr||[]))];
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden","false");
+  abrirIndicadoresTecnico(login,false);
+}
+window.abrirDashboardIndividual=abrirDashboardIndividual;
 
 async function exportarTecnico(login,tipo){
   if(!processedRows.length) return;
@@ -6738,6 +7136,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(panel) panel.classList.add("active");
       if(btn.dataset.tab==="dias") atualizarDiasTrabalhadosAutomaticamente();
       if(btn.dataset.tab==="nr35") renderizarTabelaNR35();
+      if(typeof renderCentroPerformance==="function") renderCentroPerformance(btn.dataset.tab);
     });
   });
 
@@ -6745,6 +7144,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   renderHistorico();
   atualizarSelectCompetencias();
   carregarUltimaBaseFirebaseOuLocal({auto:true});
+  if(typeof renderCentroPerformance==="function") renderCentroPerformance("executivo");
 });
 </script>
 
@@ -8305,6 +8705,690 @@ document.addEventListener("DOMContentLoaded",()=>{
   border-radius:10px;
 }
 </style>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   CENTRO DE PERFORMANCE — camada de inteligência (aditiva)
+   Lê dados já calculados pelo sistema (currentSummary, diasDadosAtuais,
+   histórico local, bases mensais, plantões) e gera dashboards executivos,
+   insights automáticos, rankings e o dashboard individual do técnico.
+   Não recalcula nem substitui nenhuma lógica de negócio existente.
+   ═══════════════════════════════════════════════════════════════════ */
+(function(){
+"use strict";
+
+/* ----------------------------- utilidades ----------------------------- */
+function n(v){const x=Number(v);return isNaN(x)?0:x}
+function r1(v){return Math.round(n(v)*10)/10}
+function media(arr,fn){if(!arr||!arr.length) return 0;return arr.reduce((s,i)=>s+n(fn(i)),0)/arr.length}
+function soma(arr,fn){return (arr||[]).reduce((s,i)=>s+n(fn(i)),0)}
+function iniciais(nome){
+  const partes=String(nome||"").trim().split(/\s+/).filter(Boolean);
+  if(!partes.length) return "?";
+  return (partes[0][0]+(partes[1]?partes[1][0]:"")).toUpperCase();
+}
+function esc2(v){return String(v??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]))}
+function corBar(pctValor){
+  if(pctValor>=100) return "var(--pos)";
+  if(pctValor>=70) return "var(--warn)";
+  return "var(--neg)";
+}
+function badgeSemaforo(ok,alerta){return ok?"green":(alerta?"yellow":"red")}
+const PALETA=["#1a5fbf","#0d9968","#d97706","#7c3aed","#0891b2","#e30613","#4f46e5","#dc2626"];
+
+/* --------------------- perfil manual do técnico (foto/aniversário/tempo de casa) --------------------- */
+const STORAGE_PERFIL_TECNICO="lumar_perfil_tecnico_v1";
+function lerPerfisTecnicos(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_PERFIL_TECNICO)||"{}")||{};}catch(e){return {};}
+}
+function salvarPerfilTecnico(login,dados){
+  const todos=lerPerfisTecnicos();
+  todos[loginKey(login)]={...(todos[loginKey(login)]||{}),...dados};
+  try{localStorage.setItem(STORAGE_PERFIL_TECNICO,JSON.stringify(todos));}catch(e){console.warn("Não foi possível salvar o perfil do técnico.",e);}
+  return todos[loginKey(login)];
+}
+function perfilTecnico(login){return lerPerfisTecnicos()[loginKey(login)]||{};}
+
+/* --------------------- dados de plantão/férias publicados pela aba Plantões --------------------- */
+function estadoPlantoes(){return window.__LUMAR_PLANTOES_STATE__||null;}
+function normalizaNome(v){
+  return String(v||"").trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+}
+function tecnicoPlantaoPorLogin(login){
+  const estado=estadoPlantoes();
+  if(!estado||!Array.isArray(estado.technicians)) return null;
+  const nomeBase=normalizaNome(nomeTecnico(login));
+  return estado.technicians.find(tc=>{
+    const nomeTc=normalizaNome(tc.name);
+    return nomeTc && (nomeTc===nomeBase || nomeTc.includes(nomeBase) || nomeBase.includes(nomeTc));
+  })||null;
+}
+function plantaoHojeInfo(){
+  const estado=estadoPlantoes();
+  if(!estado||!Array.isArray(estado.months)) return null;
+  const hojeISO=new Date().toISOString().slice(0,10);
+  for(const mes of estado.months){
+    const row=(mes.rows||[]).find(r=>r.date===hojeISO);
+    if(row) return {mes,row};
+  }
+  return null;
+}
+function agendaSemanaPlantoes(){
+  const estado=estadoPlantoes();
+  if(!estado||!Array.isArray(estado.months)) return [];
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const fim=new Date(hoje.getTime()+7*86400000);
+  const linhas=[];
+  estado.months.forEach(mes=>(mes.rows||[]).forEach(row=>{
+    const d=new Date(row.date+"T00:00:00");
+    if(d>=hoje && d<=fim){
+      const tecA=(estado.technicians||[]).find(t=>t.id===row.baseA);
+      const tecB=(estado.technicians||[]).find(t=>t.id===row.baseB);
+      linhas.push({data:d,tipo:row.type,descricao:row.description,tecA:tecA?.name||"-",tecB:tecB?.name||"-"});
+    }
+  }));
+  return linhas.sort((a,b)=>a.data-b.data);
+}
+
+/* ----------------------------- gráficos (Chart.js) ----------------------------- */
+const _charts={};
+function destroyChart(id){if(_charts[id]){try{_charts[id].destroy();}catch(e){} delete _charts[id];}}
+function ctx2d(canvasId){
+  const el=document.getElementById(canvasId);
+  if(!el||typeof Chart==="undefined") return null;
+  return el.getContext("2d");
+}
+function drawSparkline(canvasId,data,color){
+  destroyChart(canvasId);
+  const c=ctx2d(canvasId);if(!c) return;
+  const vals=(data&&data.length?data:[0,0]).map(n);
+  _charts[canvasId]=new Chart(c,{
+    type:"line",
+    data:{labels:vals.map((_,i)=>i),datasets:[{data:vals,borderColor:color||"#1a5fbf",borderWidth:2,pointRadius:0,tension:.35,fill:true,backgroundColor:(color||"#1a5fbf")+"22"}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:250},scales:{x:{display:false},y:{display:false}},plugins:{legend:{display:false},tooltip:{enabled:false}},elements:{point:{radius:0}}}
+  });
+}
+function drawLineChart(canvasId,labels,datasets,opts){
+  destroyChart(canvasId);
+  const c=ctx2d(canvasId);if(!c) return;
+  _charts[canvasId]=new Chart(c,{
+    type:"line",
+    data:{labels,datasets:datasets.map((ds,i)=>({tension:.3,borderWidth:2,pointRadius:3,pointHoverRadius:4,fill:ds.fill!==undefined?ds.fill:false,borderColor:ds.color||PALETA[i%PALETA.length],backgroundColor:(ds.color||PALETA[i%PALETA.length])+"26",...ds}))},
+    options:Object.assign({responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{display:!!(opts&&opts.legend)},tooltip:{enabled:true}},scales:{y:{beginAtZero:true,grid:{color:"rgba(100,116,139,.12)"}},x:{grid:{display:false}}}},opts||{})
+  });
+}
+function drawBar(canvasId,labels,datasets,opts){
+  destroyChart(canvasId);
+  const c=ctx2d(canvasId);if(!c) return;
+  _charts[canvasId]=new Chart(c,{
+    type:"bar",
+    data:{labels,datasets:datasets.map((ds,i)=>({borderRadius:5,backgroundColor:ds.color||PALETA[i%PALETA.length],...ds}))},
+    options:Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!(opts&&opts.legend)}},scales:{y:{beginAtZero:true,grid:{color:"rgba(100,116,139,.12)"}},x:{grid:{display:false}}}},opts||{})
+  });
+}
+function drawDoughnut(canvasId,labels,data,colors){
+  destroyChart(canvasId);
+  const c=ctx2d(canvasId);if(!c) return;
+  _charts[canvasId]=new Chart(c,{
+    type:"doughnut",
+    data:{labels,datasets:[{data,backgroundColor:colors||PALETA,borderWidth:2,borderColor:"#fff"}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{display:false}}}
+  });
+}
+function drawRadar(canvasId,labels,datasets){
+  destroyChart(canvasId);
+  const c=ctx2d(canvasId);if(!c) return;
+  _charts[canvasId]=new Chart(c,{
+    type:"radar",
+    data:{labels,datasets:datasets.map((ds,i)=>({borderWidth:2,pointRadius:2,borderColor:ds.color||PALETA[i%PALETA.length],backgroundColor:(ds.color||PALETA[i%PALETA.length])+"2E",...ds}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{r:{beginAtZero:true,suggestedMax:100,ticks:{display:false},grid:{color:"rgba(100,116,139,.16)"},pointLabels:{font:{size:10}}}}}
+  });
+}
+function trendPillHTML(atual,anterior,melhorMaior){
+  if(anterior===undefined||anterior===null) return '<span class="trend-pill flat">— sem base anterior</span>';
+  const diff=n(atual)-n(anterior);
+  if(Math.abs(diff)<0.05) return '<span class="trend-pill flat">= estável</span>';
+  const melhor=melhorMaior?diff>0:diff<0;
+  const seta=diff>0?"↑":"↓";
+  return `<span class="trend-pill ${melhor?"up":"down"}">${seta} ${Math.abs(r1(diff))}</span>`;
+}
+
+/* ----------------------------- fonte de dados históricos ----------------------------- */
+function historicoOrdenado(){
+  try{return (typeof lerHistoricoLocal==="function"?lerHistoricoLocal():[])||[];}catch(e){return [];}
+}
+function labelComparacao(atual,anterior){
+  if(!atual||!anterior) return "Sem registro anterior";
+  const dAtual=new Date(atual.date?.split(",")[0]?.split("/").reverse().join("-")||atual.date);
+  const dAnterior=new Date(anterior.date?.split(",")[0]?.split("/").reverse().join("-")||anterior.date);
+  if(!isNaN(dAtual)&&!isNaN(dAnterior)){
+    const diasDiff=Math.round((dAtual-dAnterior)/86400000);
+    if(diasDiff===1) return "Hoje x Ontem";
+    if(diasDiff>=6&&diasDiff<=8) return "Esta semana x semana anterior";
+    if(diasDiff>=27&&diasDiff<=32) return "Este mês x mês anterior";
+  }
+  return "Carregamento atual x anterior";
+}
+async function basesMensaisOrdenadas(){
+  try{
+    const mapa=await listarBasesMensaisLocais();
+    return Object.values(mapa||{}).filter(v=>v&&v.competencia?.key).sort((a,b)=>String(a.competencia.key).localeCompare(String(b.competencia.key)));
+  }catch(e){return [];}
+}
+
+/* ----------------------------- motor de insights ----------------------------- */
+function gerarInsights(){
+  const s=currentSummary;
+  const positivos=[],criticos=[],riscos=[],resumo=[];
+  if(!s||!s.arr||!s.arr.length){
+    return {positivos,criticos,riscos,resumo,semaforo:[]};
+  }
+  const arr=s.arr;
+  const revPctEquipe=s.baseLen?s.totalRev/s.baseLen*100:0;
+  const tec1PctEquipe=s.totalTecBase?s.totalOk/s.totalTecBase*100:0;
+  const dentroMeta=arr.filter(t=>!tecnicoEmAcompanhamento(t)).length;
+  const hist=historicoOrdenado();
+  const atual=hist[0],anterior=hist[1];
+
+  const semaforo=[
+    {titulo:"Revisita da equipe",valor:pct(revPctEquipe),ok:revPctEquipe<=LIMITE_ACOMP_REVISITA,alerta:revPctEquipe<=LIMITE_ACOMP_REVISITA+2,
+      texto:`Meta ≤ ${pct(LIMITE_ACOMP_REVISITA)}. ${revPctEquipe<=LIMITE_ACOMP_REVISITA?"Dentro do limite operacional.":"Acima do limite — priorizar causa raiz."}`},
+    {titulo:"TEC1 da equipe",valor:pct(tec1PctEquipe),ok:tec1PctEquipe>=LIMITE_ACOMP_TEC1,alerta:tec1PctEquipe>=LIMITE_ACOMP_TEC1-3,
+      texto:`Meta ≥ ${pct(LIMITE_ACOMP_TEC1)}. ${tec1PctEquipe>=LIMITE_ACOMP_TEC1?"Janela de atendimento sob controle.":"Auditar agenda x baixa dos técnicos fora do padrão."}`},
+    {titulo:"Técnicos dentro da meta",valor:`${dentroMeta}/${arr.length}`,ok:dentroMeta===arr.length,alerta:dentroMeta>=arr.length*0.7,
+      texto:dentroMeta===arr.length?"Toda a equipe dentro dos limites de revisita, TEC1 e produção.":`${arr.length-dentroMeta} técnico(s) precisam de acompanhamento direto.`}
+  ];
+
+  if(atual&&anterior){
+    const dRev=n(atual.revPct)-n(anterior.revPct);
+    const dTec1=n(atual.tec1)-n(anterior.tec1);
+    const dProd=n(atual.producao)-n(anterior.producao);
+    const rotulo=labelComparacao(atual,anterior);
+    resumo.push(`<b>${esc2(rotulo)}:</b> produção ${dProd>=0?"cresceu":"caiu"} ${Math.abs(r1(dProd))} contrato(s), revisita ${dRev<=0?"melhorou":"piorou"} ${Math.abs(r1(dRev))} p.p. e TEC1 ${dTec1>=0?"melhorou":"piorou"} ${Math.abs(r1(dTec1))} p.p.`);
+    (dProd>=0?positivos:criticos).push(`Produção ${dProd>=0?"↑":"↓"} ${Math.abs(r1(dProd))} contrato(s) em relação ao registro anterior.`);
+    (dRev<=0?positivos:criticos).push(`Revisita ${dRev<=0?"caiu":"subiu"} ${Math.abs(r1(dRev))} ponto(s) percentuais em relação ao registro anterior.`);
+    (dTec1>=0?positivos:criticos).push(`TEC1 ${dTec1>=0?"subiu":"caiu"} ${Math.abs(r1(dTec1))} ponto(s) percentuais em relação ao registro anterior.`);
+  }else{
+    resumo.push("Carregue mais de uma base (em datas diferentes) para habilitar comparativos de evolução.");
+  }
+
+  if(revPctEquipe<=LIMITE_ACOMP_REVISITA) positivos.push(`Revisita da equipe (${pct(revPctEquipe)}) está dentro da meta operacional (≤ ${pct(LIMITE_ACOMP_REVISITA)}).`);
+  else{criticos.push(`Revisita da equipe (${pct(revPctEquipe)}) está acima do limite operacional (≤ ${pct(LIMITE_ACOMP_REVISITA)}).`);riscos.push("Risco de reincidência de contratos e queda de satisfação — priorizar causa raiz por técnico/node.");}
+  if(tec1PctEquipe>=LIMITE_ACOMP_TEC1) positivos.push(`TEC1 da equipe (${pct(tec1PctEquipe)}) está dentro da meta (≥ ${pct(LIMITE_ACOMP_TEC1)}).`);
+  else{criticos.push(`TEC1 da equipe (${pct(tec1PctEquipe)}) está abaixo da meta (≥ ${pct(LIMITE_ACOMP_TEC1)}).`);riscos.push("Janela de atendimento fora do padrão pode indicar problema de rota ou agenda.");}
+
+  const melhor=[...arr].filter(t=>t.producao>0).sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct||b.producao-a.producao)[0];
+  if(melhor) positivos.push(`${melhor.nome} lidera a equipe com ${pct(melhor.revPct)} de revisita e ${pct(melhor.tec1Pct)} de TEC1.`);
+
+  const pior=[...arr].filter(t=>tecnicoEmAcompanhamento(t)).sort((a,b)=>(b.revPct-b.tec1Pct)-(a.revPct-a.tec1Pct))[0];
+  if(pior) criticos.push(`${pior.nome} é o ponto de maior atenção: ${resumoSituacaoTecnico(pior)}.`);
+
+  if(arr.length && s.arrNode?.[0] && s.arrNode[0].qtd>=Math.max(3,Math.round(s.baseLen*0.12))){
+    riscos.push(`Node ${s.arrNode[0].node} concentra ${s.arrNode[0].qtd} ocorrência(s) no filtro atual — possível causa recorrente de rota ou infraestrutura.`);
+  }
+
+  return {positivos,criticos,riscos,resumo,semaforo};
+}
+
+function calcularPrevisao(){
+  const d=(typeof diasDadosAtuais!=="undefined")?diasDadosAtuais:null;
+  if(!d) return null;
+  const feito=n(d.totalJaFeito);
+  const meta=n(d.meta);
+  const diasUteis=n(d.diasUteis);
+  const metaDia=n(d.metaDia);
+  const ritmoAtual=d.ultimoDiaComValor?feito/Math.max(1,n(d.ultimoDiaComValor)):0;
+  const capacidadeRestante=n(d.diasCapacidadeRestante);
+  const projecaoFinal=feito+ritmoAtual*capacidadeRestante;
+  const percentualProjetado=meta?projecaoFinal/meta*100:0;
+  let diasParaMeta=null;
+  if(ritmoAtual>0 && meta>feito) diasParaMeta=Math.ceil((meta-feito)/ritmoAtual);
+  return {feito,meta,diasUteis,metaDia,ritmoAtual,capacidadeRestante,projecaoFinal,percentualProjetado,diasParaMeta,mesInfo:(typeof diasMesInfoAtual!=="undefined"?diasMesInfoAtual:null)};
+}
+
+/* ----------------------------- ícones/labels por KPI ----------------------------- */
+function execKpiCardHTML(cfg){
+  return `<div class="exec-kpi ico-${cfg.cor}">
+    <div class="exec-kpi-top">
+      <span class="exec-kpi-label">${esc2(cfg.label)}</span>
+      <span class="exec-kpi-ico">${cfg.icone}</span>
+    </div>
+    <div class="exec-kpi-value">${cfg.valor}</div>
+    <div class="exec-kpi-foot">
+      <span class="exec-kpi-sub">${cfg.sub||""}</span>
+      <canvas id="${cfg.sparkId}" class="spark-canvas"></canvas>
+    </div>
+    ${cfg.trendHTML?`<div style="margin-top:8px">${cfg.trendHTML}</div>`:""}
+  </div>`;
+}
+
+/* ═══════════════════════════ DASHBOARD EXECUTIVO ═══════════════════════════ */
+function renderExecutivo(){
+  const grid=$("execKpiGrid");
+  if(!grid) return;
+  const s=currentSummary;
+  if(!s||!s.arr||!s.arr.length){
+    grid.innerHTML='<div class="exec-empty"><strong>Aguardando base</strong>Carregue a planilha no topo da página para gerar o dashboard executivo.</div>';
+    destroyChart("execChartEvolucao");destroyChart("execChartComposicao");
+    return;
+  }
+  const hist=historicoOrdenado();
+  const atual=hist[0],anterior=hist[1];
+  const revPctEquipe=s.baseLen?s.totalRev/s.baseLen*100:0;
+  const tec1PctEquipe=s.totalTecBase?s.totalOk/s.totalTecBase*100:0;
+  const dentroMeta=s.arr.filter(t=>!tecnicoEmAcompanhamento(t)).length;
+  const eficiencia=s.arr.length?dentroMeta/s.arr.length*100:0;
+  const d=(typeof diasDadosAtuais!=="undefined")?diasDadosAtuais:null;
+  const sparkProducao=hist.slice(0,8).map(h=>n(h.producao)).reverse();
+  const sparkRev=hist.slice(0,8).map(h=>n(h.revPct)).reverse();
+  const sparkTec1=hist.slice(0,8).map(h=>n(h.tec1)).reverse();
+
+  const cards=[
+    {label:"Equipe Ativa",icone:"👥",cor:"navy",valor:s.arr.length,sub:`${dentroMeta} dentro da meta`,sparkId:"spkEquipe"},
+    {label:"Produção (base atual)",icone:"📦",cor:"indigo",valor:s.totalProducao,sub:`${s.baseLen} contrato(s) avaliados`,sparkId:"spkProd",trendHTML:atual&&anterior?trendPillHTML(atual.producao,anterior.producao,true):""},
+    {label:"TEC1",icone:"⏱",cor:"cyan",valor:pct(tec1PctEquipe),sub:`meta ≥ ${pct(LIMITE_ACOMP_TEC1)}`,sparkId:"spkTec1",trendHTML:atual&&anterior?trendPillHTML(atual.tec1,anterior.tec1,true):""},
+    {label:"Revisita",icone:"↩",cor:"orange",valor:pct(revPctEquipe),sub:`meta ≤ ${pct(LIMITE_ACOMP_REVISITA)}`,sparkId:"spkRev",trendHTML:atual&&anterior?trendPillHTML(atual.revPct,anterior.revPct,false):""},
+    {label:"Certificação / NR35",icone:"⛑",cor:"green",valor:`${dentroMeta}/${s.arr.length}`,sub:"técnicos certificados",sparkId:"spkCert"},
+    {label:"Eficiência da Equipe",icone:"◆",cor:"violet",valor:pct(eficiencia),sub:"técnicos dentro de todas as metas",sparkId:"spkEfic"},
+    {label:"Meta do Mês",icone:"🎯",cor:"blue",valor:d?d.meta:"—",sub:d?d.metaOrigem:"Aba Dias Trabalhados não carregada",sparkId:"spkMeta"},
+    {label:"Capacidade Restante",icone:"🔋",cor:"cyan",valor:d?d.diasCapacidadeRestante:"—",sub:"dias de produção disponíveis",sparkId:"spkCap"},
+    {label:"Dias Úteis Restantes",icone:"📅",cor:"navy",valor:d?d.diasUteis:"—",sub:d&&d.mesInfo?"no mês corrente":"",sparkId:"spkDias"},
+    {label:"Produção Necessária/Dia",icone:"⚡",cor:"red",valor:d?d.metaDia:"—",sub:d?`faltam ${d.falta} para a meta`:"",sparkId:"spkNecess"},
+  ];
+  grid.innerHTML=cards.map(execKpiCardHTML).join("");
+  drawSparkline("spkEquipe",new Array(8).fill(s.arr.length),"#162540");
+  drawSparkline("spkProd",sparkProducao.length>1?sparkProducao:[s.totalProducao,s.totalProducao],"#4f46e5");
+  drawSparkline("spkTec1",sparkTec1.length>1?sparkTec1:[tec1PctEquipe,tec1PctEquipe],"#0891b2");
+  drawSparkline("spkRev",sparkRev.length>1?sparkRev:[revPctEquipe,revPctEquipe],"#ea580c");
+  drawSparkline("spkCert",new Array(8).fill(eficiencia),"#0d9968");
+  drawSparkline("spkEfic",new Array(8).fill(eficiencia),"#7c3aed");
+  if(d){drawSparkline("spkMeta",[d.feito||d.totalJaFeito,d.meta],"#1a5fbf");}
+
+  const labelsHist=hist.slice(0,10).map(h=>h.competencia?.label||h.date?.split(",")[0]||"").reverse();
+  drawLineChart("execChartEvolucao",labelsHist.length?labelsHist:["Base atual"],[
+    {label:"Produção",data:(hist.slice(0,10).map(h=>n(h.producao)).reverse().length?hist.slice(0,10).map(h=>n(h.producao)).reverse():[s.totalProducao]),color:"#1a5fbf",fill:true}
+  ],{legend:false});
+
+  const composicaoLabels=["Dentro da meta","Em acompanhamento"];
+  const composicaoData=[dentroMeta,s.arr.length-dentroMeta];
+  drawDoughnut("execChartComposicao",composicaoLabels,composicaoData,["#0d9968","#dc2626"]);
+  const legEl=$("execComposicaoLegenda");
+  if(legEl) legEl.innerHTML=composicaoLabels.map((l,i)=>`<span><i style="background:${["#0d9968","#dc2626"][i]}"></i>${l} (${composicaoData[i]})</span>`).join("");
+}
+
+/* ═══════════════════════════ DASHBOARD INTELIGENTE ═══════════════════════════ */
+function renderInteligencia(){
+  const board=$("semaphoreBoard");
+  if(!board) return;
+  const insights=gerarInsights();
+  if(!currentSummary||!currentSummary.arr?.length){
+    board.innerHTML='<div class="exec-empty"><strong>Aguardando base</strong>Carregue a planilha para gerar o semáforo e os insights automáticos.</div>';
+    $("insightList")&&($("insightList").innerHTML="");
+    $("insightPositivos")&&($("insightPositivos").innerHTML="");
+    $("insightCriticos")&&($("insightCriticos").innerHTML="");
+    $("forecastBox")&&($("forecastBox").innerHTML="");
+    return;
+  }
+  board.innerHTML=insights.semaforo.map(s=>`<div class="semaphore-card">
+    <span class="semaphore-dot ${badgeSemaforo(s.ok,s.alerta)}"></span>
+    <div><strong>${esc2(s.titulo)} — ${esc2(s.valor)}</strong><span>${esc2(s.texto)}</span></div>
+  </div>`).join("");
+
+  const listEl=$("insightList");
+  if(listEl){
+    listEl.innerHTML=insights.resumo.length?insights.resumo.map(t=>`<div class="insight-item"><span class="insight-ico">🧠</span><span>${t}</span></div>`).join(""):'<div class="empty">Sem dados suficientes para o resumo executivo.</div>';
+  }
+  const posEl=$("insightPositivos");
+  if(posEl) posEl.innerHTML=insights.positivos.length?insights.positivos.map(t=>`<div class="insight-item pos"><span class="insight-ico">✅</span><span>${esc2(t)}</span></div>`).join(""):'<div class="empty">Sem destaques positivos no filtro atual.</div>';
+  const critEl=$("insightCriticos");
+  if(critEl){
+    const itens=[...insights.criticos.map(t=>({t,cls:"warn",ico:"⚠️"})),...insights.riscos.map(t=>({t,cls:"neg",ico:"🚨"}))];
+    critEl.innerHTML=itens.length?itens.map(i=>`<div class="insight-item ${i.cls}"><span class="insight-ico">${i.ico}</span><span>${esc2(i.t)}</span></div>`).join(""):'<div class="empty">Nenhum ponto crítico identificado.</div>';
+  }
+
+  const forecastEl=$("forecastBox");
+  if(forecastEl){
+    const prev=calcularPrevisao();
+    if(!prev){
+      forecastEl.innerHTML='<div class="empty">Abra a aba "Dias Trabalhados" ao menos uma vez para habilitar a previsão de fechamento (usa a planilha de capacidade da equipe).</div>';
+    }else{
+      const dataPrevista=prev.diasParaMeta!=null?new Date(Date.now()+prev.diasParaMeta*86400000).toLocaleDateString("pt-BR"):null;
+      forecastEl.innerHTML=`
+        <div class="indiv-stat-grid" style="grid-template-columns:repeat(2,1fr)">
+          <div class="indiv-stat"><span>Produção atual</span><strong>${prev.feito}</strong></div>
+          <div class="indiv-stat"><span>Meta do mês</span><strong>${prev.meta}</strong></div>
+          <div class="indiv-stat"><span>Ritmo diário atual</span><strong>${r1(prev.ritmoAtual)}</strong></div>
+          <div class="indiv-stat"><span>Projeção de fechamento</span><strong>${pct(prev.percentualProjetado)}</strong></div>
+        </div>
+        <div class="insight-list" style="margin-top:12px">
+          <div class="insight-item ${prev.percentualProjetado>=100?"pos":"warn"}"><span class="insight-ico">${prev.percentualProjetado>=100?"🚀":"📉"}</span><span>Mantendo o ritmo atual, a equipe deve fechar o mês em <b>${pct(prev.percentualProjetado)}</b> da meta (≈ ${Math.round(prev.projecaoFinal)} produções).</span></div>
+          ${dataPrevista?`<div class="insight-item pos"><span class="insight-ico">🎯</span><span>No ritmo atual, a meta deve ser atingida em <b>${dataPrevista}</b>.</span></div>`:(prev.meta>prev.feito?'<div class="insight-item neg"><span class="insight-ico">⛔</span><span>No ritmo atual, a meta não será atingida dentro do mês — reforço na produção é necessário.</span></div>':'<div class="insight-item pos"><span class="insight-ico">🏁</span><span>Meta do mês já atingida.</span></div>')}
+        </div>`;
+    }
+  }
+}
+
+/* ═══════════════════════════ RANKING INTELIGENTE ═══════════════════════════ */
+function rankBoardHTML(titulo,itens,fmt){
+  if(!itens.length) return `<div class="chart-box"><h2>${esc2(titulo)}</h2><div class="empty">Sem dados.</div></div>`;
+  return `<div class="chart-box"><h2>${esc2(titulo)}</h2><div class="rank-board">${itens.map((it,i)=>`
+    <div class="rank-board-item">
+      <div class="rbi-pos">${i+1}</div>
+      <div class="rbi-main"><div class="rbi-name">${esc2(it.nome)}</div><div class="rbi-sub">${esc2(it.sub||"")}</div></div>
+      <div class="rbi-val">${fmt(it)}</div>
+    </div>`).join("")}</div></div>`;
+}
+async function renderRanking(){
+  const grid=$("rankingGrid");
+  if(!grid) return;
+  const s=currentSummary;
+  if(!s||!s.arr?.length){
+    grid.innerHTML='<div class="exec-empty"><strong>Aguardando base</strong>Carregue a planilha para gerar os rankings.</div>';
+    return;
+  }
+  const arr=s.arr.filter(t=>t.contratosExecutados>0);
+  const maiorProducao=[...arr].sort((a,b)=>b.producao-a.producao).slice(0,8).map(t=>({nome:t.nome,sub:`${t.contratosExecutados} contrato(s)`,producao:t.producao}));
+  const menorProducao=[...arr].sort((a,b)=>a.producao-b.producao).slice(0,8).map(t=>({nome:t.nome,sub:`${t.contratosExecutados} contrato(s)`,producao:t.producao}));
+  const maiorTec1=[...arr].filter(t=>t.tecBase>0).sort((a,b)=>b.tec1Pct-a.tec1Pct).slice(0,8).map(t=>({nome:t.nome,sub:`${t.tecOk}/${t.tecBase}`,tec1Pct:t.tec1Pct}));
+  const menorRevisita=[...arr].sort((a,b)=>a.revPct-b.revPct).slice(0,8).map(t=>({nome:t.nome,sub:`${t.revisitas} revisita(s)`,revPct:t.revPct}));
+  const melhorConsistencia=[...arr].sort((a,b)=>(b.tec1Pct-b.revPct)-(a.tec1Pct-a.revPct)).slice(0,8).map(t=>({nome:t.nome,sub:`${pct(t.tec1Pct)} TEC1 · ${pct(t.revPct)} rev.`,score:r1(t.tec1Pct-t.revPct)}));
+
+  let evolucaoHTML="";
+  try{
+    const bases=await basesMensaisOrdenadas();
+    if(bases.length>=2){
+      const atualBase=bases[bases.length-1];
+      const anteriorBase=bases[bases.length-2];
+      const resumoAtual=processarResumo(atualBase.rows).arr;
+      const resumoAnterior=processarResumo(anteriorBase.rows).arr;
+      const evolucao=resumoAtual.map(t=>{
+        const prev=resumoAnterior.find(p=>loginKey(p.login)===loginKey(t.login));
+        return {nome:t.nome,delta:prev?r1(t.producao-prev.producao):null};
+      }).filter(t=>t.delta!==null);
+      const maiorEvolucao=[...evolucao].sort((a,b)=>b.delta-a.delta).slice(0,8).map(t=>({nome:t.nome,sub:`vs ${anteriorBase.competencia.label}`,delta:t.delta}));
+      const maiorQueda=[...evolucao].sort((a,b)=>a.delta-b.delta).slice(0,8).map(t=>({nome:t.nome,sub:`vs ${anteriorBase.competencia.label}`,delta:t.delta}));
+      evolucaoHTML=rankBoardHTML("Maior Evolução (mês x mês)",maiorEvolucao,it=>(it.delta>=0?"+":"")+it.delta)+
+        rankBoardHTML("Maior Queda (mês x mês)",maiorQueda,it=>(it.delta>=0?"+":"")+it.delta);
+    }else{
+      evolucaoHTML='<div class="chart-box"><h2>Evolução mês x mês</h2><div class="empty">Salve bases de pelo menos dois meses diferentes para habilitar este ranking (ele já é gerado automaticamente a cada carga).</div></div>';
+    }
+  }catch(e){
+    evolucaoHTML='<div class="chart-box"><h2>Evolução mês x mês</h2><div class="empty">Não foi possível carregar o histórico mensal.</div></div>';
+  }
+
+  grid.innerHTML=
+    rankBoardHTML("Maior Produção",maiorProducao,it=>it.producao)+
+    rankBoardHTML("Menor Produção",menorProducao,it=>it.producao)+
+    rankBoardHTML("Maior TEC1",maiorTec1,it=>pct(it.tec1Pct))+
+    rankBoardHTML("Menor Revisita",menorRevisita,it=>pct(it.revPct))+
+    rankBoardHTML("Melhor Consistência",melhorConsistencia,it=>it.score)+
+    evolucaoHTML;
+}
+
+/* ═══════════════════════════ EVOLUÇÃO & COMPARATIVOS ═══════════════════════════ */
+function comparativoCardHTML(titulo,atual,anterior,fmt,melhorMaior){
+  if(!anterior) return `<div class="chart-box"><h2>${esc2(titulo)}</h2><div class="empty">Sem registro suficiente ainda.</div></div>`;
+  return `<div class="chart-box">
+    <h2>${esc2(titulo)}</h2>
+    <div class="indiv-compare-row"><span class="icr-label">Atual</span><strong>${fmt(atual)}</strong></div>
+    <div class="indiv-compare-row"><span class="icr-label">Anterior</span><strong>${fmt(anterior)}</strong></div>
+    <div style="margin-top:8px">${trendPillHTML(atual,anterior,melhorMaior)}</div>
+  </div>`;
+}
+async function renderEvolucao(){
+  const grid=$("comparativosGrid");
+  if(!grid) return;
+  const hist=historicoOrdenado();
+  if(!hist.length){
+    grid.innerHTML='<div class="exec-empty"><strong>Sem histórico ainda</strong>Cada carga de planilha é arquivada automaticamente. Carregue bases em datas diferentes para ver a evolução aqui.</div>';
+    destroyChart("evoChartProducao");destroyChart("evoChartIndicadores");
+    return;
+  }
+  const atual=hist[0],anterior=hist[1];
+  grid.innerHTML=
+    comparativoCardHTML(labelComparacao(atual,anterior),n(atual.producao),anterior?n(anterior.producao):null,v=>v,true)+
+    comparativoCardHTML("Revisita — comparação",n(atual.revPct),anterior?n(anterior.revPct):null,v=>pct(v),false)+
+    comparativoCardHTML("TEC1 — comparação",n(atual.tec1),anterior?n(anterior.tec1):null,v=>pct(v),true);
+
+  const janela=[...hist].slice(0,12).reverse();
+  const labels=janela.map(h=>h.competencia?.label||(h.date||"").split(",")[0]);
+  drawLineChart("evoChartProducao",labels,[{label:"Produção",data:janela.map(h=>n(h.producao)),color:"#1a5fbf",fill:true}],{legend:false});
+  drawLineChart("evoChartIndicadores",labels,[
+    {label:"TEC1 %",data:janela.map(h=>n(h.tec1)),color:"#0891b2"},
+    {label:"Revisita %",data:janela.map(h=>n(h.revPct)),color:"#ea580c"}
+  ],{legend:true});
+}
+
+/* ═══════════════════════════ EQUIPE ═══════════════════════════ */
+function statusEquipeCard(t){
+  const plantao=tecnicoPlantaoPorLogin(t.login);
+  if(plantao && String(plantao.status||"").toLowerCase().includes("fér")) return {label:"Férias",cls:"ferias"};
+  if(tecnicoEmAcompanhamento(t)) return {label:"Atenção",cls:"warn"};
+  return {label:"Em dia",cls:"ok"};
+}
+function renderEquipe(){
+  const grid=$("teamGrid");
+  if(!grid) return;
+  const s=currentSummary;
+  if(!s||!s.arr?.length){
+    grid.innerHTML='<div class="exec-empty"><strong>Aguardando base</strong>Carregue a planilha para ver os cards da equipe.</div>';
+    return;
+  }
+  const ranking=[...s.arr].sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct||b.producao-a.producao);
+  grid.innerHTML=s.arr.map(t=>{
+    const perfil=perfilTecnico(t.login);
+    const status=statusEquipeCard(t);
+    const pos=ranking.findIndex(x=>x.login===t.login)+1;
+    const plantao=tecnicoPlantaoPorLogin(t.login);
+    return `<div class="team-card" data-login="${esc2(t.login)}" onclick="if(!event.target.closest('.team-edit-btn'))abrirDashboardIndividual('${esc2(t.login)}')">
+      <span class="team-status-badge ${status.cls}">${status.label}</span>
+      <div class="team-card-head">
+        <div class="team-avatar">${perfil.foto?`<img src="${perfil.foto}" alt="">`:iniciais(t.nome)}</div>
+        <div>
+          <div class="team-card-name">${esc2(t.nome)}</div>
+          <div class="team-card-login">${esc2(t.login)} · #${pos} no ranking</div>
+        </div>
+      </div>
+      <div class="team-mini-stats">
+        <div><span>Produção</span><strong>${t.producao}</strong></div>
+        <div><span>TEC1</span><strong>${pct(t.tec1Pct)}</strong></div>
+        <div><span>Revisita</span><strong>${pct(t.revPct)}</strong></div>
+      </div>
+      <div class="team-card-foot">
+        <span>${plantao?`Plantão: ${esc2(plantao.status||"Ativo")}`:"Sem plantão vinculado"}</span>
+        <span>${perfil.tempoEmpresa?esc2(perfil.tempoEmpresa):""}</span>
+      </div>
+      <button class="team-edit-btn" type="button" title="Editar perfil" onclick="event.stopPropagation();abrirEdicaoPerfilTecnico('${esc2(t.login)}')">✎</button>
+    </div>`;
+  }).join("");
+}
+
+/* ----- mini modal de edição de perfil (foto / aniversário / tempo de empresa) ----- */
+window.abrirEdicaoPerfilTecnico=function(login){
+  let overlay=$("perfilTecnicoOverlay");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="perfilTecnicoOverlay";
+    overlay.className="mini-modal-overlay";
+    overlay.innerHTML=`<div class="mini-modal">
+      <h3>Perfil do técnico</h3>
+      <label>Foto (URL ou selecione um arquivo)</label>
+      <input type="text" id="perfilFotoUrl" placeholder="https://...">
+      <input type="file" id="perfilFotoArquivo" accept="image/*" style="margin-top:6px">
+      <label>Aniversário</label>
+      <input type="date" id="perfilAniversario">
+      <label>Tempo de empresa (texto livre)</label>
+      <input type="text" id="perfilTempoEmpresa" placeholder="Ex.: desde 03/2022">
+      <div class="mini-modal-actions">
+        <button class="secondary" type="button" id="perfilCancelar">Cancelar</button>
+        <button class="primary" type="button" id="perfilSalvar">Salvar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click",e=>{if(e.target===overlay) overlay.classList.remove("open");});
+    $("perfilCancelar").addEventListener("click",()=>overlay.classList.remove("open"));
+  }
+  const perfil=perfilTecnico(login);
+  $("perfilFotoUrl").value=perfil.foto&&!perfil.foto.startsWith("data:")?perfil.foto:"";
+  $("perfilAniversario").value=perfil.aniversario||"";
+  $("perfilTempoEmpresa").value=perfil.tempoEmpresa||"";
+  $("perfilFotoArquivo").value="";
+  overlay.classList.add("open");
+  $("perfilSalvar").onclick=()=>{
+    const arquivo=$("perfilFotoArquivo").files?.[0];
+    const finalizar=(fotoBase64)=>{
+      salvarPerfilTecnico(login,{
+        foto:fotoBase64||$("perfilFotoUrl").value.trim()||perfil.foto||"",
+        aniversario:$("perfilAniversario").value||"",
+        tempoEmpresa:$("perfilTempoEmpresa").value.trim()||""
+      });
+      overlay.classList.remove("open");
+      renderEquipe();
+    };
+    if(arquivo){
+      const reader=new FileReader();
+      reader.onload=ev=>finalizar(ev.target.result);
+      reader.readAsDataURL(arquivo);
+    }else finalizar(null);
+  };
+};
+
+/* ═══════════════════════════ PAINEL DO GESTOR ═══════════════════════════ */
+function renderGestor(){
+  const kpiGrid=$("gestorKpiGrid");
+  if(!kpiGrid) return;
+  const s=currentSummary;
+  if(!s||!s.arr?.length){
+    kpiGrid.innerHTML='<div class="exec-empty"><strong>Aguardando base</strong>Carregue a planilha para gerar o painel do gestor.</div>';
+    ["gestorAtencao","gestorDestaques","gestorAgenda","gestorHeatmap"].forEach(id=>{const el=$(id);if(el)el.innerHTML="";});
+    return;
+  }
+  const acompanhamento=s.arr.filter(tecnicoEmAcompanhamento);
+  const dentroMeta=s.arr.filter(t=>!tecnicoEmAcompanhamento(t));
+  const itensAcao=(typeof montarPlanoAcaoItens==="function")?montarPlanoAcaoItens(s):[];
+  const criticos=itensAcao.filter(i=>i.nivel==="Crítica"||i.nivel==="Alta").length;
+
+  kpiGrid.innerHTML=[
+    {label:"Técnicos abaixo da meta",icone:"⚠️",cor:"red",valor:acompanhamento.length,sub:`de ${s.arr.length} ativos`,sparkId:"gspk1"},
+    {label:"Técnicos acima da meta",icone:"🏅",cor:"green",valor:dentroMeta.length,sub:"dentro de todos os limites",sparkId:"gspk2"},
+    {label:"Ações críticas/altas",icone:"🔥",cor:"orange",valor:criticos,sub:`${itensAcao.length} pendência(s) no total`,sparkId:"gspk3"},
+    {label:"Produção da base atual",icone:"📦",cor:"indigo",valor:s.totalProducao,sub:`${s.baseLen} contrato(s)`,sparkId:"gspk4"}
+  ].map(execKpiCardHTML).join("");
+  ["gspk1","gspk2","gspk3","gspk4"].forEach(id=>drawSparkline(id,[1,1,1,1],"#162540"));
+
+  const atencaoEl=$("gestorAtencao");
+  if(atencaoEl){
+    atencaoEl.innerHTML=acompanhamento.length?acompanhamento.slice(0,10).map(t=>`<div class="gestor-list-item"><span><b>${esc2(t.nome)}</b> — ${esc2(resumoSituacaoTecnico(t))}</span><button class="secondary" type="button" style="padding:4px 10px;font-size:11px" onclick="abrirDashboardIndividual('${esc2(t.login)}')">Ver</button></div>`).join(""):'<div class="empty">Nenhum técnico precisa de acompanhamento agora.</div>';
+  }
+  const destaquesEl=$("gestorDestaques");
+  if(destaquesEl){
+    const top=[...s.arr].filter(t=>t.producao>0).sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct||b.producao-a.producao).slice(0,5);
+    destaquesEl.innerHTML=top.length?top.map((t,i)=>`<div class="gestor-list-item"><span>${i===0?"🥇":i===1?"🥈":i===2?"🥉":"⭐"} <b>${esc2(t.nome)}</b> — ${t.producao} produção · ${pct(t.tec1Pct)} TEC1 · ${pct(t.revPct)} revisita</span></div>`).join(""):'<div class="empty">Sem dados suficientes.</div>';
+  }
+
+  const agendaEl=$("gestorAgenda");
+  if(agendaEl){
+    const agenda=agendaSemanaPlantoes();
+    const hojeStr=new Date().toDateString();
+    agendaEl.innerHTML=agenda.length?agenda.map(a=>`<div class="gestor-agenda-day ${a.data.toDateString()===hojeStr?"hoje":""}"><span>${a.data.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"})} · ${esc2(a.tipo)}${a.descricao?` (${esc2(a.descricao)})`:""}</span><span>${esc2(a.tecA)} / ${esc2(a.tecB)}</span></div>`).join(""):'<div class="empty">Sem plantões nos próximos 7 dias.</div>';
+  }
+
+  const heatEl=$("gestorHeatmap");
+  if(heatEl){
+    heatEl.innerHTML=s.arr.map(t=>{
+      const score=Math.max(0,Math.min(100,100-Math.max(0,t.revPct-LIMITE_ACOMP_REVISITA)*8-Math.max(0,LIMITE_ACOMP_TEC1-t.tec1Pct)*4));
+      const cor=score>=85?"#0d9968":score>=60?"#d97706":"#dc2626";
+      return `<div class="heatmap-row" title="Revisita ${pct(t.revPct)} · TEC1 ${pct(t.tec1Pct)}">
+        <div class="heatmap-row-label">${esc2(t.nome)}</div>
+        <div class="heatmap-bar-bg"><div class="heatmap-bar" style="width:${Math.max(8,score)}%;background:${cor}">${Math.round(score)}</div></div>
+      </div>`;
+    }).join("");
+  }
+}
+
+/* ═══════════════════════════ DASHBOARD INDIVIDUAL (extensão do modal do técnico) ═══════════════════════════ */
+async function renderIndividualDashboardExtra(t,login){
+  const conteudo=$("modalTecnicosConteudo");
+  if(!conteudo) return;
+  let extra=document.getElementById("modalIndividualExtra");
+  if(!extra){
+    extra=document.createElement("div");
+    extra.id="modalIndividualExtra";
+    conteudo.appendChild(extra);
+  }
+  const s=currentSummary;
+  const arr=s?.arr||[];
+  const ranking=[...arr].sort((a,b)=>a.revPct-b.revPct||b.tec1Pct-a.tec1Pct||b.producao-a.producao);
+  const pos=ranking.findIndex(x=>x.login===login)+1;
+  const melhor=ranking[0];
+  const mediaProd=media(arr,x=>x.producao);
+  const mediaTec1=media(arr,x=>x.tec1Pct);
+  const mediaRev=media(arr,x=>x.revPct);
+  const perfil=perfilTecnico(login);
+
+  extra.innerHTML=`
+    <div class="indiv-hero">
+      <div class="indiv-avatar">${perfil.foto?`<img src="${perfil.foto}" alt="">`:iniciais(t.nome)}</div>
+      <div class="indiv-hero-info">
+        <h3>${esc2(t.nome)}</h3>
+        <div>${esc2(t.login)}${perfil.tempoEmpresa?` · ${esc2(perfil.tempoEmpresa)}`:""}</div>
+      </div>
+      <div class="indiv-rank-chip"><strong>#${pos||"-"}</strong><span>de ${arr.length} técnicos</span></div>
+    </div>
+    <div class="indiv-compare">
+      <div class="indiv-compare-row"><span class="icr-label">Produção</span><div class="icr-bar"><i style="width:${Math.min(100,mediaProd?t.producao/Math.max(t.producao,mediaProd,1)*100:0)}%;background:${corBar(mediaProd?t.producao/mediaProd*100:0)}"></i></div><span class="icr-val">${t.producao}</span></div>
+      <div class="indiv-compare-row"><span class="icr-label">vs média equipe</span><div class="icr-bar"><i style="width:${Math.min(100,mediaProd?t.producao/mediaProd*100:0)}%;background:${corBar(mediaProd?t.producao/mediaProd*100:0)}"></i></div><span class="icr-val">${r1(mediaProd)}</span></div>
+      <div class="indiv-compare-row"><span class="icr-label">vs melhor técnico</span><div class="icr-bar"><i style="width:${Math.min(100,melhor&&melhor.producao?t.producao/melhor.producao*100:0)}%;background:${corBar(melhor&&melhor.producao?t.producao/melhor.producao*100:0)}"></i></div><span class="icr-val">${melhor?melhor.producao:"-"}</span></div>
+      <div class="indiv-compare-row"><span class="icr-label">TEC1 vs meta</span><div class="icr-bar"><i style="width:${Math.min(100,t.tec1Pct)}%;background:${corBar(LIMITE_ACOMP_TEC1?t.tec1Pct/LIMITE_ACOMP_TEC1*100:0)}"></i></div><span class="icr-val">${pct(t.tec1Pct)}</span></div>
+      <div class="indiv-compare-row"><span class="icr-label">Revisita vs meta</span><div class="icr-bar"><i style="width:${Math.min(100,t.revPct*4)}%;background:${corBar(t.revPct<=LIMITE_ACOMP_REVISITA?100:50)}"></i></div><span class="icr-val">${pct(t.revPct)}</span></div>
+    </div>
+    <div class="grid-2c" style="margin-top:14px">
+      <div class="chart-box"><h2>Radar de Desempenho</h2><div class="chart-box-body"><canvas id="indivRadarChart"></canvas></div></div>
+      <div class="chart-box"><h2>Tendência (histórico mensal)</h2><div class="chart-box-body"><canvas id="indivTrendChart"></canvas></div><div id="indivTrendEmpty" class="empty" style="display:none;margin-top:8px">Ainda não há mais de um mês salvo para este técnico.</div></div>
+    </div>`;
+
+  const norm100=(v,ref)=>ref?Math.max(0,Math.min(100,v/ref*100)):0;
+  drawRadar("indivRadarChart",["Produção","TEC1","Revisita (invertida)","Consistência"],[
+    {label:t.nome,data:[norm100(t.producao,Math.max(mediaProd,1)*1.3),t.tec1Pct,100-t.revPct*6,Math.max(0,100-Math.abs(t.tec1Pct-mediaTec1))],color:"#1a5fbf"},
+    {label:"Média da equipe",data:[norm100(mediaProd,Math.max(mediaProd,1)*1.3),mediaTec1,100-mediaRev*6,80],color:"#94a3b8"}
+  ]);
+
+  try{
+    const bases=await basesMensaisOrdenadas();
+    const serie=bases.map(b=>{
+      const item=processarResumo(b.rows).arr.find(x=>loginKey(x.login)===loginKey(login));
+      return item?{label:b.competencia.label,producao:item.producao}:null;
+    }).filter(Boolean);
+    if(serie.length>=2){
+      $("indivTrendEmpty").style.display="none";
+      drawLineChart("indivTrendChart",serie.map(x=>x.label),[{label:"Produção",data:serie.map(x=>x.producao),color:"#0d9968",fill:true}],{legend:false});
+    }else{
+      $("indivTrendEmpty").style.display="block";
+      destroyChart("indivTrendChart");
+    }
+  }catch(e){
+    $("indivTrendEmpty") && ($("indivTrendEmpty").style.display="block");
+  }
+}
+window.renderIndividualDashboardExtra=renderIndividualDashboardExtra;
+
+/* ═══════════════════════════ ORQUESTRADOR ═══════════════════════════ */
+window.renderCentroPerformance=function(tab){
+  try{
+    if(tab==="executivo") renderExecutivo();
+    else if(tab==="inteligencia") renderInteligencia();
+    else if(tab==="ranking") renderRanking();
+    else if(tab==="evolucao") renderEvolucao();
+    else if(tab==="equipe") renderEquipe();
+    else if(tab==="gestor") renderGestor();
+  }catch(e){
+    console.warn("Centro de Performance: falha ao renderizar aba",tab,e);
+  }
+};
+
+})();
+
+</script>
 
 </body>
 </html>
