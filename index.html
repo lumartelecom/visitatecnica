@@ -140,15 +140,19 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .lc-legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
 /* ===== Distribuição por categoria (Tipo de serviço / Segmento de cliente) ===== */
-.dist-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.dist-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;align-items:stretch}
+/* Sem isso o 2º quadro herda o margin-top de ".card + .card" e fica 16px menor. */
+.dist-grid .card+.card{margin-top:0}
 @media (max-width:860px){.dist-grid{grid-template-columns:1fr}}
-.dist-card{padding:16px 18px}
-.dist-bar-row{display:grid;grid-template-columns:130px 1fr 50px;align-items:center;gap:10px;margin-bottom:10px}
+.dist-card{padding:16px 18px;display:flex;flex-direction:column}
+.dist-card .dist-bars{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
+.dist-card .dist-bar-row{margin-bottom:0}
+.dist-bar-row{display:grid;grid-template-columns:130px 1fr 56px;align-items:center;gap:10px;margin-bottom:10px}
 .dist-bar-row:last-child{margin-bottom:0}
 .dist-bar-name{font-size:12.5px;color:var(--text-muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dist-bar-track{height:14px;background:var(--gray-100);border-radius:4px;overflow:hidden}
 .dist-bar-fill{height:100%;border-radius:4px}
-.dist-bar-val{font-size:12px;font-variant-numeric:tabular-nums;color:var(--text);font-weight:600;text-align:right}
+.dist-bar-val{font-size:12px;font-variant-numeric:tabular-nums;color:var(--text);font-weight:600;text-align:right;white-space:nowrap}
 
 /* ===== BADGES ===== */
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
@@ -177,15 +181,15 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .form-error{font-size:11.5px;color:var(--red-dark);margin-top:5px;font-weight:600}
 
 /* ===== PLANTÕES (grade) ===== */
-.plantoes-linha-principal{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;margin-bottom:14px}
+.plantoes-linha-principal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;margin-bottom:14px}
 .plantoes-linha-principal .form-group{margin-bottom:0}
 .plantoes-linha-principal .filter-sel{width:100%}
-.plantoes-linha-principal .btn{width:100%;justify-content:center;white-space:nowrap;padding-left:6px;padding-right:6px}
-@media(max-width:1100px){
-  .plantoes-linha-principal{grid-template-columns:repeat(3,1fr)}
+.plantoes-linha-principal .btn{width:100%;min-width:0;justify-content:center;white-space:nowrap;overflow:hidden;padding-left:5px;padding-right:5px;font-size:11.5px}
+@media(max-width:1240px){
+  .plantoes-linha-principal{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @media(max-width:640px){
-  .plantoes-linha-principal{grid-template-columns:repeat(2,1fr)}
+  .plantoes-linha-principal{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 .plantoes-dias-permitidos{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 .plantoes-dias-permitidos>label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:8px}
@@ -386,18 +390,6 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           </div>
           <div id="indicadoresCapaWrap"></div>
         </div>
-      </section>
-
-      <section class="view" id="view-tecnicos">
-        <div class="toolbar">
-          <div class="form-hint" id="competenciaTecnicosLabel" style="font-size:13px"></div>
-        </div>
-        <div class="table-wrap">
-          <table id="tabelaTecnicos"><thead></thead><tbody></tbody></table>
-        </div>
-        <div class="mobile-cards" id="cardsTecnicos"></div>
-        <p class="form-hint" id="avisoIndicadoresTecnicos" style="margin-top:10px;display:none"></p>
-
         <div class="card" id="volumeDiarioTecnicosWrap" style="margin-top:16px;display:none">
           <div class="card-title">Volume diário de OS agendadas</div>
           <p class="form-hint" id="volumeDiarioTecnicosDesc" style="margin-bottom:14px"></p>
@@ -412,6 +404,18 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         </div>
       </section>
 
+      <section class="view" id="view-tecnicos">
+        <div class="toolbar">
+          <div class="form-hint" id="competenciaTecnicosLabel" style="font-size:13px"></div>
+        </div>
+        <div class="table-wrap">
+          <table id="tabelaTecnicos"><thead></thead><tbody></tbody></table>
+        </div>
+        <div class="mobile-cards" id="cardsTecnicos"></div>
+        <p class="form-hint" id="avisoIndicadoresTecnicos" style="margin-top:10px;display:none"></p>
+
+      </section>
+
       <section class="view" id="view-plantoes">
 
         <!-- 1. Configuração da Escala -->
@@ -424,6 +428,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
             <button class="btn btn-primary btn-sm no-print" id="btnBaixarEscalaImagem"></button>
             <button class="btn btn-success btn-sm" id="btnAdicionarExtra"></button>
             <button class="btn btn-danger btn-sm no-print" id="btnLimparEscala"></button>
+            <button class="btn btn-secondary btn-sm no-print" id="btnBloquearEscala"></button>
           </div>
           <div class="plantoes-dias-permitidos">
             <label>Dias permitidos para folga</label>
@@ -656,7 +661,9 @@ const ICONS={
   download:'<path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 19h14"/>',
   cash:'<rect x="2.5" y="6" width="19" height="12" rx="2.2"/><circle cx="12" cy="12" r="3"/><path d="M6 9.2h.01M18 14.8h.01"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
-  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>'
+  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
+  lock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
+  unlock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 7.6-1.4"/>'
 };
 function icon(name,size=17){return `<svg class="icon" style="width:${size}px;height:${size}px" viewBox="0 0 24 24">${ICONS[name]||''}</svg>`;}
 
@@ -823,6 +830,7 @@ async function getConfig(){
   if(!c.logoDataUrl){c.logoDataUrl=LOGO_LUMAR_PADRAO;await dbPut('configuracoes',c);}
   if(c.valorComissaoTotal===undefined){c.valorComissaoTotal=700;await dbPut('configuracoes',c);}
   if(c.minimoDiarioProducao===undefined){c.minimoDiarioProducao=MINIMO_DIARIO_PADRAO;await dbPut('configuracoes',c);}
+  if(c.mesesBloqueados===undefined){c.mesesBloqueados={};await dbPut('configuracoes',c);}
   return c;
 }
 const EQUIPE_REAL=[
@@ -943,6 +951,8 @@ async function gerarEscala(dataInicioISO,dataFimISO){
     const iso=toISO(cur);
     const feriado=feriados.has(iso);
     const domingo=cur.getDay()===0;
+    /* Mês bloqueado não recebe plantão novo, nem pela varredura automática do ano. */
+    if(mesEscalaBloqueado(config,iso.slice(0,7))){cur=addDays(cur,1);continue;}
     if((domingo||feriado)&&!datasExistentes.has(iso)){
       const ids=await selecionarProximosTecnicos(qtd,[],iso);
       if(ids.length<qtd) await registrarHistoricoGeral('plantoes','alerta',`Técnicos insuficientes para escalar ${fmtBR(iso)} (necessário ${qtd}, disponível ${ids.length})`);
@@ -1110,7 +1120,9 @@ async function garantirCompetenciaSelecionada(){
   }
   return competencias;
 }
-function calcularDistribuicaoCategoria(linhas,campo,maxCategorias=5){
+/* Mesmo número de faixas nos dois gráficos para os quadros ficarem do mesmo tamanho. */
+const CATEGORIAS_DIST=6;
+function calcularDistribuicaoCategoria(linhas,campo,maxCategorias=CATEGORIAS_DIST){
   const contagem={};
   let total=0;
   (linhas||[]).forEach(row=>{
@@ -1133,7 +1145,7 @@ function calcularDistribuicaoCategoria(linhas,campo,maxCategorias=5){
 function renderBarChartHTML(itens,corVar){
   if(!itens.length)return `<p class="form-hint">Sem dados suficientes.</p>`;
   const max=Math.max(...itens.map(i=>i.pct))||1;
-  return `<div>${itens.map(i=>`
+  return `<div class="dist-bars">${itens.map(i=>`
     <div class="dist-bar-row">
       <div class="dist-bar-name" title="${escapeHtml(i.label)}">${escapeHtml(i.label)}</div>
       <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${(i.pct/max*100)}%;background:var(${corVar})"></div></div>
@@ -1161,8 +1173,8 @@ async function renderInicio(){
   if(!indicadores.ok){
     indWrap.innerHTML=`<p class="form-hint">${mensagemIndicadoresIndisponiveis(indicadores.motivo)}</p>`;
   } else {
-    const distTipoServico=calcularDistribuicaoCategoria(indicadores.linhas,'TIPO_SERVICO',5);
-    const distSegmento=calcularDistribuicaoCategoria(indicadores.linhas,'SEGMENTO_CLIENTE',7);
+    const distTipoServico=calcularDistribuicaoCategoria(indicadores.linhas,'TIPO_SERVICO',CATEGORIAS_DIST);
+    const distSegmento=calcularDistribuicaoCategoria(indicadores.linhas,'SEGMENTO_CLIENTE',CATEGORIAS_DIST);
     indWrap.innerHTML=`
       <div class="ind-grid">
         <button type="button" class="ind-card" data-ind="revisita"><div class="ind-label">Revisita</div><div class="ind-value">${fmtPct1(indicadores.revPctGeral)}</div><div class="ind-sub">Ver por técnico &rarr;</div></button>
@@ -1184,6 +1196,7 @@ async function renderInicio(){
       </div>`;
     document.querySelectorAll('#indicadoresCapaWrap .ind-card').forEach(el=>el.addEventListener('click',()=>abrirModalIndicador(el.dataset.ind,indicadores)));
   }
+  renderVolumeDiarioTecnicos(indicadores.ok?indicadores.linhas:[],competenciaSelecionadaGlobal);
 }
 function abrirModalIndicador(tipo,indicadores){
   const cfgs={
@@ -1407,7 +1420,6 @@ async function renderTecnicos(){
   const avisoEl=document.getElementById('avisoIndicadoresTecnicos');
   if(indicadores.ok){avisoEl.style.display='none';}
   else{avisoEl.style.display='block';avisoEl.textContent=mensagemIndicadoresIndisponiveis(indicadores.motivo);}
-  renderVolumeDiarioTecnicos(indicadores.ok?indicadores.linhas:[],competenciaSelecionadaGlobal);
   const celulaInd=(t,chave,fmt)=>{
     const ind=porId[t.id];
     return ind?fmt(ind[chave]):'—';
@@ -2543,6 +2555,56 @@ function labelMesPlantao(chave){
   return `${MESES_COMPETENCIA[mes-1]}/${ano}`;
 }
 const DIAS_PERMITIDOS_PADRAO=['segunda','terca','quarta','quinta','sexta'];
+/* ---- Bloqueio da escala ----
+   Com o mês fechado, nada mais altera plantões e folgas: os botões de gerar,
+   limpar e técnico extra ficam travados e os seletores da tabela viram leitura. */
+function mesEscalaBloqueado(config,mesChave){
+  return !!(config.mesesBloqueados||{})[mesChave];
+}
+async function escalaBloqueada(mesChave){
+  return mesEscalaBloqueado(await getConfig(),mesChave||mesSelecionadoPlantoes);
+}
+async function bloquearSeNecessario(){
+  if(await escalaBloqueada()){
+    toast('Escala bloqueada. Desbloqueie para alterar este mês.','erro');
+    return true;
+  }
+  return false;
+}
+async function alternarBloqueioEscala(){
+  if(!mesSelecionadoPlantoes)return;
+  const config=await getConfig();
+  const bloqueados={...(config.mesesBloqueados||{})};
+  const estava=!!bloqueados[mesSelecionadoPlantoes];
+  if(estava){
+    const ok=await confirmarAcao(`Desbloquear a escala de <strong>${labelMesPlantao(mesSelecionadoPlantoes)}</strong>? Ela volta a poder ser gerada, editada e limpa.`);
+    if(!ok)return;
+    delete bloqueados[mesSelecionadoPlantoes];
+  } else {
+    bloqueados[mesSelecionadoPlantoes]=true;
+  }
+  config.mesesBloqueados=bloqueados;
+  await dbPut('configuracoes',config);
+  await registrarHistoricoGeral('plantoes',estava?'desbloqueio':'bloqueio',
+    `Escala de ${labelMesPlantao(mesSelecionadoPlantoes)} ${estava?'desbloqueada':'bloqueada'}`);
+  toast(estava?'Escala desbloqueada':'Escala bloqueada','sucesso');
+  renderPlantoes();
+}
+function aplicarBloqueioNaTela(bloqueado){
+  const btn=document.getElementById('btnBloquearEscala');
+  btn.innerHTML=icon(bloqueado?'unlock':'lock',14)+(bloqueado?' Desbloquear':' Bloquear');
+  btn.classList.toggle('btn-danger',bloqueado);
+  btn.classList.toggle('btn-secondary',!bloqueado);
+  ['btnGerarEscala','btnGerarFolgas','btnLimparEscala','btnAdicionarExtra']
+    .forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=bloqueado;});
+  document.querySelectorAll('#tabelaPlantoes .tec-select,#tabelaPlantoes .folga-select,#diasPermitidosRow input')
+    .forEach(el=>{el.disabled=bloqueado;});
+  document.querySelectorAll('#tabelaPlantoes .btn-extra-add').forEach(b=>{b.disabled=bloqueado;b.style.display=bloqueado?'none':'';});
+  const titulo=document.getElementById('tituloMesPlantoes');
+  const jaTem=titulo.querySelector('.badge');
+  if(bloqueado&&!jaTem)titulo.insertAdjacentHTML('beforeend',' <span class="badge badge-red">Bloqueada</span>');
+  else if(!bloqueado&&jaTem)jaTem.remove();
+}
 function renderResumoFolgasTecnicos(tecnicos,folgasDoMes){
   const box=document.getElementById('resumoFolgasTecnicos');
   const contagem=new Map();
@@ -2647,6 +2709,7 @@ async function redistribuirSlotsAutomaticos(dataInicioISO,dataFimISO,qtd){
   return mudancas;
 }
 async function gerarEscalaSelecionada(){
+  if(await bloquearSeNecessario())return;
   const [anoStr,mesStr]=document.getElementById('selMesEscala').value.split('-');
   const ano=Number(anoStr),mes=Number(mesStr);
   if(!ano||!mes)return;
@@ -2686,12 +2749,14 @@ async function gerarFolgasAutomaticasMes(mesChave){
 }
 async function gerarFolgasAutomaticasMesSelecionado(){
   if(!mesSelecionadoPlantoes){toast('Gere a escala do mês primeiro','erro');return;}
+  if(await bloquearSeNecessario())return;
   const resultado=await gerarFolgasAutomaticasMes(mesSelecionadoPlantoes);
   toast(resultado.falhas?`${resultado.geradas} folga(s) gerada(s), ${resultado.falhas} sem dia disponível na semana`:(resultado.geradas?`${resultado.geradas} folga(s) gerada(s)`:'Todas as folgas deste mês já estavam geradas'),resultado.falhas?'erro':'sucesso');
   renderPlantoes();
 }
 async function limparEscalaSelecionada(){
   if(!mesSelecionadoPlantoes)return;
+  if(await bloquearSeNecessario())return;
   const {listaMes}=await prepararLinhasPlantoesMes(mesSelecionadoPlantoes);
   if(listaMes.length===0){toast('Não há escala para limpar neste mês','erro');return;}
   const ok=await confirmarAcao(`Tem certeza que deseja limpar toda a escala de <strong>${labelMesPlantao(mesSelecionadoPlantoes)}</strong>? Todos os plantões e folgas desse mês serão excluídos. Esta ação não pode ser desfeita.`);
@@ -2703,6 +2768,7 @@ async function limparEscalaSelecionada(){
 }
 async function abrirModalAdicionarExtra(plantaoIdPreSelecionado=null){
   if(!mesSelecionadoPlantoes){toast('Gere a escala do mês primeiro','erro');return;}
+  if(await bloquearSeNecessario())return;
   const config=await getConfig();
   const qtdBase=Math.max(1,config.qtdTecnicosPorPlantao||2);
   const {listaMes}=await prepararLinhasPlantoesMes(mesSelecionadoPlantoes);
@@ -2763,6 +2829,7 @@ async function adicionarTecnicoExtra(plantaoId,tecnicoId){
 }
 async function abrirModalRemoverExtra(){
   if(!mesSelecionadoPlantoes){toast('Gere a escala do mês primeiro','erro');return;}
+  if(await bloquearSeNecessario())return;
   const config=await getConfig();
   const qtdBase=Math.max(1,config.qtdTecnicosPorPlantao||2);
   const {listaMes,tecnicos}=await prepararLinhasPlantoesMes(mesSelecionadoPlantoes);
@@ -2900,6 +2967,7 @@ async function renderTabelaEscala(){
       const idx=Number(sel.dataset.idx);
       const antigoId=sel.dataset.old?Number(sel.dataset.old):null;
       const novoId=sel.value?Number(sel.value):null;
+      if(await bloquearSeNecessario()){renderPlantoes();return;}
       if(novoId&&novoId!==antigoId){
         await trocarTecnicoPlantao(plantaoId,idx,antigoId,novoId);
         toast('Técnico atualizado no plantão','sucesso');
@@ -2913,6 +2981,7 @@ async function renderTabelaEscala(){
   document.querySelectorAll('#tabelaPlantoes .folga-select').forEach(sel=>{
     sel.addEventListener('change',async()=>{
       if(!sel.value)return;
+      if(await bloquearSeNecessario()){renderPlantoes();return;}
       const plantaoId=Number(sel.dataset.plantao);
       const tecnicoId=Number(sel.dataset.tecnico);
       const folgaId=sel.dataset.folgaId?Number(sel.dataset.folgaId):null;
@@ -2928,6 +2997,7 @@ async function renderTabelaEscala(){
   renderResumoFolgasTecnicos(tecnicos,folgasDoMes);
   document.getElementById('kpiPlantoesTotal').textContent=listaMes.reduce((a,p)=>a+p.tecnicoIds.filter(Boolean).length,0);
   document.getElementById('kpiFolgasTotal').textContent=folgasDoMes.length;
+  aplicarBloqueioNaTela(mesEscalaBloqueado(config,mesSelecionadoPlantoes));
   return{listaMes,tecnicos};
 }
 async function gerarImagemPlantoes(){
@@ -3742,6 +3812,8 @@ async function initApp(){
   document.getElementById('btnBaixarEscalaImagem').addEventListener('click',gerarImagemPlantoes);
   document.getElementById('btnLimparEscala').innerHTML=icon('trash',15)+' Limpar escala';
   document.getElementById('btnLimparEscala').addEventListener('click',limparEscalaSelecionada);
+  document.getElementById('btnBloquearEscala').innerHTML=icon('lock',14)+' Bloquear';
+  document.getElementById('btnBloquearEscala').addEventListener('click',alternarBloqueioEscala);
   document.getElementById('selMesEscala').addEventListener('change',()=>{
     mesSelecionadoPlantoes=document.getElementById('selMesEscala').value;
     renderPlantoes();
