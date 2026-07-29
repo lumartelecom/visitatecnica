@@ -6,8 +6,6 @@
 <title>Gestão de Equipe - Manutenção Lumar Telecom</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,7 +92,6 @@ button.btn-danger,.btn-danger{background:var(--red-light);color:var(--red-dark);
 
 /* ===== TOOLBAR / FILTERS ===== */
 .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.toolbar .grow{flex:1;min-width:180px}
 .search-box{position:relative;flex:1;min-width:180px;max-width:320px}
 .search-box svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted)}
 .search-box input{width:100%;padding:9px 12px 9px 32px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface);font-size:13px;outline:none}
@@ -109,7 +106,6 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
 .modal-body .table-wrap table{min-width:0}
 thead th{background:var(--brand-soft);color:var(--brand-dark);padding:11px 13px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--brand-light)}
 thead th:hover{background:var(--brand-light)}
-thead th .sort-arrow{opacity:.5;font-size:9px;margin-left:4px}
 tbody tr{border-bottom:1px solid var(--border)}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--surface-alt)}
@@ -179,13 +175,6 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-hint{font-size:11.5px;color:var(--text-muted);margin-top:5px}
 .form-error{font-size:11.5px;color:var(--red-dark);margin-top:5px;font-weight:600}
-.slot-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--surface-alt)}
-.slot-card .slot-label{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase}
-.day-picker{display:flex;gap:6px;flex-wrap:wrap}
-.day-btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--text);border-radius:8px;padding:9px 0;font-size:12.5px;font-weight:700;cursor:pointer;flex:1;min-width:44px;text-align:center}
-.day-btn:hover:not(:disabled){border-color:var(--brand)}
-.day-btn.active{background:var(--brand);border-color:var(--brand-dark);color:#fff}
-.day-btn:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
 
 /* ===== PLANTÕES (grade) ===== */
 .plantoes-linha-principal{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;margin-bottom:14px}
@@ -272,12 +261,12 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .dias-kpi.meta{background:var(--brand-soft);border-color:var(--brand-light)}
 .dias-kpi.ok>strong{color:var(--green)}
 .dias-kpi.warn>strong{color:var(--amber)}
-.dias-kpi.alt>strong{color:var(--amber)}
+.dias-kpi.bad>strong{color:var(--red-dark)}
 .dias-kpi.click{cursor:pointer;transition:border-color .12s,transform .12s}
 .dias-kpi.click:hover{border-color:var(--brand);transform:translateY(-1px)}
 .dias-kpi.click>small{color:var(--brand);font-weight:600}
-#tabelaDiasTecnicos tfoot td,#tabelaDiasContingencia tfoot td{font-weight:800;background:var(--brand-soft);color:var(--brand-dark);border-top:2px solid var(--brand-light);font-family:'IBM Plex Mono',monospace}
-#tabelaDiasTecnicos tfoot td:first-child,#tabelaDiasContingencia tfoot td:first-child{font-family:inherit;text-transform:uppercase;font-size:10.5px;letter-spacing:.05em}
+#tabelaDiasTecnicos tfoot td,#tabelaDiasContingencia tfoot td,#tabelaDiasHistorico tfoot td{font-weight:800;background:var(--brand-soft);color:var(--brand-dark);border-top:2px solid var(--brand-light);font-family:'IBM Plex Mono',monospace}
+#tabelaDiasTecnicos tfoot td:first-child,#tabelaDiasContingencia tfoot td:first-child,#tabelaDiasHistorico tfoot td:first-child{font-family:inherit;text-transform:uppercase;font-size:10.5px;letter-spacing:.05em}
 .dias-progress{height:9px;border-radius:6px;background:var(--gray-200);overflow:hidden;margin-top:14px}
 .dias-progress span{display:block;height:100%;border-radius:6px;background:var(--brand);transition:width .3s ease}
 .dias-progress span.completo{background:var(--green)}
@@ -457,11 +446,12 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           </div>
         </div>
 
-        <!-- 4. Férias -->
+        <!-- 4. Férias / Treinamento / Afastamento -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">
-            <span>Controle de férias</span>
+            <span>Controle de férias / treinamento / afastamento</span>
           </div>
+          <p class="form-hint" style="margin-bottom:12px">Qualquer um dos três tipos retira o técnico da capacidade da equipe nos dias do período e libera o plantão para outro técnico disponível.</p>
           <button class="btn btn-primary btn-sm" id="btnNovaFerias" style="margin-bottom:14px"></button>
           <div class="table-wrap">
             <table id="tabelaFerias"><thead></thead><tbody></tbody></table>
@@ -507,8 +497,8 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           <div class="dias-kpis">
             <div class="dias-kpi meta"><span>Meta do mês</span><input type="number" min="0" step="1" id="diasMetaMensal"><small id="diasMetaOrigem">—</small></div>
             <button type="button" class="dias-kpi click ok" id="cardDiasRealizados"><span>Dias realizados</span><strong id="diasTotalFeito">—</strong><small id="diasTotalFeitoSub">Detalhar &rarr;</small></button>
-            <div class="dias-kpi warn"><span>Faltam</span><strong id="diasFaltaMeta">—</strong><small id="diasMetaDia">—</small></div>
-            <button type="button" class="dias-kpi click" id="cardCapacidadeDias"><span>Capacidade</span><strong id="diasCapacidadeMes">—</strong><small>Detalhar &rarr;</small></button>
+            <div class="dias-kpi warn"><span id="diasFaltaTitulo">Faltam</span><strong id="diasFaltaMeta">—</strong><small id="diasMetaDia">—</small></div>
+            <button type="button" class="dias-kpi click" id="cardCapacidadeDias"><span>Capacidade</span><strong id="diasCapacidadeMes">—</strong><small id="diasCapacidadeSub">Detalhar &rarr;</small></button>
             <button type="button" class="dias-kpi click" id="cardTecnicosAtivosDias"><span>Técnicos</span><strong id="diasTecnicosAtivos">—</strong><small>Detalhar &rarr;</small></button>
             <div class="dias-kpi"><span>Referência</span><strong id="diasCompetencia">—</strong><small id="diasCompetenciaSub">—</small></div>
           </div>
@@ -533,10 +523,13 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         </div>
 
         <div class="card" style="margin-top:16px">
-          <div class="card-title">Histórico comparativo mensal</div>
-          <p class="form-hint" style="margin-bottom:12px">Resumo das competências já consultadas nesta instalação. A capacidade considera a escala de plantões e as folgas compensatórias.</p>
+          <div class="card-title">
+            <span>Histórico comparativo mensal</span>
+            <button class="btn btn-secondary btn-sm no-print" id="btnCarregarAnoDias"></button>
+          </div>
+          <p class="form-hint" style="margin-bottom:12px">Evolução do ano inteiro. Use &ldquo;Carregar ano&rdquo; para varrer todas as abas VT da planilha de uma vez; a capacidade de cada mês considera a escala de plantões, folgas, férias, treinamentos e afastamentos cadastrados aqui.</p>
           <div class="table-wrap">
-            <table id="tabelaDiasHistorico"><thead></thead><tbody></tbody></table>
+            <table id="tabelaDiasHistorico"><thead></thead><tbody></tbody><tfoot></tfoot></table>
           </div>
         </div>
       </section>
@@ -653,7 +646,6 @@ const ICONS={
   user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4.1 3.4-7 7.5-7s7.5 2.9 7.5 7"/>',
   calendar:'<rect x="3.5" y="5" width="17" height="16" rx="2"/><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
   coffee:'<path d="M4 9h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3c-.5 1 .5 1.5 0 3M12 3c-.5 1 .5 1.5 0 3"/>',
-  umbrella:'<path d="M12 3v17.5a2 2 0 0 0 4 0"/><path d="M3 12a9 9 0 0 1 18 0Z"/>',
   upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   settings:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
   plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
@@ -661,14 +653,10 @@ const ICONS={
   trash:'<polyline points="4 7 20 7"/><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M8 7v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V7"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
   x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
   check:'<polyline points="20 6 9 17 4 12"/>',
-  sun:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
-  moon:'<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>',
   download:'<path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 19h14"/>',
   cash:'<rect x="2.5" y="6" width="19" height="12" rx="2.2"/><circle cx="12" cy="12" r="3"/><path d="M6 9.2h.01M18 14.8h.01"/>',
-  printer:'<polyline points="6 9 6 3 18 3 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
-  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
-  arrowRight:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/>'
+  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>'
 };
 function icon(name,size=17){return `<svg class="icon" style="width:${size}px;height:${size}px" viewBox="0 0 24 24">${ICONS[name]||''}</svg>`;}
 
@@ -681,13 +669,16 @@ function fmtBR(iso){if(!iso)return'-';const d=parseISO(iso);return pad(d.getDate
 function fmtDateTimeBR(iso){const d=new Date(iso);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes());}
 const DIAS_SEMANA=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 const DIAS_FOLGA=[{v:'segunda',l:'Segunda-feira',curto:'Seg'},{v:'terca',l:'Terça-feira',curto:'Ter'},{v:'quarta',l:'Quarta-feira',curto:'Qua'},{v:'quinta',l:'Quinta-feira',curto:'Qui'},{v:'sexta',l:'Sexta-feira',curto:'Sex'},{v:'sabado',l:'Sábado',curto:'Sáb'}];
+/* Períodos em que o técnico não produz. Todos saem da capacidade da equipe e
+   liberam o plantão para outro técnico, mudando só o rótulo. */
+const TIPOS_AUSENCIA=[
+  {v:'ferias',l:'Férias',cls:'badge-blue',status:'ferias'},
+  {v:'treinamento',l:'Treinamento',cls:'badge-amber',status:'treinamento'},
+  {v:'afastamento',l:'Afastamento',cls:'badge-slate',status:'afastado'}
+];
+function tipoAusencia(v){return TIPOS_AUSENCIA.find(t=>t.v===v)||TIPOS_AUSENCIA[0];}
+function badgeTipoAusencia(v){const t=tipoAusencia(v);return `<span class="badge ${t.cls}">${t.l}</span>`;}
 const DIA_FOLGA_MAP={segunda:0,terca:1,quarta:2,quinta:3,sexta:4,sabado:5};
-function labelDiaFolga(v){const f=DIAS_FOLGA.find(d=>d.v===v);return f?f.l:'-';}
-function statusTecnicoBadge(s){
-  const map={ativo:['badge-green','Ativo'],ferias:['badge-blue','Férias'],noturno:['badge-slate','Técnico noturno'],afastado:['badge-amber','Afastado'],desligado:['badge-slate','Desligado']};
-  const [cls,lbl]=map[s]||['badge-slate',s];
-  return `<span class="badge ${cls}"><span class="badge-dot"></span>${lbl}</span>`;
-}
 function labelTipoFeriado(tipo){
   return tipo==='estadual'?'Feriado Estadual':(tipo==='municipal'?'Feriado Municipal':'Feriado Federal');
 }
@@ -1024,29 +1015,36 @@ async function substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim){
     await removerFolgaSeExistir(p.id,tecnicoId);
   }
 }
+const STATUS_POR_AUSENCIA=TIPOS_AUSENCIA.map(t=>t.status);
 async function atualizarStatusFerias(){
   const hoje=toISO(new Date());
   const feriasList=await dbGetAll('ferias');
   const tecnicos=await dbGetAll('tecnicos');
   for(const t of tecnicos){
-    if(t.status==='afastado'||t.status==='desligado')continue;
-    const emFerias=feriasList.some(f=>hoje>=f.dataInicio&&hoje<=f.dataFim&&f.tecnicoId===t.id);
-    if(emFerias&&t.status!=='ferias'){t.status='ferias';await dbPut('tecnicos',t);}
-    else if(!emFerias&&t.status==='ferias'){t.status='ativo';await dbPut('tecnicos',t);}
+    if(t.status==='desligado')continue;
+    const ausencia=feriasList.find(f=>f.tecnicoId===t.id&&hoje>=f.dataInicio&&hoje<=f.dataFim);
+    const statusAusencia=ausencia?tipoAusencia(ausencia.tipo).status:null;
+    if(statusAusencia){
+      if(t.status!==statusAusencia){t.status=statusAusencia;await dbPut('tecnicos',t);}
+    } else if(STATUS_POR_AUSENCIA.includes(t.status)&&feriasList.some(f=>f.tecnicoId===t.id)){
+      /* Só devolve para "ativo" quem entrou nesse status por um período cadastrado;
+         quem foi marcado à mão continua como está. */
+      t.status='ativo';await dbPut('tecnicos',t);
+    }
   }
   for(const f of feriasList){
     const novoStatus=hoje<f.dataInicio?'agendada':(hoje>f.dataFim?'concluida':'ativa');
     if(f.status!==novoStatus){f.status=novoStatus;await dbPut('ferias',f);}
   }
 }
-async function salvarFerias(tecnicoId,dataInicio,dataFim,feriasId=null){
-  const registro={tecnicoId,dataInicio,dataFim,status:'agendada',criadoEm:new Date().toISOString()};
+async function salvarFerias(tecnicoId,dataInicio,dataFim,feriasId=null,tipo='ferias'){
+  const registro={tecnicoId,dataInicio,dataFim,tipo,status:'agendada',criadoEm:new Date().toISOString()};
   if(feriasId){registro.id=feriasId;await dbPut('ferias',registro);}
   else{await dbAdd('ferias',registro);}
   await substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim);
   await atualizarStatusFerias();
   const tecnico=await dbGet('tecnicos',tecnicoId);
-  await registrarHistoricoGeral('ferias','cadastro',`Férias de ${tecnico?tecnico.nome:tecnicoId}: ${fmtBR(dataInicio)} a ${fmtBR(dataFim)}`);
+  await registrarHistoricoGeral('ferias','cadastro',`${tipoAusencia(tipo).l} de ${tecnico?tecnico.nome:tecnicoId}: ${fmtBR(dataInicio)} a ${fmtBR(dataFim)}`);
 }
 
 /* ===================== FOLGAS ===================== */
@@ -1060,31 +1058,6 @@ function segundaDaSemanaFolga(dataISOPlantao){
 function dataDoDiaFolga(dataISOPlantao,diaFolgaValue){
   const monday=segundaDaSemanaFolga(dataISOPlantao);
   return toISO(addDays(monday,DIA_FOLGA_MAP[diaFolgaValue]));
-}
-async function gerarFolgasPlantao(plantaoId,escolhas){
-  const plantao=await dbGet('plantoes',plantaoId);
-  const monday=toISO(segundaDaSemanaFolga(plantao.data));
-  const saturday=toISO(addDays(segundaDaSemanaFolga(plantao.data),5));
-  const resultados=[];
-  const diasEscolhidos=Object.values(escolhas).filter(Boolean);
-  const diaRepetido=diasEscolhidos.length>1&&new Set(diasEscolhidos).size!==diasEscolhidos.length;
-  for(const tecnicoId of Object.keys(escolhas).map(Number)){
-    const diaFolga=escolhas[tecnicoId];
-    if(!diaFolga){resultados.push({tecnicoId,erro:'Selecione um dia'});continue;}
-    if(diaRepetido){resultados.push({tecnicoId,erro:'Os técnicos devem folgar em dias diferentes'});continue;}
-    const dataFolga=dataDoDiaFolga(plantao.data,diaFolga);
-    const folgasExistentes=await dbGetAllByIndex('folgas','tecnicoId',tecnicoId);
-    const conflito=folgasExistentes.find(f=>f.diaFolga>=monday&&f.diaFolga<=saturday&&f.plantaoId!==plantaoId);
-    if(conflito){resultados.push({tecnicoId,erro:'Técnico já possui folga nesta semana'});continue;}
-    const existenteMesmoPlantao=folgasExistentes.find(f=>f.plantaoId===plantaoId);
-    const registro=existenteMesmoPlantao
-      ?{...existenteMesmoPlantao,diaSemana:diaFolga,diaFolga:dataFolga}
-      :{plantaoId,tecnicoId,diaSemana:diaFolga,diaFolga:dataFolga,status:'gerada',criadoEm:new Date().toISOString()};
-    await dbPut('folgas',registro);
-    resultados.push({tecnicoId,ok:true});
-  }
-  await registrarHistoricoGeral('folgas','geracao',`Folgas geradas para o plantão de ${fmtBR(plantao.data)}`);
-  return resultados;
 }
 async function removerFolgaSeExistir(plantaoId,tecnicoId){
   const all=await dbGetAll('folgas');
@@ -1625,6 +1598,7 @@ let dadosDiasAtuais=null;
 let mesInfoDiasAtual=null;
 let diasCachePlanilha={};
 let diasCarregando=false;
+let diasPendenteDias=false;
 
 /* ---- Planilha online (Controle Lumar) ---- */
 const DIAS_SHEET_CONFIG={
@@ -1654,16 +1628,11 @@ const ALIAS_PLANILHA_DIAS=[
   {planilha:['JOSE FRANCISCO','JOSÉ FRANCISCO'],app:'José Francisco'},
   {planilha:['LAILSON'],app:'Lailson'},
   {planilha:['MATEUS REIS','MATHEUS REIS'],app:'Mateus Reis'},
-  {planilha:['APOLINARIO','APOLINÁRIO'],app:'Apolinario'}
+  /* KLEYTON e APOLINARIO são a mesma pessoa na planilha. Quando as duas linhas
+     aparecem no mesmo mês, os lançamentos diários são somados antes de aplicar
+     o mínimo diário — ver o agrupamento em calcularDadosDias(). */
+  {planilha:['APOLINARIO','APOLINÁRIO','KLEYTON'],app:'Apolinario'}
 ];
-/* Equipe de manutenção que aparece na planilha mas ainda não tem cadastro no
-   sistema. Conta como quadro oficial (não é contingência); a capacidade em dias
-   só fica disponível depois que o técnico for cadastrado em Configurações. */
-const EQUIPE_MANUTENCAO_SEM_CADASTRO=[{planilha:['KLEYTON'],exibicao:'Kleyton'}];
-function equipeManutencaoSemCadastroDias(nomePlanilha){
-  const alvo=headDias(nomePlanilha);
-  return EQUIPE_MANUTENCAO_SEM_CADASTRO.find(c=>c.planilha.some(n=>headDias(n)===alvo))||null;
-}
 /* "JOSE FRANCISCO" -> "Jose Francisco", só para nomes que existem apenas na planilha. */
 function nomeBonitoDias(nome){
   return String(nome||'').toLowerCase().replace(/(^|[\s'-])([a-zà-ÿ])/g,(m,p,c)=>p+c.toUpperCase());
@@ -1909,11 +1878,21 @@ function tecnicosPlantaoDia(ctx,iso){
   return p?new Set(p.tecnicoIds.filter(Boolean)):new Set();
 }
 function tecnicosFolgaDia(ctx,iso){return ctx.folgasPorData.get(iso)||new Set();}
-function tecnicoEmFeriasDia(ctx,tecnicoId,iso){
-  return ctx.ferias.some(f=>f.tecnicoId===tecnicoId&&iso>=f.dataInicio&&iso<=f.dataFim);
+/* Férias, treinamento e afastamento saem da capacidade do mesmo jeito — o que
+   muda é só o rótulo. Retorna o registro para o detalhamento individual saber
+   qual foi o motivo naquele dia. */
+function ausenciaNoDia(ctx,tecnicoId,iso){
+  return ctx.ferias.find(f=>f.tecnicoId===tecnicoId&&iso>=f.dataInicio&&iso<=f.dataFim)||null;
 }
 function equipeAtivaDia(ctx,iso){
-  return ctx.tecnicos.filter(t=>t.status!=='desligado'&&t.status!=='afastado'&&!tecnicoEmFeriasDia(ctx,t.id,iso)).length;
+  return ctx.tecnicos.filter(t=>{
+    if(t.status==='desligado')return false;
+    /* O período cadastrado manda: só tira o técnico nos dias que ele cobre. */
+    if(ausenciaNoDia(ctx,t.id,iso))return false;
+    /* Marcado como afastado à mão, sem período: fica fora do mês inteiro. */
+    if(t.status==='afastado'&&!ctx.ferias.some(f=>f.tecnicoId===t.id))return false;
+    return true;
+  }).length;
 }
 /* Capacidade em dias = técnicos disponíveis para produção naquele dia. */
 function capacidadeDia(ctx,dia){
@@ -1950,15 +1929,17 @@ function detalhesDiasPrevistosTecnico(ctx,tecnico){
     const feriado=ctx.feriadosSet.has(iso);
     const emPlantao=tecnicosPlantaoDia(ctx,iso).has(tecnico.id);
     const emFolga=tecnicosFolgaDia(ctx,iso).has(tecnico.id);
-    const emFerias=tecnicoEmFeriasDia(ctx,tecnico.id,iso);
+    const ausencia=ausenciaNoDia(ctx,tecnico.id,iso);
     let status='Dia normal',contabilizado=true;
     if(d.getDay()===0||feriado){
       contabilizado=emPlantao;
       status=emPlantao?'Plantão':(feriado?'Feriado':'Domingo');
-    } else if(tecnico.status==='desligado'||tecnico.status==='afastado'){
-      contabilizado=false;status=tecnico.status==='desligado'?'Desligado':'Afastado';
-    } else if(emFerias){
-      contabilizado=false;status='Férias';
+    } else if(tecnico.status==='desligado'){
+      contabilizado=false;status='Desligado';
+    } else if(ausencia){
+      contabilizado=false;status=tipoAusencia(ausencia.tipo).l;
+    } else if(tecnico.status==='afastado'&&!ctx.ferias.some(f=>f.tecnicoId===tecnico.id)){
+      contabilizado=false;status='Afastado';
     } else if(emFolga){
       contabilizado=false;status='Folga compensatória';
     }
@@ -1975,29 +1956,12 @@ function inicioRestanteDias(ctx,ultimoDiaComValor){
   if(mesPassado)return ctx.ultimoDia+1;
   return 1;
 }
-/* Percorre as colunas de dia da planilha, pulando dias sem capacidade produtiva. */
-function contarDiasMetaTecnicoDias(ctx,row,idx,header,minimo){
-  let producao=0,ultimoDiaComValor=0;
-  const diasTrabalhados=[];
-  idx.dayIndices.forEach(i=>{
-    const dia=Number(headDias(header[i]));
-    if(!dia||dia>ctx.ultimoDia||capacidadeDia(ctx,dia)<=0)return;
-    const valor=parseNumeroDias(row[i]);
-    if(valor>0)ultimoDiaComValor=Math.max(ultimoDiaComValor,dia);
-    producao+=valor;
-    if(valor>=minimo)diasTrabalhados.push({dia,valor});
-  });
-  return{producao,ultimoDiaComValor,diasTrabalhados};
-}
-function chaveMetaDias(mesChave){return mesChave;}
-async function metaManualDias(mesChave){
-  const config=await getConfig();
-  const metas=config.metasDiasManuais||{};
-  return Number(metas[chaveMetaDias(mesChave)])||0;
+function metaManualDias(config,mesChave){
+  return Number((config.metasDiasManuais||{})[mesChave])||0;
 }
 async function salvarMetaManualDias(mesChave,valor){
   const config=await getConfig();
-  config.metasDiasManuais={...(config.metasDiasManuais||{}),[chaveMetaDias(mesChave)]:valor};
+  config.metasDiasManuais={...(config.metasDiasManuais||{}),[mesChave]:valor};
   await dbPut('configuracoes',config);
 }
 async function salvarHistoricoDias(mesChave,dados){
@@ -2007,10 +1971,11 @@ async function salvarHistoricoDias(mesChave,dados){
     producao:dados.totalJaFeito,contingencia:dados.totalContingencia,atualizadoEm:new Date().toISOString()
   }};
   await dbPut('configuracoes',config);
+  return config;
 }
 
 /* ---- Cálculo principal (matriz da planilha + escala do app) ---- */
-async function calcularDadosDias(mesChave,minimo){
+async function calcularDadosDias(mesChave,minimo,config){
   const ctx=await contextoDias(mesChave);
   const capacidadeMes=detalhesCapacidadeMesDias(ctx,1);
   const mesInfo=mesInfoDias(ctx.mesIdx);
@@ -2027,29 +1992,61 @@ async function calcularDadosDias(mesChave,minimo){
   const idx=indicesCabecalhoDias(header);
   const linhas=matriz.slice(idxHeader+1).filter(r=>r.some(Boolean));
 
-  const linhasTec=[],linhasCont=[];
-  let ultimoDiaComValor=0;
+  /* 1ª passada: agrupa as linhas por técnico de destino. Um mesmo técnico pode
+     aparecer em mais de uma linha da planilha (nomes diferentes para a mesma
+     pessoa), então os lançamentos diários são somados antes de qualquer conta. */
+  const grupos=new Map();
   linhas.forEach(row=>{
     const nome=normDias(row[idx.tecnico]);
     const h=headDias(nome);
     if(!nome||h.includes('TOTAL_DO_DIA')||h.includes('TOTAL_GERAL'))return;
     if(tecnicoExcluidoDias(nome))return;
-    const calc=contarDiasMetaTecnicoDias(ctx,row,idx,header,minimo);
-    ultimoDiaComValor=Math.max(ultimoDiaComValor,calc.ultimoDiaComValor);
     const dt=parseNumeroDias(row[idx.dt]);
     if(dt<=0)return;
-    const totalPlanilha=parseNumeroDias(row[idx.total]);
-    const producao=calc.producao>0?calc.producao:totalPlanilha;
     const tecnico=tecnicoAppPorNomePlanilha(ctx.tecnicos,nome);
-    const semCadastro=tecnico?null:equipeManutencaoSemCadastroDias(nome);
-    const manutencao=!!tecnico||!!semCadastro;
-    const item={tecnicoId:tecnico?tecnico.id:null,
-      nome:tecnico?tecnico.nome:(semCadastro?semCadastro.exibicao:nomeBonitoDias(nome)),
-      nomePlanilha:nome,
-      login:tecnico?(tecnico.login||''):'',dt,producao,
-      diasPrevistos:tecnico?detalhesDiasPrevistosTecnico(ctx,tecnico).filter(i=>i.contabilizado).length:null,
-      diasTrabalhados:calc.diasTrabalhados,contingencia:!manutencao};
-    (manutencao?linhasTec:linhasCont).push(item);
+    const chave=tecnico?`t:${tecnico.id}`:`c:${headDias(nome)}`;
+    if(!grupos.has(chave)){
+      grupos.set(chave,{chave,tecnico,nomesPlanilha:[],porDia:new Map(),dt:0,totalPlanilha:0});
+    }
+    const g=grupos.get(chave);
+    if(!g.nomesPlanilha.includes(nome))g.nomesPlanilha.push(nome);
+    g.dt+=dt;
+    g.totalPlanilha+=parseNumeroDias(row[idx.total]);
+    idx.dayIndices.forEach(i=>{
+      const dia=Number(headDias(header[i]));
+      if(!dia||dia>ctx.ultimoDia)return;
+      const valor=parseNumeroDias(row[i]);
+      if(valor>0)g.porDia.set(dia,(g.porDia.get(dia)||0)+valor);
+    });
+  });
+
+  /* 2ª passada: com os dias já somados, aplica o mínimo diário e a capacidade. */
+  const linhasTec=[],linhasCont=[];
+  let ultimoDiaComValor=0;
+  grupos.forEach(g=>{
+    let producao=0;
+    const diasTrabalhados=[];
+    for(let dia=1;dia<=ctx.ultimoDia;dia++){
+      if(capacidadeDia(ctx,dia)<=0)continue;
+      const valor=g.porDia.get(dia)||0;
+      if(valor>0)ultimoDiaComValor=Math.max(ultimoDiaComValor,dia);
+      producao+=valor;
+      if(valor>=minimo)diasTrabalhados.push({dia,valor});
+    }
+    const item={
+      chave:g.chave,
+      tecnicoId:g.tecnico?g.tecnico.id:null,
+      nome:g.tecnico?g.tecnico.nome:nomeBonitoDias(g.nomesPlanilha[0]),
+      nomePlanilha:g.nomesPlanilha.join(' + '),
+      nomesMultiplos:g.nomesPlanilha.length>1,
+      login:g.tecnico?(g.tecnico.login||''):'',
+      dt:g.dt,
+      producao:producao>0?producao:g.totalPlanilha,
+      diasPrevistos:g.tecnico?detalhesDiasPrevistosTecnico(ctx,g.tecnico).filter(i=>i.contabilizado).length:null,
+      diasTrabalhados,
+      contingencia:!g.tecnico
+    };
+    (g.tecnico?linhasTec:linhasCont).push(item);
   });
   linhasTec.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   linhasCont.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
@@ -2062,16 +2059,31 @@ async function calcularDadosDias(mesChave,minimo){
   const totalPrevistos=linhasTec.reduce((a,t)=>a+(t.diasPrevistos||0),0);
   const totalOS=linhasTec.reduce((a,t)=>a+t.producao,0);
   const pdEquipe=totalManutencao?totalOS/totalManutencao:0;
-  const manual=await metaManualDias(mesChave);
-  const meta=manual>0?manual:capacidadeMes.total;
-  const metaOrigem=manual>0?'Meta editada manualmente':'Capacidade mensal da equipe';
+  /* A capacidade da equipe é a da escala mais o que a contingência entregou:
+     quem veio de apoio também é força de trabalho do mês. Como não existe escala
+     para eles, o que dá para medir são os dias que efetivamente produziram. */
+  const capacidadeEscala=capacidadeMes.total;
+  const capacidadeContingencia=totalContingencia;
+  const capacidadeTotal=capacidadeEscala+capacidadeContingencia;
+  const manual=metaManualDias(config,mesChave);
+  const meta=manual>0?manual:capacidadeTotal;
+  const metaOrigem=manual>0?'Manual':'Automática';
+  const metaOrigemLonga=manual>0?'Meta editada manualmente'
+    :`Capacidade mensal da equipe (${capacidadeEscala} da escala + ${capacidadeContingencia} de contingência)`;
   const falta=Math.max(0,meta-totalJaFeito);
   const inicio=inicioRestanteDias(ctx,ultimoDiaComValor);
-  const capacidadeRestante=detalhesCapacidadeMesDias(ctx,inicio);
-  const metaDia=capacidadeRestante.total?Math.ceil(falta/capacidadeRestante.total):0;
+  const restante=detalhesCapacidadeMesDias(ctx,inicio);
+  const capacidadeRestante=restante.total;      // dias-técnico que ainda podem ser produzidos
+  const datasRestantes=restante.detalhes.length; // dias de calendário que ainda sobram no mês
+  /* O que falta e a capacidade restante estão na mesma unidade (dias-técnico),
+     então dá para dizer direto se a meta ainda cabe no que sobrou do mês. */
+  const statusFalta=falta===0?'atingida'
+    :(capacidadeRestante<=0?'encerrado'
+    :(falta<=capacidadeRestante?'possivel':'inalcancavel'));
   return{ok:true,ctx,linhasTec,linhasCont,totalJaFeito,totalManutencao,totalContingencia,
-    totalPrevistos,totalOS,pdEquipe,meta,metaOrigem,falta,metaDia,inicioRestante:inicio,
-    capacidadeEquipeMes:capacidadeMes.total,capacidadeRestante:capacidadeRestante.total,fonte,minimo};
+    totalPrevistos,totalOS,pdEquipe,meta,metaOrigem,metaOrigemLonga,falta,statusFalta,
+    inicioRestante:inicio,capacidadeEquipeMes:capacidadeTotal,capacidadeEscala,
+    capacidadeContingencia,capacidadeRestante,datasRestantes,fonte,minimo};
 }
 
 /* ---- Render ---- */
@@ -2087,9 +2099,11 @@ function mesChaveAtualDias(){
 }
 async function renderDiasTrabalhados(opcoes={}){
   if(opcoes.limparCache)diasCachePlanilha={};
-  if(diasCarregando)return;
+  /* Se já houver uma leitura em andamento, marca para repetir quando terminar,
+     em vez de descartar a troca de mês do usuário. */
+  if(diasCarregando){diasPendenteDias=true;return;}
   diasCarregando=true;
-  const config=await getConfig();
+  let config=await getConfig();
   const meses=DIAS_SHEET_CONFIG.meses.map(m=>`${DIAS_SHEET_CONFIG.anoPadrao}-${pad(m.num+1)}`);
   if(!meses.includes(mesSelecionadoDias))mesSelecionadoDias=mesChaveAtualDias();
   const selMes=document.getElementById('selMesDias');
@@ -2105,7 +2119,12 @@ async function renderDiasTrabalhados(opcoes={}){
 
   let dados;
   try{
-    dados=await calcularDadosDias(mesSelecionadoDias,minimo);
+    dados=await calcularDadosDias(mesSelecionadoDias,minimo,config);
+  } catch(e){
+    /* Falha fora da leitura da planilha (banco local, por exemplo): a tela
+       precisa sair do estado "carregando" mesmo assim. */
+    console.error('Dias Trabalhados:',e);
+    dados={ok:false,erro:e.message||String(e),ctx:null,capacidadeEquipeMes:0};
   } finally {
     btn.disabled=false;
     diasCarregando=false;
@@ -2125,14 +2144,55 @@ async function renderDiasTrabalhados(opcoes={}){
 
   const inputMeta=document.getElementById('diasMetaMensal');
   if(document.activeElement!==inputMeta)inputMeta.value=meta;
-  document.getElementById('diasMetaOrigem').textContent=dados.ok?dados.metaOrigem:'Capacidade mensal da equipe';
+  /* Quantos dias de calendário ainda restam no mês — deixa claro que "meta
+     atingida" não quer dizer que o mês acabou. */
+  const restanteTxt=!dados.ok?''
+    :(dados.datasRestantes>0?` · faltam ${dados.datasRestantes} dia(s)`:' · mês encerrado');
+  const elOrigem=document.getElementById('diasMetaOrigem');
+  elOrigem.textContent=(dados.ok?dados.metaOrigem:'Automática')+restanteTxt;
+  elOrigem.title=dados.ok
+    ?`${dados.metaOrigemLonga}. ${dados.datasRestantes>0?`Ainda restam ${dados.datasRestantes} dia(s) de produção no mês, a partir de ${fmtBR(toISO(new Date(ano,mes-1,Math.min(dados.inicioRestante,new Date(ano,mes,0).getDate()))))}.`:'O mês já foi encerrado.'}`
+    :'';
   document.getElementById('diasTotalFeito').textContent=dados.ok?feito:'—';
   document.getElementById('diasTotalFeitoSub').textContent=dados.ok
     ?(dados.totalContingencia?`${dados.totalManutencao} + ${dados.totalContingencia} apoio →`:'Detalhar →')
     :'Detalhar →';
-  document.getElementById('diasFaltaMeta').textContent=dados.ok?dados.falta:'—';
-  document.getElementById('diasMetaDia').textContent=dados.ok?(dados.metaDia?`${dados.metaDia}/dia restante`:'Meta atingida'):'—';
+  /* Com a meta batida e mês em aberto, "faltam 0" não informa nada — o card vira
+     o saldo que a equipe ainda pode produzir nos dias que sobraram. */
+  const subFalta=document.getElementById('diasMetaDia');
+  const cardFalta=subFalta.closest('.dias-kpi');
+  const elFaltaTitulo=document.getElementById('diasFaltaTitulo');
+  let faltaTitulo='Faltam',faltaNum='—',faltaSub='—',faltaEstado='';
+  if(dados.ok){
+    if(dados.statusFalta==='atingida'&&dados.datasRestantes>0){
+      faltaTitulo='Ainda pode produzir';
+      faltaNum=dados.capacidadeRestante;
+      faltaSub=`em ${dados.datasRestantes} dia(s) restantes`;
+      faltaEstado='ok';
+    } else if(dados.statusFalta==='atingida'){
+      faltaNum=0;faltaSub='Meta atingida · mês encerrado';faltaEstado='ok';
+    } else if(dados.statusFalta==='encerrado'){
+      faltaTitulo='Faltaram';faltaNum=dados.falta;faltaSub='Mês encerrado sem atingir';faltaEstado='bad';
+    } else if(dados.statusFalta==='possivel'){
+      faltaNum=dados.falta;faltaSub=`de ${dados.capacidadeRestante} ainda possíveis`;faltaEstado='warn';
+    } else {
+      faltaNum=dados.falta;faltaSub=`só restam ${dados.capacidadeRestante} — inalcançável`;faltaEstado='bad';
+    }
+  }
+  elFaltaTitulo.textContent=faltaTitulo;
+  document.getElementById('diasFaltaMeta').textContent=faltaNum;
+  subFalta.textContent=faltaSub;
+  cardFalta.classList.toggle('ok',faltaEstado==='ok');
+  cardFalta.classList.toggle('warn',faltaEstado==='warn');
+  cardFalta.classList.toggle('bad',faltaEstado==='bad');
   document.getElementById('diasCapacidadeMes').textContent=dados.capacidadeEquipeMes;
+  const elCapSub=document.getElementById('diasCapacidadeSub');
+  elCapSub.textContent=!dados.ok?'Detalhar →'
+    :(dados.capacidadeContingencia?`${dados.capacidadeEscala} + ${dados.capacidadeContingencia} apoio →`
+    :(dados.capacidadeRestante>0?`restam ${dados.capacidadeRestante} →`:'mês encerrado →'));
+  elCapSub.title=dados.ok
+    ?`${dados.capacidadeEscala} dia(s) da escala da equipe${dados.capacidadeContingencia?` + ${dados.capacidadeContingencia} dia(s) entregues pela contingência`:''}. Restam ${dados.capacidadeRestante} dia(s) de capacidade da escala neste mês.`
+    :'';
   document.getElementById('diasTecnicosAtivos').textContent=dados.ok?dados.linhasTec.length:'—';
   document.getElementById('diasCompetencia').textContent=labelMesDias(mesSelecionadoDias);
   document.getElementById('diasCompetenciaSub').textContent=`${fmtBR(toISO(ini))} a ${fmtBR(toISO(fim))}`;
@@ -2146,8 +2206,12 @@ async function renderDiasTrabalhados(opcoes={}){
 
   renderTabelaDiasTecnicos(dados);
   renderTabelaDiasContingencia(dados);
-  if(dados.ok)await salvarHistoricoDias(mesSelecionadoDias,dados);
-  await renderHistoricoDias();
+  /* Só entra no histórico quando houve produção de fato — apenas navegar por um
+     mês vazio não deve registrar uma competência com 0%. */
+  if(dados.ok&&dados.totalJaFeito>0)config=await salvarHistoricoDias(mesSelecionadoDias,dados);
+  renderHistoricoDias(config);
+
+  if(diasPendenteDias){diasPendenteDias=false;renderDiasTrabalhados();}
 }
 function renderTabelaDiasTecnicos(dados){
   const thead=document.querySelector('#tabelaDiasTecnicos thead');
@@ -2163,7 +2227,7 @@ function renderTabelaDiasTecnicos(dados){
   tbody.innerHTML=rows.map(t=>`<tr>
     <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div>${t.login?`<div class="tec-login-sub">${escapeHtml(t.login)}</div>`:''}</div></div></td>
     <td>${t.tecnicoId?`<button type="button" class="dias-link" data-cap-tec="${t.tecnicoId}">${t.diasPrevistos} dias</button>`:'<span class="form-hint">sem cadastro no sistema</span>'}</td>
-    <td><button type="button" class="dias-link" data-real-tec="${escapeHtml(t.nomePlanilha)}">${t.diasTrabalhados.length} dias</button></td>
+    <td><button type="button" class="dias-link" data-real-tec="${escapeHtml(t.chave)}">${t.diasTrabalhados.length} dias</button></td>
   </tr>`).join('');
   tfoot.innerHTML=`<tr><td>Total geral</td><td>${dados.totalPrevistos} dias</td><td>${dados.totalManutencao} dias</td></tr>`;
   tbody.querySelectorAll('[data-cap-tec]').forEach(b=>b.addEventListener('click',()=>abrirModalCapacidadeTecnicoDias(Number(b.dataset.capTec))));
@@ -2180,29 +2244,96 @@ function renderTabelaDiasContingencia(dados){
   thead.innerHTML='<tr><th>Colaborador</th><th>Dias efetivamente trabalhados</th></tr>';
   tbody.innerHTML=rows.map(t=>`<tr>
     <td><strong>${escapeHtml(t.nome)}</strong> <span class="badge badge-amber">Contingência</span></td>
-    <td><button type="button" class="dias-link" data-real-tec="${escapeHtml(t.nomePlanilha)}">${t.diasTrabalhados.length} dias</button></td>
+    <td><button type="button" class="dias-link" data-real-tec="${escapeHtml(t.chave)}">${t.diasTrabalhados.length} dias</button></td>
   </tr>`).join('');
   tfoot.innerHTML=`<tr><td>Total geral</td><td>${dados.totalContingencia} dias</td></tr>`;
   tbody.querySelectorAll('[data-real-tec]').forEach(b=>b.addEventListener('click',()=>abrirModalDiasRealizadosDias(b.dataset.realTec)));
 }
-async function renderHistoricoDias(){
-  const config=await getConfig();
+function pctAlcancadoDias(r){
+  return r&&Number(r.meta)?Math.min(100,(Number(r.producao)||0)/Number(r.meta)*100):0;
+}
+function corPctDias(pct){
+  return pct>=100?'var(--green)':(pct>=80?'var(--amber)':'var(--red)');
+}
+/* Mostra os 12 meses do ano, mesmo os ainda não carregados, para a evolução
+   ficar visível de ponta a ponta. */
+function renderHistoricoDias(config){
   const thead=document.querySelector('#tabelaDiasHistorico thead');
   const tbody=document.querySelector('#tabelaDiasHistorico tbody');
-  thead.innerHTML='<tr><th>Competência</th><th>Capacidade da equipe</th><th>Meta mínima</th><th>Dias realizados</th><th>Contingência</th><th>Alcançado</th></tr>';
-  const rows=Object.values(config.historicoDias||{}).sort((a,b)=>String(a.mesChave).localeCompare(String(b.mesChave)));
-  if(!rows.length){
-    tbody.innerHTML='<tr class="empty-row"><td colspan="6">Nenhuma competência consultada ainda.</td></tr>';
+  const tfoot=document.querySelector('#tabelaDiasHistorico tfoot');
+  thead.innerHTML='<tr><th>Competência</th><th>Capacidade</th><th>Meta</th><th>Dias realizados</th><th>Contingência</th><th>Alcançado</th><th>Evolução</th></tr>';
+  const hist=config.historicoDias||{};
+  const ano=DIAS_SHEET_CONFIG.anoPadrao;
+  const linhas=DIAS_SHEET_CONFIG.meses.map(m=>{
+    const chave=`${ano}-${pad(m.num+1)}`;
+    return{chave,nome:m.nome,r:hist[chave]||null};
+  });
+  const comDados=linhas.filter(l=>l.r);
+  if(!comDados.length){
+    tbody.innerHTML='<tr class="empty-row"><td colspan="7">Nenhum mês carregado ainda. Clique em "Carregar ano" para varrer a planilha.</td></tr>';
+    tfoot.innerHTML='';
     return;
   }
-  tbody.innerHTML=rows.map(r=>{
-    const pct=r.meta?Math.min(100,(Number(r.producao)||0)/Number(r.meta)*100):0;
+  const maxProd=Math.max(...comDados.map(l=>Number(l.r.producao)||0),1);
+  tbody.innerHTML=linhas.map(l=>{
+    if(!l.r){
+      return `<tr style="opacity:.45"><td><strong>${escapeHtml(l.nome)}/${ano}</strong></td>
+        <td colspan="6" style="color:var(--text-muted);font-size:11.5px">sem dados carregados</td></tr>`;
+    }
+    const pct=pctAlcancadoDias(l.r);
+    const prod=Number(l.r.producao)||0;
     return `<tr>
-      <td><strong>${escapeHtml(labelMesDias(r.mesChave))}</strong></td>
-      <td>${r.capacidade}</td><td>${r.meta}</td><td>${r.producao}</td><td>${r.contingencia??'—'}</td>
+      <td><strong>${escapeHtml(l.nome)}/${ano}</strong></td>
+      <td>${l.r.capacidade}</td><td>${l.r.meta}</td><td>${prod}</td><td>${l.r.contingencia??'—'}</td>
       <td><span class="badge ${pct>=100?'badge-green':(pct>=80?'badge-amber':'badge-red')}">${fmtNum2(pct)}%</span></td>
+      <td style="min-width:130px"><div class="dist-bar-track" title="${prod} dia(s) realizados"><div class="dist-bar-fill" style="width:${prod/maxProd*100}%;background:${corPctDias(pct)}"></div></div></td>
     </tr>`;
   }).join('');
+  const somaCap=comDados.reduce((a,l)=>a+(Number(l.r.capacidade)||0),0);
+  const somaMeta=comDados.reduce((a,l)=>a+(Number(l.r.meta)||0),0);
+  const somaProd=comDados.reduce((a,l)=>a+(Number(l.r.producao)||0),0);
+  const somaCont=comDados.reduce((a,l)=>a+(Number(l.r.contingencia)||0),0);
+  const pctAno=somaMeta?Math.min(100,somaProd/somaMeta*100):0;
+  tfoot.innerHTML=`<tr>
+    <td>Ano (${comDados.length} ${comDados.length===1?'mês':'meses'})</td>
+    <td>${somaCap}</td><td>${somaMeta}</td><td>${somaProd}</td><td>${somaCont}</td>
+    <td><span class="badge ${pctAno>=100?'badge-green':(pctAno>=80?'badge-amber':'badge-red')}">${fmtNum2(pctAno)}%</span></td>
+    <td></td></tr>`;
+}
+/* Varre todas as abas VT do ano e preenche o histórico de uma vez. */
+async function carregarAnoCompletoDias(){
+  const btn=document.getElementById('btnCarregarAnoDias');
+  const btnAtualizar=document.getElementById('btnAtualizarDias');
+  if(diasCarregando)return;
+  diasCarregando=true;btn.disabled=true;btnAtualizar.disabled=true;
+  const rotuloOriginal=icon('calendar',14)+' Carregar ano';
+  const meses=DIAS_SHEET_CONFIG.meses;
+  let ok=0,vazios=0,falhas=0;
+  try{
+    const cfgBase=await getConfig();
+    const minimo=Math.max(1,Number(cfgBase.minimoDiarioProducao)||MINIMO_DIARIO_PADRAO);
+    for(let i=0;i<meses.length;i++){
+      const m=meses[i];
+      const chave=`${DIAS_SHEET_CONFIG.anoPadrao}-${pad(m.num+1)}`;
+      btn.textContent=`Lendo ${m.nome}… (${i+1}/${meses.length})`;
+      try{
+        const cfg=await getConfig();
+        const d=await calcularDadosDias(chave,minimo,cfg);
+        if(d.ok&&d.totalJaFeito>0){await salvarHistoricoDias(chave,d);ok++;}
+        else if(d.ok)vazios++;
+        else falhas++;
+      }catch(e){falhas++;console.warn('Carregar ano —',m.nome,e);}
+    }
+  } finally {
+    diasCarregando=false;btn.disabled=false;btnAtualizar.disabled=false;
+    btn.innerHTML=rotuloOriginal;
+  }
+  renderHistoricoDias(await getConfig());
+  const partes=[`${ok} mês(es) com produção`];
+  if(vazios)partes.push(`${vazios} sem lançamentos`);
+  if(falhas)partes.push(`${falhas} sem aba na planilha`);
+  toast(partes.join(' · '),ok?'sucesso':'erro');
+  if(diasPendenteDias){diasPendenteDias=false;renderDiasTrabalhados();}
 }
 
 /* ---- Modais de detalhamento ---- */
@@ -2222,10 +2353,10 @@ function abrirModalCapacidadeTecnicoDias(tecnicoId){
     footButtons:[{label:'Fechar',classe:'btn-secondary',onClick:fecharModal}]
   });
 }
-function abrirModalDiasRealizadosDias(nomePlanilha){
+function abrirModalDiasRealizadosDias(chave){
   const dados=dadosDiasAtuais;
   if(!dados||!dados.ok)return;
-  const linha=[...dados.linhasTec,...dados.linhasCont].find(t=>t.nomePlanilha===nomePlanilha);
+  const linha=[...dados.linhasTec,...dados.linhasCont].find(t=>t.chave===chave);
   if(!linha)return;
   const ctx=dados.ctx;
   const itens=linha.diasTrabalhados.map(item=>{
@@ -2239,9 +2370,9 @@ function abrirModalDiasRealizadosDias(nomePlanilha){
   const totalFds=itens.filter(i=>i.tipo==='Fim de semana').length;
   const totalFer=itens.filter(i=>i.tipo==='Feriado').length;
   abrirModal({
-    titulo:`Dias efetivamente trabalhados &mdash; ${escapeHtml(linha.nome)}`,
+    titulo:`Dias efetivamente trabalhados &mdash; ${escapeHtml(linha.nome)}${linha.nomesMultiplos?` (${escapeHtml(linha.nomePlanilha)})`:''}`,
     wide:true,
-    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">${itens.length} dia(s) atingiram o mínimo de ${dados.minimo} OS em ${escapeHtml(labelMesDias(mesInfoDiasAtual))}, sendo ${totalFds} em fim de semana e ${totalFer} em feriado.</p>
+    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">${itens.length} dia(s) atingiram o mínimo de ${dados.minimo} lançamento(s) na planilha em ${escapeHtml(labelMesDias(mesInfoDiasAtual))}, sendo ${totalFds} em fim de semana e ${totalFer} em feriado.</p>
       <div class="table-wrap"><table><thead><tr><th>Data</th><th>Dia da semana</th><th>Tipo</th><th>Produção no dia</th></tr></thead>
       <tbody>${itens.length?itens.map(i=>`<tr><td>${i.data}</td><td>${i.diaSemana}</td><td>${i.tipo}</td><td>${fmtNum2(i.valor).replace(',00','')}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="4">Nenhum dia atingiu o mínimo neste mês.</td></tr>'}</tbody></table></div>`,
     footButtons:[{label:'Fechar',classe:'btn-secondary',onClick:fecharModal}]
@@ -2251,12 +2382,21 @@ function abrirModalCapacidadeEquipeDias(){
   const dados=dadosDiasAtuais;
   if(!dados||!dados.ctx)return;
   const cap=detalhesCapacidadeMesDias(dados.ctx,1);
+  const cont=dados.ok?dados.capacidadeContingencia:0;
+  const linhasCont=dados.ok?dados.linhasCont:[];
   abrirModal({
     titulo:'Capacidade da equipe em dias',
     wide:true,
-    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">${cap.total} dia(s) de capacidade produtiva em ${escapeHtml(labelMesDias(mesInfoDiasAtual))}, distribuídos em ${cap.detalhes.length} data(s). Domingos e feriados só entram quando há plantão, contando os técnicos escalados.</p>
-      <div class="table-wrap"><table><thead><tr><th>Data disponível</th><th>Capacidade</th><th>Status</th></tr></thead>
-      <tbody>${cap.detalhes.length?cap.detalhes.map(i=>`<tr><td>${i.data}</td><td>${i.capacidade}</td><td>${i.status}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="3">Nenhum dia disponível para produção neste mês.</td></tr>'}</tbody></table></div>`,
+    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">Em ${escapeHtml(labelMesDias(mesInfoDiasAtual))} a capacidade total é de <strong>${cap.total+cont} dia(s)</strong>: ${cap.total} da escala da equipe${cont?` mais ${cont} entregues pela contingência`:''}. Domingos e feriados só entram na escala quando há plantão, contando os técnicos escalados.</p>
+      <div class="card-title">Escala da equipe &middot; ${cap.total} dia(s) em ${cap.detalhes.length} data(s)</div>
+      <div class="table-wrap" style="margin-bottom:16px"><table><thead><tr><th>Data disponível</th><th>Capacidade</th><th>Status</th></tr></thead>
+      <tbody>${cap.detalhes.length?cap.detalhes.map(i=>`<tr><td>${i.data}</td><td>${i.capacidade}</td><td>${i.status}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="3">Nenhum dia disponível para produção neste mês.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="2"><strong>Subtotal da escala</strong></td><td><strong>${cap.total} dias</strong></td></tr></tfoot></table></div>
+      ${cont?`<div class="card-title">Contingência &middot; ${cont} dia(s)</div>
+      <div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Nome na planilha</th><th>Dias entregues</th></tr></thead>
+      <tbody>${linhasCont.map(t=>`<tr><td><strong>${escapeHtml(t.nome)}</strong></td><td>${escapeHtml(t.nomePlanilha)}</td><td>${t.diasTrabalhados.length} dias</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="2"><strong>Subtotal de contingência</strong></td><td><strong>${cont} dias</strong></td></tr></tfoot></table></div>`
+      :'<p class="form-hint">Nenhum colaborador de contingência produziu neste mês.</p>'}`,
     footButtons:[{label:'Fechar',classe:'btn-secondary',onClick:fecharModal}]
   });
 }
@@ -2318,7 +2458,6 @@ async function salvarMinimoDiario(){
 }
 
 function abrirModalTecnico(id=null){
-  dbGet('tecnicos',id).then(t=>t).catch(()=>null);
   (async()=>{
     const tecnico=id?await dbGet('tecnicos',id):null;
     abrirModal({
@@ -2843,26 +2982,29 @@ async function salvarDiaFolgaSelecionado(plantaoId,tecnicoId,folgaId,diaSemana){
 async function renderTabelaFeriasSecao(){
   const thead=document.querySelector('#tabelaFerias thead');
   const tbody=document.querySelector('#tabelaFerias tbody');
-  thead.innerHTML=`<tr><th>Técnico</th><th>Status</th><th>Data Inicial</th><th>Data Final</th><th></th></tr>`;
+  thead.innerHTML=`<tr><th>Técnico</th><th>Tipo</th><th>Status</th><th>Data Inicial</th><th>Data Final</th><th></th></tr>`;
   await atualizarStatusFerias();
   let lista=ordenarLista(await dbGetAll('ferias'),'dataInicio',-1);
   const tecnicos=await dbGetAll('tecnicos');
   const tecnicoNome=(id)=>{const t=tecnicos.find(x=>x.id===id);return t?t.nome:'(removido)';};
   const cards=document.getElementById('cardsFerias');
   if(lista.length===0){
-    tbody.innerHTML=`<tr class="empty-row"><td colspan="5">Nenhum período de férias cadastrado</td></tr>`;
-    cards.innerHTML=`<div class="mcard-empty">Nenhum período de férias cadastrado</div>`;
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="6">Nenhum período cadastrado</td></tr>`;
+    cards.innerHTML=`<div class="mcard-empty">Nenhum período cadastrado</div>`;
     return;
   }
   const hoje=toISO(new Date());
   const situacao=(f)=>{
-    const emFerias=hoje>=f.dataInicio&&hoje<=f.dataFim;
-    return{cls:emFerias?'badge-blue':'badge-green',lbl:emFerias?'Férias':'Trabalhando'};
+    const emCurso=hoje>=f.dataInicio&&hoje<=f.dataFim;
+    const futuro=hoje<f.dataInicio;
+    return emCurso?{cls:'badge-amber',lbl:'Em curso'}
+      :(futuro?{cls:'badge-slate',lbl:'Agendado'}:{cls:'badge-green',lbl:'Concluído'});
   };
   tbody.innerHTML=lista.map(f=>{
     const {cls,lbl}=situacao(f);
     return `<tr>
       <td><strong>${escapeHtml(tecnicoNome(f.tecnicoId))}</strong></td>
+      <td>${badgeTipoAusencia(f.tipo)}</td>
       <td><span class="badge ${cls}">${lbl}</span></td>
       <td>${fmtBR(f.dataInicio)}</td><td>${fmtBR(f.dataFim)}</td>
       <td><div class="row-actions">
@@ -2876,7 +3018,7 @@ async function renderTabelaFeriasSecao(){
     return `<div class="mcard">
       <div class="mcard-head">
         <div><div class="mcard-title">${escapeHtml(tecnicoNome(f.tecnicoId))}</div><div class="mcard-sub">${fmtBR(f.dataInicio)} &rarr; ${fmtBR(f.dataFim)}</div></div>
-        <span class="badge ${cls}">${lbl}</span>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${badgeTipoAusencia(f.tipo)}<span class="badge ${cls}">${lbl}</span></div>
       </div>
       <div class="mcard-actions">
         <button class="btn btn-secondary btn-sm" data-edit="${f.id}">${icon('edit',14)} Editar</button>
@@ -2891,34 +3033,40 @@ async function abrirModalFerias(feriasId=null){
   const ferias=feriasId?await dbGet('ferias',feriasId):null;
   const tecnicos=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const opts=tecnicos.map(t=>`<option value="${t.id}" ${ferias?.tecnicoId===t.id?'selected':''}>${escapeHtml(t.nome)}</option>`).join('');
+  const optsTipo=TIPOS_AUSENCIA.map(t=>`<option value="${t.v}" ${(ferias?.tipo||'ferias')===t.v?'selected':''}>${t.l}</option>`).join('');
   abrirModal({
-    titulo:feriasId?'Editar férias':'Nova férias',
+    titulo:feriasId?'Editar período':'Novo período',
     bodyHtml:`
-      <div class="form-group"><label>Técnico</label><select id="frTecnico">${opts}</select></div>
+      <div class="form-row">
+        <div class="form-group"><label>Técnico</label><select id="frTecnico">${opts}</select></div>
+        <div class="form-group"><label>Tipo</label><select id="frTipo">${optsTipo}</select></div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Data início</label><input type="date" id="frInicio" value="${ferias?.dataInicio||''}"></div>
         <div class="form-group"><label>Data fim</label><input type="date" id="frFim" value="${ferias?.dataFim||''}"></div>
       </div>
+      <p class="form-hint">O técnico sai da capacidade da equipe em todos os dias do período e é substituído nos plantões que caírem dentro dele.</p>
       <div id="frErro" class="form-error" style="display:none"></div>`,
     footButtons:[
       {label:'Cancelar',classe:'btn-secondary',onClick:fecharModal},
       {label:'Salvar',classe:'btn-primary',onClick:async()=>{
         const tecnicoId=Number(document.getElementById('frTecnico').value);
+        const tipo=document.getElementById('frTipo').value;
         const dataInicio=document.getElementById('frInicio').value;
         const dataFim=document.getElementById('frFim').value;
         const erroEl=document.getElementById('frErro');
         if(!dataInicio||!dataFim||dataFim<dataInicio){erroEl.style.display='block';erroEl.textContent='Informe um período válido';return;}
         const existentes=(await dbGetAll('ferias')).filter(f=>f.tecnicoId===tecnicoId&&f.id!==feriasId);
         const sobrepoe=existentes.some(f=>dataInicio<=f.dataFim&&dataFim>=f.dataInicio);
-        if(sobrepoe){erroEl.style.display='block';erroEl.textContent='Já existe um período de férias sobreposto para este técnico';return;}
-        await salvarFerias(tecnicoId,dataInicio,dataFim,feriasId);
-        fecharModal();toast('Férias salvas com sucesso','sucesso');renderPlantoes();
+        if(sobrepoe){erroEl.style.display='block';erroEl.textContent='Este técnico já tem um período cadastrado que se sobrepõe a essas datas';return;}
+        await salvarFerias(tecnicoId,dataInicio,dataFim,feriasId,tipo);
+        fecharModal();toast(`${tipoAusencia(tipo).l} salva(o) com sucesso`,'sucesso');renderPlantoes();
       }}
     ]
   });
 }
 async function excluirFeriasConfirm(id){
-  const ok=await confirmarAcao('Excluir este período de férias? Substituições já realizadas nos plantões não serão desfeitas automaticamente.');
+  const ok=await confirmarAcao('Excluir este período? Substituições já realizadas nos plantões não serão desfeitas automaticamente.');
   if(!ok)return;
   await dbDelete('ferias',id);
   await atualizarStatusFerias();
@@ -3207,7 +3355,7 @@ async function salvarStatusCompliance(tecnicoId,campo,valor){
   t[campo]=valor;
   await dbPut('tecnicos',t);
 }
-const OPCOES_STATUS_TECNICO=[{v:'ativo',l:'Ativo'},{v:'ferias',l:'Férias'},{v:'noturno',l:'Técnico noturno'},{v:'afastado',l:'Afastado'},{v:'desligado',l:'Desligado'}];
+const OPCOES_STATUS_TECNICO=[{v:'ativo',l:'Ativo'},{v:'ferias',l:'Férias'},{v:'treinamento',l:'Treinamento'},{v:'noturno',l:'Técnico noturno'},{v:'afastado',l:'Afastado'},{v:'desligado',l:'Desligado'}];
 function selectStatusTecnico(tecnicoId,statusAtual){
   const opts=OPCOES_STATUS_TECNICO.map(s=>`<option value="${s.v}" ${statusAtual===s.v?'selected':''}>${s.l}</option>`).join('');
   return `<select class="status-tecnico-sel" data-tid="${tecnicoId}" style="padding:2px 4px;font-size:11px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface)">${opts}</select>`;
@@ -3541,29 +3689,6 @@ async function restaurarBackup(file){
   irParaView('inicio');
 }
 
-/* ===================== EXPORT / PRINT ===================== */
-function exportarExcel(nomeArquivo,colunas,linhas){
-  const header=colunas.map(c=>c.label);
-  const body=linhas.map(row=>colunas.map(c=>row[c.key]??''));
-  const ws=XLSX.utils.aoa_to_sheet([header,...body]);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Dados');
-  XLSX.writeFile(wb,nomeArquivo);
-}
-function exportarPDF(nomeArquivo,titulo,colunas,linhas){
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:'landscape'});
-  doc.setFontSize(14);doc.text(titulo,14,15);
-  doc.autoTable({
-    startY:22,
-    head:[colunas.map(c=>c.label)],
-    body:linhas.map(row=>colunas.map(c=>String(row[c.key]??''))),
-    styles:{fontSize:9},
-    headStyles:{fillColor:[22,96,209]}
-  });
-  doc.save(nomeArquivo);
-}
-
 /* ===================== INICIALIZAÇÃO ===================== */
 async function corrigirNomesPlaceholder(){
   const tecnicos=ordenarLista(await dbGetAll('tecnicos'),'id',1);
@@ -3622,7 +3747,7 @@ async function initApp(){
     renderPlantoes();
   });
 
-  document.getElementById('btnNovaFerias').innerHTML=icon('plus',15)+' Nova férias';
+  document.getElementById('btnNovaFerias').innerHTML=icon('plus',15)+' Novo período';
   document.getElementById('btnNovaFerias').addEventListener('click',()=>abrirModalFerias());
 
   document.getElementById('btnBaixarValoresImagem').innerHTML=icon('download',15)+' Baixar imagem';
@@ -3637,6 +3762,8 @@ async function initApp(){
   });
   document.getElementById('cfgMinimoDiario').addEventListener('change',salvarMinimoDiario);
   document.getElementById('diasMetaMensal').addEventListener('change',aplicarMetaManualDias);
+  document.getElementById('btnCarregarAnoDias').innerHTML=icon('calendar',14)+' Carregar ano';
+  document.getElementById('btnCarregarAnoDias').addEventListener('click',carregarAnoCompletoDias);
   document.getElementById('cardDiasRealizados').addEventListener('click',abrirModalDiasRealizadosEquipe);
   document.getElementById('cardCapacidadeDias').addEventListener('click',abrirModalCapacidadeEquipeDias);
   document.getElementById('cardTecnicosAtivosDias').addEventListener('click',abrirModalTecnicosAtivosDias);
