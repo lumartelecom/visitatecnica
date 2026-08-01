@@ -2082,19 +2082,17 @@ async function calcularDadosDias(mesChave,minimo,config){
   const totalPrevistos=linhasTec.reduce((a,t)=>a+(t.diasPrevistos||0),0);
   const totalOS=linhasTec.reduce((a,t)=>a+t.producao,0);
   const pdEquipe=totalManutencao?totalOS/totalManutencao:0;
-  /* A capacidade da equipe é a da escala mais o que a contingência entregou:
-     quem veio de apoio também é força de trabalho do mês. Como não existe escala
-     para eles, o que dá para medir são os dias que efetivamente produziram. */
+  /* Capacidade = só a equipe própria de manutenção (escala, folgas, férias,
+     treinamentos e afastamentos). A contingência não entra aqui — ela aparece
+     apenas no card "Dias realizados", somada ao que a equipe entregou. */
   const capacidadeEscala=capacidadeMes.total;
-  const capacidadeContingencia=totalContingencia;
-  const capacidadeTotal=capacidadeEscala+capacidadeContingencia;
   const manual=metaManualDias(config,mesChave);
   /* A meta segue a capacidade da ESCALA. A contingência aparece na capacidade
      total como informação, mas não eleva o alvo — apoio é ganho, não obrigação. */
   const meta=manual>0?manual:capacidadeEscala;
   const metaOrigem=manual>0?'Manual':'Automática';
   const metaOrigemLonga=manual>0?'Meta editada manualmente'
-    :`Capacidade da escala da equipe: ${capacidadeEscala} dia(s) — a contingência não eleva a meta`;
+    :`Capacidade da equipe própria de manutenção: ${capacidadeEscala} dia(s). A contingência não eleva a meta`;
   const falta=Math.max(0,meta-totalJaFeito);
   const inicio=inicioRestanteDias(ctx,ultimoDiaComValor);
   const restante=detalhesCapacidadeMesDias(ctx,inicio);
@@ -2107,8 +2105,8 @@ async function calcularDadosDias(mesChave,minimo,config){
     :(falta<=capacidadeRestante?'possivel':'inalcancavel'));
   return{ok:true,ctx,linhasTec,linhasCont,totalJaFeito,totalManutencao,totalContingencia,
     totalPrevistos,totalOS,pdEquipe,meta,metaOrigem,metaOrigemLonga,falta,statusFalta,
-    inicioRestante:inicio,capacidadeEquipeMes:capacidadeTotal,capacidadeEscala,
-    capacidadeContingencia,capacidadeRestante,datasRestantes,fonte,minimo};
+    inicioRestante:inicio,capacidadeEquipeMes:capacidadeEscala,capacidadeEscala,
+    capacidadeRestante,datasRestantes,fonte,minimo};
 }
 
 /* ---- Render ---- */
@@ -2214,10 +2212,9 @@ async function renderDiasTrabalhados(opcoes={}){
   document.getElementById('diasCapacidadeMes').textContent=dados.capacidadeEquipeMes;
   const elCapSub=document.getElementById('diasCapacidadeSub');
   elCapSub.textContent=!dados.ok?'Detalhar →'
-    :(dados.capacidadeContingencia?`${dados.capacidadeEscala} + ${dados.capacidadeContingencia} apoio →`
-    :(dados.capacidadeRestante>0?`restam ${dados.capacidadeRestante} →`:'mês encerrado →'));
+    :(dados.capacidadeRestante>0?`restam ${dados.capacidadeRestante} →`:'mês encerrado →');
   elCapSub.title=dados.ok
-    ?`${dados.capacidadeEscala} dia(s) da escala da equipe${dados.capacidadeContingencia?` + ${dados.capacidadeContingencia} dia(s) entregues pela contingência`:''}. Restam ${dados.capacidadeRestante} dia(s) de capacidade da escala neste mês.`
+    ?`${dados.capacidadeEscala} dia(s) da equipe própria de manutenção neste mês, dos quais ainda restam ${dados.capacidadeRestante}. A contingência não entra na capacidade.`
     :'';
   document.getElementById('diasTecnicosAtivos').textContent=dados.ok?dados.linhasTec.length:'—';
   document.getElementById('diasCompetencia').textContent=labelMesDias(mesSelecionadoDias);
@@ -2414,21 +2411,14 @@ function abrirModalCapacidadeEquipeDias(){
   const dados=dadosDiasAtuais;
   if(!dados||!dados.ctx)return;
   const cap=detalhesCapacidadeMesDias(dados.ctx,1);
-  const cont=dados.ok?dados.capacidadeContingencia:0;
-  const linhasCont=dados.ok?dados.linhasCont:[];
+  const restante=dados.ok?dados.capacidadeRestante:0;
   abrirModal({
     titulo:'Capacidade da equipe em dias',
     wide:true,
-    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">Em ${escapeHtml(labelMesDias(mesInfoDiasAtual))} a capacidade total é de <strong>${cap.total+cont} dia(s)</strong>: ${cap.total} da escala da equipe${cont?` mais ${cont} entregues pela contingência`:''}. Domingos e feriados só entram na escala quando há plantão, contando os técnicos escalados.</p>
-      <div class="card-title">Escala da equipe &middot; ${cap.total} dia(s) em ${cap.detalhes.length} data(s)</div>
-      <div class="table-wrap" style="margin-bottom:16px"><table><thead><tr><th>Data disponível</th><th>Capacidade</th><th>Status</th></tr></thead>
+    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">Em ${escapeHtml(labelMesDias(mesInfoDiasAtual))} a equipe própria de manutenção tem <strong>${cap.total} dia(s)</strong> de capacidade, distribuídos em ${cap.detalhes.length} data(s), dos quais ainda restam <strong>${restante}</strong>. Domingos e feriados só entram quando há plantão, contando os técnicos escalados; folgas, férias, treinamentos e afastamentos são descontados. A contingência não entra nesta conta &mdash; ela aparece no card &ldquo;Dias realizados&rdquo;.</p>
+      <div class="table-wrap"><table><thead><tr><th>Data disponível</th><th>Capacidade</th><th>Status</th></tr></thead>
       <tbody>${cap.detalhes.length?cap.detalhes.map(i=>`<tr><td>${i.data}</td><td>${i.capacidade}</td><td>${i.status}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="3">Nenhum dia disponível para produção neste mês.</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="2"><strong>Subtotal da escala</strong></td><td><strong>${cap.total} dias</strong></td></tr></tfoot></table></div>
-      ${cont?`<div class="card-title">Contingência &middot; ${cont} dia(s)</div>
-      <div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Nome na planilha</th><th>Dias entregues</th></tr></thead>
-      <tbody>${linhasCont.map(t=>`<tr><td><strong>${escapeHtml(t.nome)}</strong></td><td>${escapeHtml(t.nomePlanilha)}</td><td>${t.diasTrabalhados.length} dias</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="2"><strong>Subtotal de contingência</strong></td><td><strong>${cont} dias</strong></td></tr></tfoot></table></div>`
-      :'<p class="form-hint">Nenhum colaborador de contingência produziu neste mês.</p>'}`,
+      <tfoot><tr><td colspan="2"><strong>Total do mês</strong></td><td><strong>${cap.total} dias</strong></td></tr></tfoot></table></div>`,
     footButtons:[{label:'Fechar',classe:'btn-secondary',onClick:fecharModal}]
   });
 }
