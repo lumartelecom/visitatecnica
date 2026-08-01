@@ -859,6 +859,14 @@ async function addHistoricoPlantao(plantaoId,tecnicoId,acao,detalhes){
 }
 
 /* ===================== MOTOR DE RODÍZIO ===================== */
+/* Mês bloqueado não é remanejado por nada: nem férias, nem mudança de status,
+   nem exclusão de técnico. Só volta a aceitar alteração quando o gestor destrava. */
+function mesEscalaBloqueado(config,mesChave){
+  return !!(config.mesesBloqueados||{})[mesChave];
+}
+function filtrarPlantoesNaoBloqueados(plantoes,config){
+  return plantoes.filter(p=>!mesEscalaBloqueado(config,String(p.data||'').slice(0,7)));
+}
 function tecnicoEmFerias(tecnicoId,dataISO,feriasList){
   return feriasList.some(f=>f.tecnicoId===tecnicoId && dataISO>=f.dataInicio && dataISO<=f.dataFim);
 }
@@ -1008,7 +1016,8 @@ async function excluirPlantao(plantaoId){
 /* ===================== FÉRIAS ===================== */
 async function substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim){
   const plantoes=await dbGetAll('plantoes');
-  const afetados=plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=dataInicio&&p.data<=dataFim);
+  const cfgBloq=await getConfig();
+  const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=dataInicio&&p.data<=dataFim),cfgBloq);
   for(const p of afetados){
     const idx=p.tecnicoIds.indexOf(tecnicoId);
     const tecnico=await dbGet('tecnicos',tecnicoId);
@@ -1611,6 +1620,8 @@ let mesInfoDiasAtual=null;
 let diasCachePlanilha={};
 let diasCarregando=false;
 let diasPendenteDias=false;
+let diasPendenteAno=false;   // pedido de "carregar ano" feito durante uma leitura
+let diasAnoAutoTentado=false; // já tentou preencher o ano sozinho nesta sessão
 
 /* ---- Planilha online (Controle Lumar) ---- */
 const DIAS_SHEET_CONFIG={
@@ -2078,10 +2089,12 @@ async function calcularDadosDias(mesChave,minimo,config){
   const capacidadeContingencia=totalContingencia;
   const capacidadeTotal=capacidadeEscala+capacidadeContingencia;
   const manual=metaManualDias(config,mesChave);
-  const meta=manual>0?manual:capacidadeTotal;
+  /* A meta segue a capacidade da ESCALA. A contingência aparece na capacidade
+     total como informação, mas não eleva o alvo — apoio é ganho, não obrigação. */
+  const meta=manual>0?manual:capacidadeEscala;
   const metaOrigem=manual>0?'Manual':'Automática';
   const metaOrigemLonga=manual>0?'Meta editada manualmente'
-    :`Capacidade mensal da equipe (${capacidadeEscala} da escala + ${capacidadeContingencia} de contingência)`;
+    :`Capacidade da escala da equipe: ${capacidadeEscala} dia(s) — a contingência não eleva a meta`;
   const falta=Math.max(0,meta-totalJaFeito);
   const inicio=inicioRestanteDias(ctx,ultimoDiaComValor);
   const restante=detalhesCapacidadeMesDias(ctx,inicio);
@@ -2116,6 +2129,7 @@ async function renderDiasTrabalhados(opcoes={}){
   if(diasCarregando){diasPendenteDias=true;return;}
   diasCarregando=true;
   let config=await getConfig();
+  const historicoVazioAntes=!Object.keys(config.historicoDias||{}).length;
   const meses=DIAS_SHEET_CONFIG.meses.map(m=>`${DIAS_SHEET_CONFIG.anoPadrao}-${pad(m.num+1)}`);
   if(!meses.includes(mesSelecionadoDias))mesSelecionadoDias=mesChaveAtualDias();
   const selMes=document.getElementById('selMesDias');
@@ -2223,7 +2237,13 @@ async function renderDiasTrabalhados(opcoes={}){
   if(dados.ok&&dados.totalJaFeito>0)config=await salvarHistoricoDias(mesSelecionadoDias,dados);
   renderHistoricoDias(config);
 
-  if(diasPendenteDias){diasPendenteDias=false;renderDiasTrabalhados();}
+  /* Preenche o ano sozinho na primeira vez que a aba abre sem histórico, para o
+     comparativo já nascer completo. Depois disso só atualiza o mês corrente. */
+  if(historicoVazioAntes&&!diasAnoAutoTentado&&dados.ok){
+    diasAnoAutoTentado=true;diasPendenteAno=true;
+  }
+  if(diasPendenteAno){diasPendenteAno=false;carregarAnoCompletoDias();}
+  else if(diasPendenteDias){diasPendenteDias=false;renderDiasTrabalhados();}
 }
 function renderTabelaDiasTecnicos(dados){
   const thead=document.querySelector('#tabelaDiasTecnicos thead');
@@ -2316,7 +2336,7 @@ function renderHistoricoDias(config){
 async function carregarAnoCompletoDias(){
   const btn=document.getElementById('btnCarregarAnoDias');
   const btnAtualizar=document.getElementById('btnAtualizarDias');
-  if(diasCarregando)return;
+  if(diasCarregando){diasPendenteAno=true;return;}
   diasCarregando=true;btn.disabled=true;btnAtualizar.disabled=true;
   const rotuloOriginal=icon('calendar',14)+' Carregar ano';
   const meses=DIAS_SHEET_CONFIG.meses;
@@ -2522,7 +2542,8 @@ async function excluirTecnicoConfirm(id){
   if(!ok)return;
   const hoje=toISO(new Date());
   const plantoes=await dbGetAll('plantoes');
-  const afetados=plantoes.filter(p=>p.tecnicoIds.includes(id)&&p.data>=hoje);
+  const cfgBloq=await getConfig();
+  const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(id)&&p.data>=hoje),cfgBloq);
   for(const p of afetados){
     const idx=p.tecnicoIds.indexOf(id);
     const excluir=p.tecnicoIds.filter((x,i)=>i!==idx&&x);
@@ -2558,9 +2579,6 @@ const DIAS_PERMITIDOS_PADRAO=['segunda','terca','quarta','quinta','sexta'];
 /* ---- Bloqueio da escala ----
    Com o mês fechado, nada mais altera plantões e folgas: os botões de gerar,
    limpar e técnico extra ficam travados e os seletores da tabela viram leitura. */
-function mesEscalaBloqueado(config,mesChave){
-  return !!(config.mesesBloqueados||{})[mesChave];
-}
 async function escalaBloqueada(mesChave){
   return mesEscalaBloqueado(await getConfig(),mesChave||mesSelecionadoPlantoes);
 }
@@ -3439,7 +3457,8 @@ async function salvarStatusTecnico(tecnicoId,novoStatus){
   if(statusAntigo==='ativo'&&novoStatus!=='ativo'){
     const hoje=toISO(new Date());
     const plantoes=await dbGetAll('plantoes');
-    const afetados=plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=hoje);
+    const cfgBloq=await getConfig();
+    const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=hoje),cfgBloq);
     for(const p of afetados){
       const idx=p.tecnicoIds.indexOf(tecnicoId);
       t.contadorPlantoes=Math.max(0,(t.contadorPlantoes||0)-1);
