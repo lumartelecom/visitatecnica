@@ -83,12 +83,71 @@ button.btn-danger,.btn-danger{background:var(--red-light);color:var(--red-dark);
 .hero-logo img{width:100%;height:100%;object-fit:cover}
 .hero h2{font-size:19px;font-weight:800}
 .hero p{color:var(--text-muted);font-size:13px;margin-top:2px}
-.ind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.ind-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;text-align:left;transition:border-color .12s,transform .12s}
-.ind-card:hover{border-color:var(--brand);transform:translateY(-1px)}
-.ind-card .ind-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
-.ind-card .ind-value{font-size:22px;font-weight:700;color:var(--text);margin-top:6px;font-family:'IBM Plex Mono',monospace}
-.ind-card .ind-sub{font-size:11px;color:var(--brand);margin-top:4px;font-weight:600}
+.ind-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media(max-width:1180px){.ind-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.ind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ===== CAPA: hero + stat tiles ===== */
+.capa-hero{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;
+  background:linear-gradient(120deg,var(--brand-dark) 0%,var(--brand) 62%,#1877e8 100%);
+  border-radius:var(--radius-lg);padding:22px 26px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden}
+.capa-hero::after{content:'';position:absolute;right:-70px;top:-90px;width:280px;height:280px;border-radius:50%;
+  background:rgba(255,255,255,.07);pointer-events:none}
+.capa-hero-txt{min-width:240px;position:relative;z-index:1}
+.capa-hero-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.82}
+.capa-hero-num{display:flex;align-items:baseline;gap:10px;margin-top:4px}
+.capa-hero-num strong{font-size:52px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.capa-hero-num span{font-size:16px;font-weight:600;opacity:.85}
+.capa-hero-meter{height:6px;border-radius:4px;background:rgba(255,255,255,.24);overflow:hidden;margin-top:14px;max-width:340px}
+.capa-hero-meter>span{display:block;height:100%;border-radius:4px;background:#fff;transition:width .4s ease}
+.capa-hero.is-amarelo .capa-hero-meter>span{background:var(--amber-light)}
+.capa-hero.is-vermelho .capa-hero-meter>span{background:var(--red-light)}
+.capa-hero-side{display:flex;flex-direction:column;gap:2px;text-align:right;position:relative;z-index:1;min-width:0}
+.capa-hero-periodo{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.capa-hero-datas{font-size:12px;font-weight:600;opacity:.88;margin-bottom:6px}
+.capa-hero-base{font-size:10.5px;opacity:.72;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:700px){
+  .capa-hero{padding:18px}
+  .capa-hero-side{text-align:left}
+  .capa-hero-num strong{font-size:42px}
+}
+
+.ind-card{--st:var(--slate);--st-soft:var(--slate-light);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:14px 15px 13px;cursor:pointer;text-align:left;min-width:0;font-family:inherit;color:inherit;
+  display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;
+  transition:border-color .14s,box-shadow .14s,transform .14s}
+.ind-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--st)}
+.ind-card:hover{border-color:var(--st);box-shadow:var(--shadow);transform:translateY(-2px)}
+.ind-card.is-verde{--st:var(--green);--st-soft:var(--green-light)}
+.ind-card.is-amarelo{--st:var(--amber);--st-soft:var(--amber-light)}
+.ind-card.is-vermelho{--st:var(--red);--st-soft:var(--red-light)}
+.ind-card .ind-top{display:flex;align-items:center;gap:7px;min-width:0}
+.ind-card .ind-alvo{margin-left:auto;font-size:9.5px;font-weight:700;color:var(--text-muted);background:var(--gray-100);
+  border-radius:20px;padding:2px 7px;white-space:nowrap;flex-shrink:0}
+.ind-card .ind-ico{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;
+  background:var(--st-soft);color:var(--st);flex-shrink:0}
+.ind-card .ind-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ind-card .ind-value{font-size:30px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.02em}
+.ind-card .ind-value small{font-size:14px;font-weight:600;color:var(--text-muted);letter-spacing:0}
+.ind-card .ind-meter{height:5px;border-radius:3px;background:var(--st-soft);overflow:hidden}
+.ind-card .ind-meter>span{display:block;height:100%;border-radius:3px;background:var(--st);transition:width .4s ease}
+.ind-card .ind-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.ind-card .ind-status{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--st);white-space:nowrap}
+.ind-card .ind-status svg{width:11px;height:11px;stroke-width:2.8;flex-shrink:0}
+.ind-card .ind-ver{font-size:10px;color:var(--brand);font-weight:700;white-space:nowrap;opacity:0;transition:opacity .14s}
+.ind-card:hover .ind-ver{opacity:1}
+/* Em duas colunas no celular o alvo não cabe junto do rótulo — ele continua no
+   tooltip e o status abaixo já diz o resultado, que é o que importa na tela pequena. */
+@media(max-width:700px){
+  .ind-card{padding:12px 12px 11px;gap:8px}
+  .ind-card .ind-ico{width:21px;height:21px}
+  .ind-card .ind-alvo{display:none}
+  .ind-card .ind-label{font-size:10px;letter-spacing:.03em}
+  .ind-card .ind-value{font-size:25px}
+  .ind-card .ind-value small{font-size:12px}
+}
 
 /* ===== TOOLBAR / FILTERS ===== */
 .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
@@ -663,7 +722,14 @@ const ICONS={
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
   lock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
-  unlock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 7.6-1.4"/>'
+  unlock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 7.6-1.4"/>',
+  repeat:'<polyline points="17 2 21 6 17 10"/><path d="M3 12V10a4 4 0 0 1 4-4h14"/><polyline points="7 22 3 18 7 14"/><path d="M21 12v2a4 4 0 0 1-4 4H3"/>',
+  alvo:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+  barras:'<line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="7"/><line x1="18" y1="20" x2="18" y2="10"/>',
+  capacete:'<path d="M3 17a9 9 0 0 1 18 0Z"/><path d="M8 17V9a4 4 0 0 1 8 0v8"/><line x1="2.5" y1="20" x2="21.5" y2="20"/>',
+  diploma:'<path d="M2.5 8.5 12 4l9.5 4.5L12 13Z"/><path d="M6.5 10.7V16c0 1.4 2.5 2.6 5.5 2.6s5.5-1.2 5.5-2.6v-5.3"/><line x1="21" y1="9" x2="21" y2="14"/>',
+  alerta:'<path d="M12 3.5 22 20H2Z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="16.6" x2="12" y2="16.7"/>',
+  traco:'<line x1="6" y1="12" x2="18" y2="12"/>'
 };
 function icon(name,size=17){return `<svg class="icon" style="width:${size}px;height:${size}px" viewBox="0 0 24 24">${ICONS[name]||''}</svg>`;}
 
@@ -1161,6 +1227,48 @@ function renderBarChartHTML(itens,corVar){
       <div class="dist-bar-val">${i.pct.toFixed(2).replace('.',',')}%</div>
     </div>`).join('')}</div>`;
 }
+/* ---- Stat tiles da capa ----
+   Regra do medidor: sempre "progresso até a meta", 100% = meta batida. Para
+   Revisita (onde menos é melhor) o progresso é a distância abaixo do limite,
+   para que barra cheia signifique "bom" em todos os cartões.
+   O status nunca é só cor: vem sempre com ícone + texto. */
+const ALVO_INDICADOR={
+  revisita:{curto:'≤ 7%',longo:'Meta: revisita de no máximo 7%',pct:v=>Math.max(0,Math.min(100,(7-v)/7*100))},
+  tec1:{curto:'≥ 95%',longo:'Meta: TEC1 de no mínimo 95%',pct:v=>Math.max(0,Math.min(100,v/95*100))},
+  producao:{curto:'≥ 5,00',longo:'Meta: produção média de no mínimo 5,00 OS/dia',pct:v=>Math.max(0,Math.min(100,v/5*100))},
+  nr35:{curto:'≥ 90%',longo:'Meta: NR35 de no mínimo 90%',pct:v=>Math.max(0,Math.min(100,v/90*100))}
+};
+function statusIndicador(nivel){
+  if(nivel==='verde')return{cls:'is-verde',ico:'check',txt:'Dentro da meta'};
+  if(nivel==='amarelo')return{cls:'is-amarelo',ico:'alerta',txt:'No limite'};
+  if(nivel==='vermelho')return{cls:'is-vermelho',ico:'x',txt:'Fora da meta'};
+  return{cls:'is-neutro',ico:'traco',txt:'Sem dados'};
+}
+function tileIndicador(chave,icone,rotulo,valorFmt,valorNum){
+  const nivel=valorNum==null?null:nivelIndicador(valorNum,chave);
+  const st=statusIndicador(nivel);
+  const alvo=ALVO_INDICADOR[chave];
+  const pct=valorNum==null?0:alvo.pct(valorNum);
+  return `<button type="button" class="ind-card ${st.cls}" data-ind="${chave}">
+    <div class="ind-top"><span class="ind-ico">${icon(icone,15)}</span><span class="ind-label">${rotulo}</span><span class="ind-alvo" title="${alvo.longo}">${alvo.curto}</span></div>
+    <div class="ind-value">${valorFmt}</div>
+    <div class="ind-meter"><span style="width:${pct}%"></span></div>
+    <div class="ind-foot"><span class="ind-status">${icon(st.ico,11)}${st.txt}</span><span class="ind-ver">Ver &rarr;</span></div>
+  </button>`;
+}
+function tileIndicadorT1(ind){
+  const total=ind.totalTecnicos||0;
+  const emDia=ind.t1EmDia||0;
+  const nivel=total===0?null:(emDia===total?'verde':(emDia>=total*0.7?'amarelo':'vermelho'));
+  const st=statusIndicador(nivel);
+  const pct=total?emDia/total*100:0;
+  return `<button type="button" class="ind-card ${st.cls}" data-ind="t1">
+    <div class="ind-top"><span class="ind-ico">${icon('diploma',15)}</span><span class="ind-label">T1</span><span class="ind-alvo" title="Meta: todos os ${total} técnicos com T1 em dia">${total} de ${total}</span></div>
+    <div class="ind-value">${emDia}<small> de ${total}</small></div>
+    <div class="ind-meter"><span style="width:${pct}%"></span></div>
+    <div class="ind-foot"><span class="ind-status">${icon(st.ico,11)}${st.txt}</span><span class="ind-ver">Ver &rarr;</span></div>
+  </button>`;
+}
 async function renderInicio(){
   const config=await getConfig();
   document.getElementById('heroNome').textContent=config.nomeEmpresa||'Lumar Telecom';
@@ -1184,15 +1292,31 @@ async function renderInicio(){
   } else {
     const distTipoServico=calcularDistribuicaoCategoria(indicadores.linhas,'TIPO_SERVICO',CATEGORIAS_DIST);
     const distSegmento=calcularDistribuicaoCategoria(indicadores.linhas,'SEGMENTO_CLIENTE',CATEGORIAS_DIST);
+    const certificados=indicadores.porTecnico.filter(t=>situacaoTecnico(t).label==='Certificado').length;
+    const totalTec=indicadores.porTecnico.length||1;
+    const pctCert=certificados/totalTec*100;
+    const nivelCert=pctCert>=100?'verde':(pctCert>=70?'amarelo':'vermelho');
     indWrap.innerHTML=`
-      <div class="ind-grid">
-        <button type="button" class="ind-card" data-ind="revisita"><div class="ind-label">Revisita</div><div class="ind-value">${fmtPct1(indicadores.revPctGeral)}</div><div class="ind-sub">Ver por técnico &rarr;</div></button>
-        <button type="button" class="ind-card" data-ind="tec1"><div class="ind-label">TEC1</div><div class="ind-value">${fmtPct1(indicadores.tec1PctGeral)}</div><div class="ind-sub">Ver por técnico &rarr;</div></button>
-        <button type="button" class="ind-card" data-ind="producao"><div class="ind-label">Produção</div><div class="ind-value">${fmtNum2(indicadores.mediaProducaoGeral)}</div><div class="ind-sub">Ver por técnico &rarr;</div></button>
-        <button type="button" class="ind-card" data-ind="nr35"><div class="ind-label">NR35</div><div class="ind-value">${indicadores.nr35Disponivel?fmtPct1(indicadores.nr35PctGeral):'—'}</div><div class="ind-sub">Ver por técnico &rarr;</div></button>
-        <button type="button" class="ind-card" data-ind="t1"><div class="ind-label">T1</div><div class="ind-value">${indicadores.t1EmDia}/${indicadores.totalTecnicos}</div><div class="ind-sub">Ver por técnico &rarr;</div></button>
+      <div class="capa-hero is-${nivelCert}">
+        <div class="capa-hero-txt">
+          <span class="capa-hero-label">Técnicos certificados na competência</span>
+          <div class="capa-hero-num"><strong>${certificados}</strong><span>de ${indicadores.porTecnico.length}</span></div>
+          <div class="capa-hero-meter"><span style="width:${pctCert}%"></span></div>
+        </div>
+        <div class="capa-hero-side">
+          <span class="capa-hero-periodo">${escapeHtml(competenciaSelecionadaGlobal||'')}</span>
+          <span class="capa-hero-datas">${formatarIntervaloCompetencia(competenciaSelecionadaGlobal)}</span>
+          <span class="capa-hero-base" title="${escapeHtml(indicadores.importacaoNome)}">${escapeHtml(indicadores.importacaoNome)}</span>
+          <span class="capa-hero-base">Atualizado em ${fmtDateTimeBR(indicadores.importacaoData)}</span>
+        </div>
       </div>
-      <p class="form-hint" style="margin-top:10px">Base: ${escapeHtml(indicadores.importacaoNome)} &middot; ${fmtDateTimeBR(indicadores.importacaoData)}</p>
+      <div class="ind-grid">
+        ${tileIndicador('revisita','repeat','Revisita',fmtPct1(indicadores.revPctGeral),indicadores.revPctGeral)}
+        ${tileIndicador('tec1','alvo','TEC1',fmtPct1(indicadores.tec1PctGeral),indicadores.tec1PctGeral)}
+        ${tileIndicador('producao','barras','Produção',fmtNum2(indicadores.mediaProducaoGeral),indicadores.mediaProducaoGeral)}
+        ${tileIndicador('nr35','capacete','NR35',indicadores.nr35Disponivel?fmtPct1(indicadores.nr35PctGeral):'—',indicadores.nr35Disponivel?indicadores.nr35PctGeral:null)}
+        ${tileIndicadorT1(indicadores)}
+      </div>
       <div class="dist-grid">
         <div class="card dist-card">
           <div class="card-title">Tipo de serviço</div>
