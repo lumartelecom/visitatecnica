@@ -44,7 +44,8 @@ svg.icon{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;s
 .side-nav .nav-item:hover{background:var(--gray-100);color:var(--text)}
 .side-nav .nav-item.active{background:var(--brand-light);color:var(--brand-dark);border-left-color:var(--brand)}
 .side-nav .nav-item svg{opacity:.9}
-.sidebar-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:10.5px;color:var(--text-muted)}
+.sidebar-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:10.5px;color:var(--text-muted);line-height:1.6}
+.sidebar-dev strong{color:var(--brand);font-weight:700}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190}
 
 .main-col{flex:1;margin-left:var(--sidebar-w);min-width:0;display:flex;flex-direction:column;min-height:100vh}
@@ -78,11 +79,18 @@ button.btn-danger,.btn-danger{background:var(--red-light);color:var(--red-dark);
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;box-shadow:var(--shadow-sm)}
 .card + .card{margin-top:16px}
 .card-title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
-.hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.hero-logo{width:52px;height:52px;border-radius:12px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;overflow:hidden}
-.hero-logo img{width:100%;height:100%;object-fit:cover}
-.hero h2{font-size:19px;font-weight:800}
-.hero p{color:var(--text-muted);font-size:13px;margin-top:2px}
+/* Filtro na barra de título — uma linha acima do conteúdo que ele controla. */
+.capa-filtro{display:flex;align-items:center;gap:8px;flex-shrink:0;text-transform:none;letter-spacing:0}
+.capa-filtro label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);white-space:nowrap}
+.capa-filtro select{padding:6px 10px;font-size:12.5px;font-weight:600;max-width:230px}
+@media(max-width:640px){
+  #view-inicio .card-title{flex-wrap:wrap;gap:8px}
+  .capa-filtro{width:100%}
+  /* O rótulo some da tela para o seletor caber inteiro, mas continua no DOM
+     para leitor de tela — o próprio texto da opção já diz o que é. */
+  .capa-filtro label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .capa-filtro select{flex:1;min-width:0;max-width:none}
+}
 .ind-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 @media(max-width:1180px){.ind-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.ind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -338,6 +346,19 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .dias-link{background:none;border:none;padding:0;color:var(--brand);font-weight:700;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-family:inherit}
 .dias-link:hover{color:var(--brand-dark)}
 
+/* ===== BANNER DE ATUALIZAÇÃO ===== */
+.update-banner{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:950;
+  display:flex;align-items:center;gap:14px;background:var(--gray-950);color:#fff;
+  padding:12px 14px 12px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);
+  max-width:calc(100vw - 24px);animation:slideIn .2s ease}
+.update-banner>div{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.update-banner strong{font-size:13px;font-weight:700}
+.update-banner span{font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.update-banner .update-x{background:none;border:none;color:#fff;opacity:.55;font-size:20px;line-height:1;
+  cursor:pointer;padding:0 4px}
+.update-banner .update-x:hover{opacity:1}
+@media(max-width:520px){.update-banner{left:12px;right:12px;transform:none;max-width:none}}
+
 /* ===== TOAST ===== */
 .toast-root{position:fixed;top:16px;right:16px;z-index:900;display:flex;flex-direction:column;gap:8px}
 .toast{background:var(--brand);color:#fff;padding:12px 16px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:var(--shadow);min-width:220px;max-width:340px;display:flex;align-items:center;gap:9px;animation:slideIn .18s ease}
@@ -418,7 +439,10 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
       </div>
     </div>
     <nav class="side-nav" id="sideNav"></nav>
-    <div class="sidebar-foot">Terceirizada Claro &middot; v1.0</div>
+    <div class="sidebar-foot">
+      <div>Terceirizada Claro &middot; v1.0</div>
+      <div class="sidebar-dev">Desenvolvido por <strong>Geovanio Junior</strong></div>
+    </div>
   </aside>
 
   <div class="main-col">
@@ -433,19 +457,9 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 
       <section class="view active" id="view-inicio">
         <div class="card">
-          <div class="hero">
-            <div class="hero-logo" id="heroLogo">L</div>
-            <div>
-              <h2 id="heroNome">Lumar Telecom</h2>
-              <p>Gestão operacional da equipe de manutenção &mdash; escalas, folgas, férias e bases de dados.</p>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Indicadores da equipe</div>
-          <div class="form-group" style="max-width:220px;margin-bottom:14px">
-            <label style="margin-bottom:4px">Competência</label>
-            <select class="filter-sel" id="filtroCompetenciaCapa" style="width:100%"></select>
+          <div class="card-title">
+            <span>Indicadores da equipe</span>
+            <span class="capa-filtro"><label for="filtroCompetenciaCapa">Competência</label><select class="filter-sel" id="filtroCompetenciaCapa"></select></span>
           </div>
           <div id="indicadoresCapaWrap"></div>
         </div>
@@ -607,6 +621,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
             <div class="dz-sub">Aceita XLSX, XLS, CSV e ZIP</div>
           </div>
           <input type="file" id="fileInputImport" multiple accept=".xlsx,.xls,.csv,.zip">
+          <p class="form-error" id="avisoLibsImport" style="display:none;margin-top:10px"></p>
         </div>
         <div class="toolbar">
           <div class="search-box">
@@ -683,6 +698,32 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           <div class="mobile-cards" id="cardsFeriados"></div>
         </div>
         <div class="card">
+          <div class="card-title">Sincronizar entre aparelhos</div>
+          <p class="form-hint" style="margin-bottom:12px">Com isso ligado, os dados (técnicos, escalas, folgas, férias, bases e configurações) ficam iguais no computador e no celular. O sistema guarda um arquivo JSON no seu Google Drive através de um Web App do Apps Script &mdash; não precisa de servidor nem de mensalidade.</p>
+          <div class="form-group">
+            <label>Endereço do Web App (Apps Script)</label>
+            <input type="url" id="cfgSyncUrl" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn btn-primary btn-sm" id="btnSalvarSync"></button>
+            <button class="btn btn-secondary btn-sm" id="btnEnviarSync"></button>
+            <button class="btn btn-secondary btn-sm" id="btnBaixarSync"></button>
+          </div>
+          <p class="form-hint" id="syncStatus" style="margin-top:10px">Sincronização desligada.</p>
+          <details style="margin-top:14px">
+            <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--brand)">Como criar o endereço (uma vez só)</summary>
+            <ol style="font-size:12.5px;line-height:1.7;margin:10px 0 10px 18px">
+              <li>Abra <strong>script.google.com</strong> &rarr; Novo projeto.</li>
+              <li>Apague o conteúdo e cole o código abaixo.</li>
+              <li>Clique em <strong>Implantar &rarr; Nova implantação</strong>, tipo <strong>App da Web</strong>.</li>
+              <li>Em &ldquo;Executar como&rdquo; escolha <strong>Eu</strong>; em &ldquo;Quem pode acessar&rdquo; escolha <strong>Qualquer pessoa</strong>.</li>
+              <li>Copie o endereço que termina em <code>/exec</code> e cole no campo acima.</li>
+            </ol>
+            <textarea id="codigoAppsScript" readonly rows="12" style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5"></textarea>
+            <button class="btn btn-secondary btn-sm" id="btnCopiarScript" style="margin-top:8px"></button>
+          </details>
+        </div>
+        <div class="card">
           <div class="card-title">Backup e restauração</div>
           <p class="form-hint" style="margin-bottom:12px">Gere um backup completo de todos os dados ou restaure a partir de um arquivo salvo anteriormente.</p>
           <button class="btn btn-secondary" id="btnBackup" style="margin-right:8px"></button>
@@ -703,6 +744,45 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 <div class="toast-root" id="toastRoot"></div>
 
 <script>
+/* ===================== VERSÃO / ATUALIZAÇÃO AUTOMÁTICA =====================
+   Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
+   minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
+   próprio arquivo de tempos em tempos e avisa quando há versão nova. */
+const APP_VERSAO='2026.08.02.1';
+let bannerAtualizacaoAberto=false;
+function mostrarBannerAtualizacao(nova){
+  if(bannerAtualizacaoAberto)return;
+  bannerAtualizacaoAberto=true;
+  const el=document.createElement('div');
+  el.className='update-banner';
+  el.innerHTML=`<div><strong>Nova versão disponível</strong><span>${escapeHtml(nova)} &middot; seus dados não são afetados</span></div>
+    <button type="button" class="btn btn-primary btn-sm" id="btnAplicarAtualizacao">Atualizar agora</button>
+    <button type="button" class="update-x" id="btnAdiarAtualizacao" aria-label="Adiar">&times;</button>`;
+  document.body.appendChild(el);
+  el.querySelector('#btnAplicarAtualizacao').addEventListener('click',()=>{
+    /* Query nova força o navegador a buscar o documento em vez do cache. */
+    location.href=location.pathname+'?v='+encodeURIComponent(nova);
+  });
+  el.querySelector('#btnAdiarAtualizacao').addEventListener('click',()=>{el.remove();bannerAtualizacaoAberto=false;});
+}
+async function verificarAtualizacao(){
+  if(location.protocol==='file:')return;            // sem servidor não há o que checar
+  if(bannerAtualizacaoAberto)return;
+  try{
+    const alvo=location.pathname+'?_ck='+Date.now();
+    const resp=await fetch(alvo,{cache:'no-store'});
+    if(!resp.ok)return;
+    const txt=await resp.text();
+    const m=txt.match(/const APP_VERSAO='([^']+)'/);
+    if(m&&m[1]&&m[1]!==APP_VERSAO)mostrarBannerAtualizacao(m[1]);
+  }catch(e){/* offline: tenta de novo no próximo ciclo */}
+}
+function iniciarVerificacaoDeVersao(){
+  setTimeout(verificarAtualizacao,8000);
+  setInterval(verificarAtualizacao,15*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)verificarAtualizacao();});
+}
+
 /* ===================== ÍCONES ===================== */
 const ICONS={
   home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h5v-6h2v6h5a1 1 0 0 0 1-1v-9"/>',
@@ -873,10 +953,10 @@ function tx(store,mode='readonly'){return dbInstance.transaction(store,mode);}
 function reqToPromise(req){return new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);});}
 async function dbGetAll(store){return reqToPromise(tx(store).objectStore(store).getAll());}
 async function dbGet(store,key){return reqToPromise(tx(store).objectStore(store).get(key));}
-async function dbAdd(store,val){return reqToPromise(tx(store,'readwrite').objectStore(store).add(val));}
-async function dbPut(store,val){return reqToPromise(tx(store,'readwrite').objectStore(store).put(val));}
-async function dbDelete(store,key){return reqToPromise(tx(store,'readwrite').objectStore(store).delete(key));}
-async function dbClear(store){return reqToPromise(tx(store,'readwrite').objectStore(store).clear());}
+async function dbAdd(store,val){const r=await reqToPromise(tx(store,'readwrite').objectStore(store).add(val));marcarAlteracaoLocal();return r;}
+async function dbPut(store,val){const r=await reqToPromise(tx(store,'readwrite').objectStore(store).put(val));marcarAlteracaoLocal();return r;}
+async function dbDelete(store,key){const r=await reqToPromise(tx(store,'readwrite').objectStore(store).delete(key));marcarAlteracaoLocal();return r;}
+async function dbClear(store){const r=await reqToPromise(tx(store,'readwrite').objectStore(store).clear());marcarAlteracaoLocal();return r;}
 async function dbGetAllByIndex(store,indexName,value){
   return new Promise((resolve,reject)=>{
     const req=tx(store).objectStore(store).index(indexName).getAll(value);
@@ -1270,10 +1350,6 @@ function tileIndicadorT1(ind){
   </button>`;
 }
 async function renderInicio(){
-  const config=await getConfig();
-  document.getElementById('heroNome').textContent=config.nomeEmpresa||'Lumar Telecom';
-  document.getElementById('heroLogo').innerHTML=config.logoDataUrl?`<img src="${config.logoDataUrl}">`:(config.nomeEmpresa||'L')[0].toUpperCase();
-
   const competencias=await garantirCompetenciaSelecionada();
   const selComp=document.getElementById('filtroCompetenciaCapa');
   if(competencias.length===0){
@@ -1552,7 +1628,7 @@ async function renderTecnicos(){
   if(indicadores.ok)indicadores.porTecnico.forEach(t=>{porId[t.tecnicoId]=t;});
   const avisoEl=document.getElementById('avisoIndicadoresTecnicos');
   if(indicadores.ok){avisoEl.style.display='none';}
-  else{avisoEl.style.display='block';avisoEl.textContent=mensagemIndicadoresIndisponiveis(indicadores.motivo);}
+  else{avisoEl.style.display='block';avisoEl.innerHTML=mensagemIndicadoresIndisponiveis(indicadores.motivo);}
   const celulaInd=(t,chave,fmt)=>{
     const ind=porId[t.id];
     return ind?fmt(ind[chave]):'—';
@@ -1672,7 +1748,7 @@ async function renderValores(){
   if(indicadores.ok)indicadores.porTecnico.forEach(t=>{porId[t.tecnicoId]=t;});
   const avisoEl=document.getElementById('avisoIndicadoresValores');
   if(indicadores.ok){avisoEl.style.display='none';}
-  else{avisoEl.style.display='block';avisoEl.textContent=mensagemIndicadoresIndisponiveis(indicadores.motivo);}
+  else{avisoEl.style.display='block';avisoEl.innerHTML=mensagemIndicadoresIndisponiveis(indicadores.motivo);}
 
   const thead=document.querySelector('#tabelaValores thead');
   thead.innerHTML=`<tr>
@@ -3538,7 +3614,7 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
   };
 }
 function mensagemIndicadoresIndisponiveis(motivo){
-  if(motivo==='sem_importacao')return 'Nenhuma base importada ainda. Acesse "Importação de Bases" e carregue um arquivo.';
+  if(motivo==='sem_importacao')return 'Nenhuma base importada <strong>neste aparelho</strong>. Os dados ficam salvos no navegador de cada dispositivo, então uma base carregada no computador não aparece sozinha no celular. Importe o arquivo aqui em "Importação de Bases", ou use Configurações &rarr; Backup para trazer os dados do outro aparelho.';
   if(motivo==='sem_colunas')return 'A última base importada não tem as colunas necessárias (UNIDADE_NEGOCIO, NM_MUNICIPIO, LOGIN_TECNICO). Confira se o arquivo é o relatório correto.';
   if(motivo==='sem_registros')return 'A base foi importada, mas nenhum registro corresponde ao filtro configurado (Unidade de Negócio / Município). Confira em Configurações.';
   return 'Não foi possível calcular os indicadores.';
@@ -3644,6 +3720,7 @@ async function processarZip(file){
   }
 }
 async function processarArquivos(fileList){
+  if(!window.XLSX){toast('Leitor de planilhas não carregado. Conecte-se à internet e recarregue a página.','erro');return;}
   for(const file of Array.from(fileList)){
     const ext=extensao(file.name);
     try{
@@ -3803,6 +3880,8 @@ async function renderConfig(){
   document.getElementById('cfgHorario').value=config.horarioPlantao||'';
   document.getElementById('cfgUnidadeNegocio').value=config.analiseUnidadeNegocio||'';
   document.getElementById('cfgMunicipio').value=config.analiseMunicipio||'';
+  document.getElementById('cfgSyncUrl').value=config.syncUrl||'';
+  if(config.syncUrl)statusSync('Sincronização ligada. Último carimbo local: '+(lsGet(SYNC_CARIMBO)?fmtDateTimeBR(lsGet(SYNC_CARIMBO)):'nenhum'));
   const preview=document.getElementById('cfgLogoPreview');
   preview.innerHTML=config.logoDataUrl?`<img src="${config.logoDataUrl}">`:(config.nomeEmpresa||'L')[0].toUpperCase();
 
@@ -3863,6 +3942,174 @@ function aplicarBranding(config){
   mark.innerHTML=config.logoDataUrl?`<img src="${config.logoDataUrl}">`:(config.nomeEmpresa||'L')[0].toUpperCase();
 }
 
+/* ===================== SINCRONIZAÇÃO ENTRE APARELHOS =====================
+   O app é estático (GitHub Pages), então não tem servidor próprio. A ponte é um
+   Web App do Google Apps Script que guarda um JSON no Drive: qualquer aparelho
+   lê e escreve nesse mesmo arquivo.
+
+   Modelo: snapshot do estado inteiro com carimbo de tempo, o mais recente vence.
+   Serve para um gestor editando por vez — dois editando ao mesmo tempo, a última
+   gravação sobrescreve a outra.
+
+   Os metadados de sync ficam em localStorage (por aparelho), nunca no IndexedDB,
+   senão entrariam no próprio snapshot e se sobrescreveriam. */
+const CODIGO_APPS_SCRIPT=[
+'// Ponte de sincronizacao do sistema de Gestao de Manutencao - Lumar Telecom',
+'// Guarda um unico arquivo JSON no seu Google Drive.',
+'',
+'var NOME_ARQUIVO = "lumar-gestao-estado.json";',
+'',
+'function arquivo_() {',
+'  var it = DriveApp.getFilesByName(NOME_ARQUIVO);',
+'  return it.hasNext() ? it.next() : null;',
+'}',
+'',
+'function doGet() {',
+'  var f = arquivo_();',
+'  var txt = f ? f.getBlob().getDataAsString() : "{}";',
+'  return ContentService.createTextOutput(txt)',
+'    .setMimeType(ContentService.MimeType.JSON);',
+'}',
+'',
+'function doPost(e) {',
+'  var txt = e.postData.contents;',
+'  var f = arquivo_();',
+'  if (f) { f.setContent(txt); }',
+'  else { DriveApp.createFile(NOME_ARQUIVO, txt, MimeType.PLAIN_TEXT); }',
+'  return ContentService.createTextOutput(JSON.stringify({ok:true}))',
+'    .setMimeType(ContentService.MimeType.JSON);',
+'}'
+].join('\n');
+
+const SYNC_CARIMBO='lumar_sync_carimbo';        // quando este aparelho editou pela última vez
+const SYNC_BASE='lumar_sync_base';              // qual versão da nuvem este aparelho já tem
+const SYNC_DISPOSITIVO='lumar_sync_dispositivo';
+let syncSujo=false,syncEmAndamento=false,syncAplicandoRemoto=false,syncTimer=null;
+
+function lsGet(k,padrao=''){try{return localStorage.getItem(k)??padrao;}catch(e){return padrao;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function idDispositivo(){
+  let id=lsGet(SYNC_DISPOSITIVO);
+  if(!id){id=Math.random().toString(36).slice(2,10);lsSet(SYNC_DISPOSITIVO,id);}
+  return id;
+}
+function marcarAlteracaoLocal(){
+  if(syncAplicandoRemoto)return;          // eco da aplicação remota não conta
+  syncSujo=true;
+  lsSet(SYNC_CARIMBO,new Date().toISOString());
+  agendarEnvioSync();
+}
+function agendarEnvioSync(){
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>{enviarSync().catch(()=>{});},20000);
+}
+async function urlSync(){
+  const c=await getConfig();
+  return (c.syncUrl||'').trim();
+}
+function statusSync(txt,tipo){
+  const el=document.getElementById('syncStatus');
+  if(!el)return;
+  el.textContent=txt;
+  el.className='form-hint'+(tipo==='erro'?' form-error':'');
+}
+async function coletarEstadoSync(){
+  const dados={};
+  for(const st of TODAS_STORES)dados[st]=await dbGetAll(st);
+  return dados;
+}
+async function aplicarEstadoSync(dados){
+  syncAplicandoRemoto=true;
+  try{
+    for(const st of Object.keys(dados||{})){
+      if(!TODAS_STORES.includes(st))continue;
+      await dbClear(st);
+      for(const item of dados[st])await dbPut(st,item);
+    }
+  } finally { syncAplicandoRemoto=false; }
+}
+async function enviarSync({silencioso=true}={}){
+  const url=await urlSync();
+  if(!url||syncEmAndamento)return false;
+  syncEmAndamento=true;
+  try{
+    statusSync('Enviando…');
+    const corpo={carimbo:lsGet(SYNC_CARIMBO)||new Date().toISOString(),
+      dispositivo:idDispositivo(),app:APP_VERSAO,dados:await coletarEstadoSync()};
+    /* text/plain evita o preflight CORS, que o Apps Script não responde. */
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(corpo),redirect:'follow'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    lsSet(SYNC_BASE,corpo.carimbo);
+    syncSujo=false;
+    statusSync('Enviado em '+fmtDateTimeBR(corpo.carimbo));
+    if(!silencioso)toast('Dados enviados para a nuvem','sucesso');
+    return true;
+  }catch(e){
+    statusSync('Falha ao enviar: '+(e.message||e),'erro');
+    if(!silencioso)toast('Não foi possível enviar: '+(e.message||e),'erro');
+    return false;
+  } finally { syncEmAndamento=false; }
+}
+async function baixarSync({silencioso=true}={}){
+  const url=await urlSync();
+  if(!url||syncEmAndamento)return false;
+  syncEmAndamento=true;
+  try{
+    statusSync('Verificando…');
+    const r=await fetch(url+(url.includes('?')?'&':'?')+'_ck='+Date.now(),{cache:'no-store',redirect:'follow'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const remoto=await r.json();
+    if(!remoto||!remoto.dados){statusSync('Nuvem ainda vazia — use "Enviar agora".');return false;}
+    const base=lsGet(SYNC_BASE)||'';
+    if(remoto.carimbo&&remoto.carimbo===base){
+      statusSync('Já está atualizado ('+fmtDateTimeBR(remoto.carimbo)+')');
+      return false;
+    }
+    /* Aparelho que já sincronizou antes, tem edição local pendente e encontra a
+       nuvem mudada: não sobrescreve nada sozinho — quem decide é o usuário. */
+    if(syncSujo&&base){
+      statusSync('A nuvem mudou e há alterações locais ainda não enviadas. Use "Enviar agora" para manter as deste aparelho, ou "Baixar agora" de novo depois de enviar.','erro');
+      return false;
+    }
+    await aplicarEstadoSync(remoto.dados);
+    lsSet(SYNC_BASE,remoto.carimbo||'');
+    lsSet(SYNC_CARIMBO,remoto.carimbo||new Date().toISOString());
+    syncSujo=false;
+    statusSync('Baixado de '+fmtDateTimeBR(remoto.carimbo||new Date().toISOString()));
+    if(!silencioso)toast('Dados atualizados a partir da nuvem','sucesso');
+    return true;
+  }catch(e){
+    statusSync('Falha ao baixar: '+(e.message||e),'erro');
+    if(!silencioso)toast('Não foi possível baixar: '+(e.message||e),'erro');
+    return false;
+  } finally { syncEmAndamento=false; }
+}
+async function salvarUrlSync(){
+  const url=document.getElementById('cfgSyncUrl').value.trim();
+  const config=await getConfig();
+  config.syncUrl=url;
+  await dbPut('configuracoes',config);
+  statusSync(url?'Endereço salvo. Use "Baixar agora" para trazer os dados.':'Sincronização desligada.');
+  toast(url?'Sincronização configurada':'Sincronização desligada','sucesso');
+}
+/* Na abertura: puxa o que houver na nuvem antes de desenhar as telas. */
+async function sincronizarNaAbertura(){
+  if(!(await urlSync()))return;
+  const mudou=await baixarSync();
+  if(mudou)await irParaView('inicio');
+}
+function iniciarSync(){
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden&&syncSujo)enviarSync().catch(()=>{});
+    if(!document.hidden)baixarSync().catch(()=>{});
+  });
+  window.addEventListener('beforeunload',()=>{if(syncSujo)navigator.sendBeacon&&urlSync().then(u=>{
+    if(u)navigator.sendBeacon(u,new Blob([JSON.stringify({carimbo:lsGet(SYNC_CARIMBO),dispositivo:idDispositivo(),
+      app:APP_VERSAO})],{type:'text/plain'}));});});
+  setInterval(()=>{if(syncSujo)enviarSync().catch(()=>{});},5*60*1000);
+}
+
 /* ===================== BACKUP / RESTORE ===================== */
 const TODAS_STORES=['tecnicos','feriados','plantoes','historicoPlantoes','folgas','ferias','importacoes','importacoesDados','configuracoes','historicoGeral'];
 async function baixarBackup(){
@@ -3912,7 +4159,13 @@ async function definirIzidoroComoNoturno(){
   await salvarStatusTecnico(izidoro.id,'noturno');
 }
 async function initApp(){
-  await openDB();
+  /* openDB é a primeira coisa a rodar: se falhar aqui, é o armazenamento local
+     que está indisponível — marcamos para dar a mensagem certa na tela. */
+  await openDB().catch(e=>{
+    const err=new Error((e&&e.message)||String(e)||'armazenamento indisponível');
+    err.armazenamento=true;
+    throw err;
+  });
   await seedInicial();
   await corrigirNomesPlaceholder();
   await definirIzidoroComoNoturno();
@@ -3973,6 +4226,14 @@ async function initApp(){
   document.getElementById('cardCapacidadeDias').addEventListener('click',abrirModalCapacidadeEquipeDias);
   document.getElementById('cardTecnicosAtivosDias').addEventListener('click',abrirModalTecnicosAtivosDias);
 
+  /* As bibliotecas de leitura vêm de CDN. Sem internet na primeira abertura elas
+     não carregam e a importação falharia sem explicação — melhor avisar antes. */
+  const avisoLibs=document.getElementById('avisoLibsImport');
+  if(!window.XLSX){
+    avisoLibs.style.display='block';
+    avisoLibs.innerHTML='Sem conexão na primeira abertura, o leitor de planilhas não foi carregado. Conecte-se à internet e recarregue a página antes de importar.';
+    document.getElementById('dropZone').style.opacity='.55';
+  }
   const dropZone=document.getElementById('dropZone');
   const fileInput=document.getElementById('fileInputImport');
   dropZone.addEventListener('click',()=>fileInput.click());
@@ -4014,6 +4275,22 @@ async function initApp(){
     toast('Feriado adicionado','sucesso');
     renderConfig();
   });
+  document.getElementById('btnSalvarSync').innerHTML=icon('check',15)+' Salvar endereço';
+  document.getElementById('btnSalvarSync').addEventListener('click',salvarUrlSync);
+  document.getElementById('btnEnviarSync').innerHTML=icon('upload',15)+' Enviar agora';
+  document.getElementById('btnEnviarSync').addEventListener('click',()=>enviarSync({silencioso:false}));
+  document.getElementById('btnBaixarSync').innerHTML=icon('download',15)+' Baixar agora';
+  document.getElementById('btnBaixarSync').addEventListener('click',async()=>{
+    if(await baixarSync({silencioso:false}))await irParaView('inicio');
+  });
+  document.getElementById('codigoAppsScript').value=CODIGO_APPS_SCRIPT;
+  document.getElementById('btnCopiarScript').innerHTML=icon('edit',15)+' Copiar código';
+  document.getElementById('btnCopiarScript').addEventListener('click',async()=>{
+    const ta=document.getElementById('codigoAppsScript');
+    try{await navigator.clipboard.writeText(ta.value);}catch(e){ta.select();document.execCommand('copy');}
+    toast('Código copiado','sucesso');
+  });
+
   document.getElementById('btnBackup').innerHTML=icon('download',15)+' Baixar backup';
   document.getElementById('btnBackup').addEventListener('click',baixarBackup);
   document.getElementById('btnRestaurar').innerHTML=icon('upload',15)+' Restaurar backup';
@@ -4023,9 +4300,33 @@ async function initApp(){
     e.target.value='';
   });
 
+  await sincronizarNaAbertura();
   await renderInicio();
+  iniciarVerificacaoDeVersao();
+  iniciarSync();
 }
-document.addEventListener('DOMContentLoaded',initApp);
+/* Se o navegador negar o banco local (aba anônima, WebView restrita, pouco
+   espaço), o app não pode funcionar — mas precisa dizer isso na tela em vez de
+   ficar em branco. */
+function telaDeFalha(titulo,detalhe){
+  const alvo=document.getElementById('content');
+  if(!alvo)return;
+  alvo.innerHTML=`<div class="card" style="max-width:560px;margin:24px auto">
+    <div class="card-title"><span>${escapeHtml(titulo)}</span></div>
+    <p style="font-size:13.5px;line-height:1.65">${detalhe}</p>
+  </div>`;
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  initApp().catch(e=>{
+    console.error('Falha ao iniciar:',e);
+    const bloqueado=!!(e&&e.armazenamento)||!window.indexedDB;
+    telaDeFalha(
+      bloqueado?'Não foi possível abrir o banco local':'Não foi possível iniciar o sistema',
+      bloqueado
+        ? 'Este navegador está bloqueando o armazenamento local (IndexedDB), que é onde o sistema guarda técnicos, escalas e bases.<br><br><strong>O que costuma resolver:</strong><br>&bull; sair da aba anônima/privada;<br>&bull; abrir em Chrome ou Safari, e não dentro do navegador de um aplicativo (WhatsApp, Instagram);<br>&bull; liberar espaço no aparelho;<br>&bull; permitir cookies e dados de sites.'
+        : `Ocorreu um erro inesperado ao carregar.<br><br><code style="font-size:11.5px">${escapeHtml(String(e&&e.message||e))}</code>`);
+  });
+});
 </script>
 </body>
 </html>
