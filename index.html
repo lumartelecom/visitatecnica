@@ -55,6 +55,14 @@ svg.icon{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;s
 .hamburger{display:none;background:none;border:none;padding:6px;border-radius:6px;cursor:pointer;color:var(--text)}
 .hamburger:hover{background:var(--gray-100)}
 .topbar h1{font-size:16px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nuvem-chip{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-muted);background:var(--brand-soft);border:1px solid var(--border);border-radius:999px;padding:5px 11px;white-space:nowrap;flex-shrink:0}
+.nuvem-ponto{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
+.nuvem-chip.ok .nuvem-ponto{background:var(--green)}
+.nuvem-chip.trabalhando .nuvem-ponto{background:var(--amber);animation:nuvemPulso 1.1s ease-in-out infinite}
+.nuvem-chip.erro{color:var(--red)}
+.nuvem-chip.erro .nuvem-ponto{background:var(--red)}
+@keyframes nuvemPulso{0%,100%{opacity:1}50%{opacity:.25}}
+@media(max-width:640px){.nuvem-chip span:last-child{display:none}.nuvem-chip{padding:6px}}
 .icon-btn{background:none;border:1px solid var(--border-strong);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);flex-shrink:0}
 .icon-btn:hover{background:var(--gray-100);color:var(--text)}
 .content{flex:1;padding:22px;max-width:1400px;width:100%;margin:0 auto}
@@ -453,6 +461,10 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <h1 id="pageTitle">Início</h1>
+      <div class="nuvem-chip" id="nuvemChip" title="Sincronização com o Firebase">
+        <span class="nuvem-ponto" id="nuvemPonto"></span>
+        <span id="nuvemTexto">Conectando…</span>
+      </div>
     </header>
 
     <main class="content" id="content">
@@ -700,24 +712,6 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           <div class="mobile-cards" id="cardsFeriados"></div>
         </div>
         <div class="card">
-          <div class="card-title">Sincronizar entre aparelhos</div>
-          <p class="form-hint" style="margin-bottom:12px">Com isso ligado, os dados (técnicos, escalas, folgas, férias, bases e configurações) ficam iguais no computador e no celular. Usa o Firebase que já existe no projeto <strong>indicadores-vt</strong> &mdash; nada para instalar ou contratar.</p>
-          <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;font-weight:600;cursor:pointer">
-            <input type="checkbox" id="cfgSyncAtivo"> Manter este aparelho sincronizado com a nuvem
-          </label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button class="btn btn-secondary btn-sm" id="btnEnviarSync"></button>
-            <button class="btn btn-secondary btn-sm" id="btnBaixarSync"></button>
-          </div>
-          <p class="form-hint" id="syncStatus" style="margin-top:10px">Sincronização desligada.</p>
-          <details style="margin-top:14px">
-            <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--brand)">Se aparecer erro de permissão</summary>
-            <p style="font-size:12.5px;line-height:1.7;margin:10px 0">No console do Firebase &rarr; <strong>Firestore &rarr; Regras</strong>, garanta que a coleção <code>gestao_manutencao</code> pode ser lida e escrita. Exemplo:</p>
-            <textarea id="codigoRegrasFirebase" readonly rows="9" style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5"></textarea>
-            <button class="btn btn-secondary btn-sm" id="btnCopiarRegras" style="margin-top:8px"></button>
-          </details>
-        </div>
-        <div class="card">
           <div class="card-title">Backup e restauração</div>
           <p class="form-hint" style="margin-bottom:12px">Gere um backup completo de todos os dados ou restaure a partir de um arquivo salvo anteriormente.</p>
           <button class="btn btn-secondary" id="btnBackup" style="margin-right:8px"></button>
@@ -742,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.02.2';
+const APP_VERSAO='2026.08.02.3';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -3881,14 +3875,6 @@ async function renderConfig(){
   document.getElementById('cfgHorario').value=config.horarioPlantao||'';
   document.getElementById('cfgUnidadeNegocio').value=config.analiseUnidadeNegocio||'';
   document.getElementById('cfgMunicipio').value=config.analiseMunicipio||'';
-  const ativo=lsGet(SYNC_ATIVO,'1')!=='0';
-  document.getElementById('cfgSyncAtivo').checked=ativo;
-  if(!firestore())statusSync('Firebase não carregou — sem internet, o app continua funcionando só neste aparelho.','erro');
-  else if(!ativo)statusSync('Sincronização desligada neste aparelho.');
-  else{
-    const b=lsGet(SYNC_BASE);
-    statusSync(b?'Sincronizado com a nuvem em '+fmtDateTimeBR(b):'Sincronização ligada. Ainda não trocou dados com a nuvem.');
-  }
   const preview=document.getElementById('cfgLogoPreview');
   preview.innerHTML=config.logoDataUrl?`<img src="${config.logoDataUrl}">`:(config.nomeEmpresa||'L')[0].toUpperCase();
 
@@ -3949,21 +3935,21 @@ function aplicarBranding(config){
   mark.innerHTML=config.logoDataUrl?`<img src="${config.logoDataUrl}">`:(config.nomeEmpresa||'L')[0].toUpperCase();
 }
 
-/* ===================== SINCRONIZAÇÃO ENTRE APARELHOS =====================
-   O app é estático (GitHub Pages), então não tem servidor próprio. O depósito é
-   o Cloud Firestore do projeto indicadores-vt, o mesmo que o painel de
-   indicadores já usa — nada novo para criar ou contratar.
+/* ===================== NUVEM (FIREBASE / FIRESTORE) =====================
+   Não há tela nem botão: a nuvem é o lugar onde os dados moram, e o IndexedDB
+   local é só a cópia de trabalho deste aparelho. O app puxa ao abrir, grava
+   sozinho depois de cada alteração e escuta o Firestore para receber na hora o
+   que outro aparelho gravou. O único sinal visível é o chip do cabeçalho.
 
-   Modelo: snapshot do estado inteiro com carimbo de tempo, o mais recente vence.
-   Serve para um gestor editando por vez — dois editando ao mesmo tempo, a última
-   gravação sobrescreve a outra. O onSnapshot avisa na hora quando outro aparelho
-   grava, então não há espera nem botão a apertar no uso normal.
+   Mesmo projeto Firebase do painel de indicadores (indicadores-vt), em coleção
+   separada — nada para criar, implantar ou configurar.
 
-   Os metadados de sync ficam em localStorage (por aparelho), nunca no IndexedDB,
-   senão entrariam no próprio snapshot e se sobrescreveriam. */
-/* Mesmo projeto Firebase já usado pelo painel de indicadores da Lumar, para não
-   exigir nenhuma criação de conta ou implantação. O estado vai para uma coleção
-   própria, separada da que o painel de indicadores usa. */
+   Modelo: snapshot inteiro com carimbo de tempo, o mais recente vence. Serve
+   para um gestor editando por vez; dois ao mesmo tempo, a última gravação
+   prevalece.
+
+   Os metadados de sync ficam em localStorage (por aparelho), nunca no
+   IndexedDB, senão entrariam no próprio snapshot e se sobrescreveriam. */
 const FIREBASE_CONFIG_LUMAR={
   apiKey:"AIzaSyDIAneGh89_4bS3AOTmZM5d4v94BJvBfY",
   authDomain:"indicadores-vt.firebaseapp.com",
@@ -3975,22 +3961,24 @@ const FIREBASE_CONFIG_LUMAR={
 const SYNC_COLECAO='gestao_manutencao';
 const SYNC_DOC='estado';
 /* O documento do Firestore tem teto de ~1 MB. O snapshot inteiro (com as bases
-   importadas) passa disso, então ele é quebrado em pedaços gravados como
-   documentos filhos, e o documento-pai guarda só o cabeçalho. */
+   importadas) passa disso, então vai quebrado em documentos filhos e o
+   documento-pai guarda só o cabeçalho. */
 const SYNC_TAMANHO_PEDACO=350000;
 
-const CODIGO_REGRAS_FIREBASE=[
-'rules_version = "2";',
-'service cloud.firestore {',
-'  match /databases/{database}/documents {',
-'    match /gestao_manutencao/{doc=**} {',
-'      allow read, write: if true;',
-'    }',
-'  }',
-'}'
-].join('\n');
+const SYNC_CARIMBO='lumar_sync_carimbo';        // quando este aparelho editou pela última vez
+const SYNC_BASE='lumar_sync_base';              // qual versão da nuvem este aparelho já tem
+const SYNC_DISPOSITIVO='lumar_sync_dispositivo';
 
 let fbApp=null,fbDb=null,fbOuvinte=null;
+let syncSujo=false,syncEmAndamento=false,syncAplicandoRemoto=false,syncTimer=null;
+
+function lsGet(k,padrao=''){try{return localStorage.getItem(k)??padrao;}catch(e){return padrao;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function idDispositivo(){
+  let id=lsGet(SYNC_DISPOSITIVO);
+  if(!id){id=Math.random().toString(36).slice(2,10);lsSet(SYNC_DISPOSITIVO,id);}
+  return id;
+}
 function firestore(){
   if(fbDb)return fbDb;
   if(!window.firebase||!firebase.firestore)return null;
@@ -4009,49 +3997,58 @@ function quebrarEmPedacos(texto){
   for(let i=0;i<texto.length;i+=SYNC_TAMANHO_PEDACO)partes.push(texto.slice(i,i+SYNC_TAMANHO_PEDACO));
   return partes.length?partes:[''];
 }
-
-const SYNC_CARIMBO='lumar_sync_carimbo';        // quando este aparelho editou pela última vez
-const SYNC_BASE='lumar_sync_base';              // qual versão da nuvem este aparelho já tem
-const SYNC_DISPOSITIVO='lumar_sync_dispositivo';
-let syncSujo=false,syncEmAndamento=false,syncAplicandoRemoto=false,syncTimer=null;
-
-function lsGet(k,padrao=''){try{return localStorage.getItem(k)??padrao;}catch(e){return padrao;}}
-function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
-function idDispositivo(){
-  let id=lsGet(SYNC_DISPOSITIVO);
-  if(!id){id=Math.random().toString(36).slice(2,10);lsSet(SYNC_DISPOSITIVO,id);}
-  return id;
+/* Traduz os erros do Firestore para algo que o usuário consiga agir em cima. */
+function motivoNuvem(e){
+  const cod=(e&&e.code)||'';
+  if(cod.includes('permission-denied'))return 'sem permissão no Firestore';
+  if(cod.includes('unavailable')||cod.includes('failed-precondition'))return 'sem conexão';
+  if(cod.includes('resource-exhausted'))return 'cota do Firebase esgotada hoje';
+  return 'falha ao sincronizar';
+}
+/* O chip do cabeçalho é a única superfície da sincronização. */
+function chipNuvem(estado,texto,detalhe){
+  const chip=document.getElementById('nuvemChip');
+  if(!chip)return;
+  chip.className='nuvem-chip'+(estado?' '+estado:'');
+  document.getElementById('nuvemTexto').textContent=texto;
+  chip.title=detalhe||texto;
+}
+function chipOffline(){
+  chipNuvem('erro','Offline','Sem conexão com o Firebase — as alterações ficam salvas neste aparelho e sobem sozinhas quando a internet voltar');
+}
+function chipSincronizado(){
+  const b=lsGet(SYNC_BASE);
+  chipNuvem('ok','Sincronizado',b?'Última sincronização em '+fmtDateTimeBR(b):'Sincronizado com a nuvem');
+}
+/* Alteração local ainda não enviada, medida em disco e não em memória: sobrevive
+   a recarregar a página, ao contrário de syncSujo. */
+function pendenteLocal(){
+  const c=lsGet(SYNC_CARIMBO)||'',b=lsGet(SYNC_BASE)||'';
+  return !!c&&c>b;
+}
+/* "Tem dados próprios" = alguém já importou uma base ou mexeu na equipe/folgas/
+   férias neste aparelho. A equipe semeada na primeira abertura e os feriados
+   padrão não contam. Serve para decidir quem pode publicar numa nuvem vazia:
+   sem isso, um celular recém-aberto publicaria a semente e o computador com os
+   dados de verdade baixaria essa semente por cima. */
+async function temDadosLocais(){
+  for(const st of ['importacoes','folgas','ferias'])
+    if((await dbGetAll(st)).length)return true;
+  const nomes=(await dbGetAll('tecnicos')).map(t=>t.nome).sort();
+  const padrao=EQUIPE_REAL.map(t=>t.nome).sort();
+  return nomes.length!==padrao.length||nomes.some((n,i)=>n!==padrao[i]);
 }
 function marcarAlteracaoLocal(){
   if(syncAplicandoRemoto)return;          // eco da aplicação remota não conta
   syncSujo=true;
   lsSet(SYNC_CARIMBO,new Date().toISOString());
-  agendarEnvioSync();
+  if(firestore())chipNuvem('trabalhando','Salvando…','Alterações pendentes de envio');
+  else chipOffline();
+  agendarEnvioNuvem();
 }
-function agendarEnvioSync(){
+function agendarEnvioNuvem(){
   clearTimeout(syncTimer);
-  syncTimer=setTimeout(()=>{enviarSync().catch(()=>{});},20000);
-}
-/* Ligar/desligar é escolha de cada aparelho, então mora no localStorage: se
-   ficasse em "configuracoes" viajaria no snapshot e um aparelho desligaria o
-   outro. */
-const SYNC_ATIVO='lumar_sync_ativo';
-function syncLigado(){
-  return lsGet(SYNC_ATIVO,'1')!=='0' && !!firestore();
-}
-/* Traduz os erros do Firestore para algo acionável em português. */
-function motivoSync(e){
-  const cod=(e&&e.code)||'';
-  if(cod.includes('permission-denied'))return 'o Firestore recusou o acesso — revise as regras da coleção gestao_manutencao';
-  if(cod.includes('unavailable')||cod.includes('failed-precondition'))return 'sem conexão com o Firebase no momento';
-  if(cod.includes('resource-exhausted'))return 'a cota gratuita do Firebase foi atingida hoje';
-  return (e&&e.message)||String(e);
-}
-function statusSync(txt,tipo){
-  const el=document.getElementById('syncStatus');
-  if(!el)return;
-  el.textContent=txt;
-  el.className='form-hint'+(tipo==='erro'?' form-error':'');
+  syncTimer=setTimeout(()=>{enviarNuvem().catch(()=>{});},6000);
 }
 async function coletarEstadoSync(){
   const dados={};
@@ -4070,13 +4067,13 @@ async function aplicarEstadoSync(dados){
 }
 /* Grava os pedaços primeiro e o cabeçalho por último: quem estiver lendo só
    enxerga o carimbo novo depois que o conteúdo inteiro já subiu. */
-async function enviarSync({silencioso=true}={}){
-  if(syncEmAndamento||!syncLigado())return false;
+async function enviarNuvem(){
   const ref=docEstado();
-  if(!ref)return false;
+  if(!ref){chipOffline();return false;}
+  if(syncEmAndamento)return false;
   syncEmAndamento=true;
   try{
-    statusSync('Enviando…');
+    chipNuvem('trabalhando','Salvando…');
     const carimbo=lsGet(SYNC_CARIMBO)||new Date().toISOString();
     const texto=JSON.stringify(await coletarEstadoSync());
     const partes=quebrarEmPedacos(texto);
@@ -4091,47 +4088,42 @@ async function enviarSync({silencioso=true}={}){
       atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()});
     lsSet(SYNC_BASE,carimbo);
     syncSujo=false;
-    statusSync('Enviado em '+fmtDateTimeBR(carimbo));
-    if(!silencioso)toast('Dados enviados para a nuvem','sucesso');
+    chipSincronizado();
     return true;
   }catch(e){
-    statusSync('Falha ao enviar: '+motivoSync(e),'erro');
-    if(!silencioso)toast('Não foi possível enviar: '+motivoSync(e),'erro');
+    chipNuvem('erro','Offline',motivoNuvem(e)+' — os dados continuam salvos neste aparelho e sobem quando a conexão voltar');
     return false;
   } finally { syncEmAndamento=false; }
 }
-async function baixarSync({silencioso=true}={}){
-  if(syncEmAndamento||!syncLigado())return false;
+/* Sem tela de conflito: entre o que está aqui e o que está na nuvem, vale o
+   carimbo mais recente. O aparelho que ficou para trás recebe o do outro. */
+async function baixarNuvem(){
   const ref=docEstado();
-  if(!ref)return false;
+  if(!ref){chipOffline();return false;}
+  if(syncEmAndamento)return false;
   syncEmAndamento=true;
   try{
-    statusSync('Verificando…');
+    chipNuvem('trabalhando','Verificando…');
     const cab=await ref.get();
     if(!cab.exists||!cab.data().pedacos){
-      statusSync('Nuvem ainda vazia — use "Enviar agora" para publicar os dados deste aparelho.');
+      /* Nuvem vazia. Publica só quem tem dado de verdade — um aparelho que só
+         tem a equipe semeada esperaria e receberia o do outro. */
+      syncEmAndamento=false;
+      if(await temDadosLocais()){
+        lsSet(SYNC_CARIMBO,new Date().toISOString());
+        return await enviarNuvem();
+      }
+      chipNuvem('','Nuvem vazia','Nenhum aparelho publicou dados ainda');
       return false;
     }
     const meta=cab.data();
     const base=lsGet(SYNC_BASE)||'';
-    if(meta.carimbo&&meta.carimbo===base){
-      statusSync('Já está atualizado ('+fmtDateTimeBR(meta.carimbo)+')');
-      return false;
-    }
-    /* Aparelho que já sincronizou antes, tem edição local pendente e encontra a
-       nuvem mudada: não sobrescreve nada sozinho — quem decide é o usuário. */
-    if(syncSujo&&base){
-      statusSync('A nuvem mudou e há alterações locais ainda não enviadas. Use "Enviar agora" para manter as deste aparelho, ou "Baixar agora" de novo depois de enviar.','erro');
-      return false;
-    }
-    /* Primeiro contato deste aparelho com a nuvem: se ele já tem dados próprios,
-       baixar apagaria tudo. Sozinho o app nunca faz isso; no clique explícito,
-       só depois de confirmar. */
-    if(!base&&await temDadosLocais()){
-      statusSync('Este aparelho ainda não tinha sincronizado e já possui dados próprios. "Baixar agora" substitui o que está aqui pelo da nuvem; "Enviar agora" publica o deste aparelho.','erro');
-      if(silencioso)return false;
-      const ok=await confirmarAcao('Este aparelho tem dados que ainda não foram para a nuvem. Baixar vai <strong>substituir tudo</strong> que está aqui pela versão da nuvem de '+fmtDateTimeBR(meta.carimbo||'')+'. Deseja continuar?');
-      if(!ok){statusSync('Download cancelado. Os dados deste aparelho continuam intactos.');return false;}
+    if(meta.carimbo&&meta.carimbo===base){chipSincronizado();return false;}
+    const meu=lsGet(SYNC_CARIMBO)||'';
+    if((syncSujo||pendenteLocal())&&meu&&meta.carimbo&&meu>meta.carimbo){
+      /* O que está aqui é mais novo: sobe em vez de descer. */
+      syncEmAndamento=false;
+      return await enviarNuvem();
     }
     const partes=[];
     for(let i=0;i<meta.pedacos;i++){
@@ -4143,45 +4135,18 @@ async function baixarSync({silencioso=true}={}){
     lsSet(SYNC_BASE,meta.carimbo||'');
     lsSet(SYNC_CARIMBO,meta.carimbo||new Date().toISOString());
     syncSujo=false;
-    statusSync('Baixado de '+fmtDateTimeBR(meta.carimbo||new Date().toISOString()));
-    if(!silencioso)toast('Dados atualizados a partir da nuvem','sucesso');
+    chipSincronizado();
     return true;
   }catch(e){
-    statusSync('Falha ao baixar: '+motivoSync(e),'erro');
-    if(!silencioso)toast('Não foi possível baixar: '+motivoSync(e),'erro');
+    chipNuvem('erro','Offline',motivoNuvem(e)+' — trabalhando com a cópia deste aparelho');
     return false;
   } finally { syncEmAndamento=false; }
 }
-/* "Tem dados próprios" = alguém já importou uma base ou mexeu na equipe/folgas/
-   férias neste aparelho. Não vale por marca em disco (a própria inicialização
-   grava várias coisas): vale pelo conteúdo. A equipe semeada na primeira
-   abertura e os feriados padrão não contam, senão todo aparelho novo travaria
-   justamente na sincronização que deveria ser automática. Plantões também não,
-   por serem gerados a partir da configuração. */
-async function temDadosLocais(){
-  for(const st of ['importacoes','folgas','ferias'])
-    if((await dbGetAll(st)).length)return true;
-  const nomes=(await dbGetAll('tecnicos')).map(t=>t.nome).sort();
-  const padrao=EQUIPE_REAL.map(t=>t.nome).sort();
-  return nomes.length!==padrao.length||nomes.some((n,i)=>n!==padrao[i]);
-}
-async function alternarSync(ativo){
-  lsSet(SYNC_ATIVO,ativo?'1':'0');
-  if(ativo){
-    statusSync('Sincronização ligada. Verificando a nuvem…');
-    await baixarSync({silencioso:false});
-    ouvirNuvem();
-  }else{
-    if(fbOuvinte){fbOuvinte();fbOuvinte=null;}
-    statusSync('Sincronização desligada neste aparelho.');
-  }
-  toast(ativo?'Sincronização ligada':'Sincronização desligada','sucesso');
-}
 /* Na abertura: puxa o que houver na nuvem antes de desenhar as telas. */
 async function sincronizarNaAbertura(){
-  if(!syncLigado())return;
-  const mudou=await baixarSync();
-  if(mudou)await irParaView('inicio');
+  if(!firestore()){chipOffline();return;}
+  const mudou=await baixarNuvem();
+  if(mudou)await irParaView(viewAtual||'inicio');
 }
 /* O Firestore avisa sozinho quando outro aparelho grava — não precisa ficar
    perguntando de tempos em tempos. */
@@ -4194,24 +4159,23 @@ function ouvirNuvem(){
       const meta=snap.data();
       if(!meta.carimbo||meta.carimbo===lsGet(SYNC_BASE))return;
       if(meta.dispositivo===idDispositivo())return;
-      if(syncSujo){
-        statusSync('Outro aparelho gravou dados novos, mas há alterações locais não enviadas aqui. Use "Enviar agora" ou "Baixar agora".','erro');
-        return;
-      }
-      if(await baixarSync()){
+      if(syncSujo){await enviarNuvem();return;}
+      if(await baixarNuvem()){
         await irParaView(viewAtual||'inicio');
         toast('Dados atualizados por outro aparelho','sucesso');
       }
-    },()=>{});
+    },(e)=>{chipNuvem('erro','Offline',motivoNuvem(e));});
   }catch(e){}
 }
 function iniciarSync(){
   document.addEventListener('visibilitychange',()=>{
-    if(document.hidden&&syncSujo)enviarSync().catch(()=>{});
-    if(!document.hidden)baixarSync().catch(()=>{});
+    if(document.hidden){if(syncSujo)enviarNuvem().catch(()=>{});}
+    else{(syncSujo?enviarNuvem():baixarNuvem()).catch(()=>{});}
   });
-  setInterval(()=>{if(syncSujo)enviarSync().catch(()=>{});},2*60*1000);
-  if(syncLigado())ouvirNuvem();
+  window.addEventListener('online',()=>{(syncSujo?enviarNuvem():baixarNuvem()).catch(()=>{});});
+  window.addEventListener('offline',chipOffline);
+  setInterval(()=>{if(syncSujo)enviarNuvem().catch(()=>{});},2*60*1000);
+  ouvirNuvem();
 }
 
 /* ===================== BACKUP / RESTORE ===================== */
@@ -4379,21 +4343,6 @@ async function initApp(){
     toast('Feriado adicionado','sucesso');
     renderConfig();
   });
-  document.getElementById('cfgSyncAtivo').addEventListener('change',(e)=>alternarSync(e.target.checked));
-  document.getElementById('btnEnviarSync').innerHTML=icon('upload',15)+' Enviar agora';
-  document.getElementById('btnEnviarSync').addEventListener('click',()=>enviarSync({silencioso:false}));
-  document.getElementById('btnBaixarSync').innerHTML=icon('download',15)+' Baixar agora';
-  document.getElementById('btnBaixarSync').addEventListener('click',async()=>{
-    if(await baixarSync({silencioso:false}))await irParaView('inicio');
-  });
-  document.getElementById('codigoRegrasFirebase').value=CODIGO_REGRAS_FIREBASE;
-  document.getElementById('btnCopiarRegras').innerHTML=icon('edit',15)+' Copiar regras';
-  document.getElementById('btnCopiarRegras').addEventListener('click',async()=>{
-    const ta=document.getElementById('codigoRegrasFirebase');
-    try{await navigator.clipboard.writeText(ta.value);}catch(e){ta.select();document.execCommand('copy');}
-    toast('Regras copiadas','sucesso');
-  });
-
   document.getElementById('btnBackup').innerHTML=icon('download',15)+' Baixar backup';
   document.getElementById('btnBackup').addEventListener('click',baixarBackup);
   document.getElementById('btnRestaurar').innerHTML=icon('upload',15)+' Restaurar backup';
