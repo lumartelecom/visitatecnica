@@ -736,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.02.3';
+const APP_VERSAO='2026.08.02.4';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -3941,8 +3941,10 @@ function aplicarBranding(config){
    sozinho depois de cada alteração e escuta o Firestore para receber na hora o
    que outro aparelho gravou. O único sinal visível é o chip do cabeçalho.
 
-   Mesmo projeto Firebase do painel de indicadores (indicadores-vt), em coleção
-   separada — nada para criar, implantar ou configurar.
+   Mesmo projeto Firebase do painel de indicadores (indicadores-vt) e, de
+   propósito, dentro da MESMA coleção que ele já usa: as regras do Firestore que
+   deixam o painel funcionar valem aqui também, sem precisar mexer em nada. O
+   documento é outro, então os dois não se atrapalham.
 
    Modelo: snapshot inteiro com carimbo de tempo, o mais recente vence. Serve
    para um gestor editando por vez; dois ao mesmo tempo, a última gravação
@@ -3958,8 +3960,8 @@ const FIREBASE_CONFIG_LUMAR={
   messagingSenderId:"511392597059",
   appId:"1:511392597059:web:d898f6555a24dcbed8c0f6"
 };
-const SYNC_COLECAO='gestao_manutencao';
-const SYNC_DOC='estado';
+const SYNC_COLECAO='indicadores_vt';
+const SYNC_DOC='gestao_manutencao';
 /* O documento do Firestore tem teto de ~1 MB. O snapshot inteiro (com as bases
    importadas) passa disso, então vai quebrado em documentos filhos e o
    documento-pai guarda só o cabeçalho. */
@@ -3997,13 +3999,26 @@ function quebrarEmPedacos(texto){
   for(let i=0;i<texto.length;i+=SYNC_TAMANHO_PEDACO)partes.push(texto.slice(i,i+SYNC_TAMANHO_PEDACO));
   return partes.length?partes:[''];
 }
-/* Traduz os erros do Firestore para algo que o usuário consiga agir em cima. */
-function motivoNuvem(e){
-  const cod=(e&&e.code)||'';
-  if(cod.includes('permission-denied'))return 'sem permissão no Firestore';
-  if(cod.includes('unavailable')||cod.includes('failed-precondition'))return 'sem conexão';
-  if(cod.includes('resource-exhausted'))return 'cota do Firebase esgotada hoje';
-  return 'falha ao sincronizar';
+/* "Offline" para tudo escondia a causa real. Cada falha tem rótulo próprio, e o
+   código cru do Firestore vai no title para dar para diagnosticar pelo celular. */
+function estadoDaFalha(e){
+  const cod=((e&&e.code)||'')+'';
+  if(cod.includes('permission-denied'))
+    return {rotulo:'Sem permissão',detalhe:'O Firestore recusou o acesso. Nas regras do projeto indicadores-vt, a coleção '+SYNC_COLECAO+' precisa permitir leitura e escrita.'};
+  if(cod.includes('resource-exhausted'))
+    return {rotulo:'Cota esgotada',detalhe:'A cota gratuita do Firebase acabou por hoje. Volta a sincronizar sozinho amanhã.'};
+  if(cod.includes('unauthenticated'))
+    return {rotulo:'Sem permissão',detalhe:'O Firestore exigiu autenticação para este acesso.'};
+  return {rotulo:'Sem conexão',detalhe:'Não consegui falar com o Firebase. As alterações ficam salvas neste aparelho e sobem sozinhas quando a conexão voltar.'};
+}
+let ultimoErroNuvem='';
+function chipFalha(e){
+  /* Aberto do arquivo local, qualquer erro do Firestore tem a mesma causa de
+     fundo, e é ela que precisa aparecer. */
+  if(location.protocol==='file:'){chipOffline();return;}
+  ultimoErroNuvem=((e&&(e.code||e.message))||'')+'';
+  const f=estadoDaFalha(e);
+  chipNuvem('erro',f.rotulo,f.detalhe+(ultimoErroNuvem?'\n\n['+ultimoErroNuvem+']':'')+'\n\nToque para tentar de novo.');
 }
 /* O chip do cabeçalho é a única superfície da sincronização. */
 function chipNuvem(estado,texto,detalhe){
@@ -4013,8 +4028,15 @@ function chipNuvem(estado,texto,detalhe){
   document.getElementById('nuvemTexto').textContent=texto;
   chip.title=detalhe||texto;
 }
+/* Aberto direto do arquivo baixado (file://) o Firestore não funciona: a origem
+   é "null" e o projeto não a reconhece. Como é um engano comum, tem aviso próprio. */
 function chipOffline(){
-  chipNuvem('erro','Offline','Sem conexão com o Firebase — as alterações ficam salvas neste aparelho e sobem sozinhas quando a internet voltar');
+  if(location.protocol==='file:')
+    chipNuvem('erro','Fora do site','O sistema foi aberto direto do arquivo salvo no aparelho. Assim ele não sincroniza. Abra pelo endereço do site para os dados conversarem entre os aparelhos.');
+  else if(!navigator.onLine)
+    chipNuvem('erro','Sem conexão','Este aparelho está sem internet. As alterações ficam salvas aqui e sobem sozinhas quando a conexão voltar.');
+  else
+    chipNuvem('erro','Sem conexão','A biblioteca do Firebase não carregou. Recarregue a página; se persistir, pode ser bloqueio de rede ao domínio gstatic.com.\n\nToque para tentar de novo.');
 }
 function chipSincronizado(){
   const b=lsGet(SYNC_BASE);
@@ -4091,7 +4113,7 @@ async function enviarNuvem(){
     chipSincronizado();
     return true;
   }catch(e){
-    chipNuvem('erro','Offline',motivoNuvem(e)+' — os dados continuam salvos neste aparelho e sobem quando a conexão voltar');
+    chipFalha(e);
     return false;
   } finally { syncEmAndamento=false; }
 }
@@ -4138,7 +4160,7 @@ async function baixarNuvem(){
     chipSincronizado();
     return true;
   }catch(e){
-    chipNuvem('erro','Offline',motivoNuvem(e)+' — trabalhando com a cópia deste aparelho');
+    chipFalha(e);
     return false;
   } finally { syncEmAndamento=false; }
 }
@@ -4164,10 +4186,30 @@ function ouvirNuvem(){
         await irParaView(viewAtual||'inicio');
         toast('Dados atualizados por outro aparelho','sucesso');
       }
-    },(e)=>{chipNuvem('erro','Offline',motivoNuvem(e));});
+    },(e)=>{chipFalha(e);});
   }catch(e){}
 }
+/* Tocar no chip força uma tentativa e mostra o erro cru — sem isso, diagnosticar
+   um celular que não sincroniza viraria adivinhação. */
+async function tentarNovamenteNuvem(){
+  if(location.protocol==='file:'){
+    toast('Abra o sistema pelo endereço do site para sincronizar','erro');
+    return;
+  }
+  if(!firestore()){
+    chipOffline();
+    toast('A biblioteca do Firebase não carregou. Recarregue a página.','erro');
+    return;
+  }
+  ultimoErroNuvem='';
+  chipNuvem('trabalhando','Verificando…');
+  const ok=await (pendenteLocal()||syncSujo?enviarNuvem():baixarNuvem());
+  if(ok||!ultimoErroNuvem)toast('Tudo sincronizado com a nuvem','sucesso');
+  else toast(estadoDaFalha({code:ultimoErroNuvem}).detalhe,'erro');
+}
 function iniciarSync(){
+  const chip=document.getElementById('nuvemChip');
+  if(chip){chip.style.cursor='pointer';chip.addEventListener('click',()=>tentarNovamenteNuvem().catch(()=>{}));}
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){if(syncSujo)enviarNuvem().catch(()=>{});}
     else{(syncSujo?enviarNuvem():baixarNuvem()).catch(()=>{});}
