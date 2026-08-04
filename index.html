@@ -736,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.04.2';
+const APP_VERSAO='2026.08.04.3';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -856,11 +856,22 @@ function toast(msg,tipo='info'){
 }
 
 /* ===================== MODAL ===================== */
+/* Alguns modais devolvem resposta por promessa (confirmar ação, escolher abas).
+   Fechar pelo X ou pelo Esc precisa avisar quem está esperando, senão a promessa
+   nunca resolve e a operação fica pendurada para sempre. */
+let aoFecharModal=null;
+function teclaModal(e){if(e.key==='Escape'){e.preventDefault();fecharModal();}}
 function fecharModal(){
-  const root=document.getElementById('modalRoot');
-  root.innerHTML='';
+  document.getElementById('modalRoot').innerHTML='';
+  document.removeEventListener('keydown',teclaModal);
+  const cb=aoFecharModal;
+  aoFecharModal=null;
+  if(cb)cb();
 }
-function abrirModal({titulo,bodyHtml,wide=false,footButtons=[]}){
+/* Para os botões do rodapé: eles já entregam a resposta, então desarmam o aviso
+   de fechamento antes de fechar. */
+function responderModal(fn){aoFecharModal=null;fecharModal();fn();}
+function abrirModal({titulo,bodyHtml,wide=false,footButtons=[],aoFechar=null}){
   const root=document.getElementById('modalRoot');
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -870,9 +881,17 @@ function abrirModal({titulo,bodyHtml,wide=false,footButtons=[]}){
       <div class="modal-body">${bodyHtml}</div>
       <div class="modal-foot" id="modalFoot"></div>
     </div>`;
+  /* Se havia outro modal aberto esperando resposta, ele está sendo substituído:
+     avisa antes de perder a referência. */
+  const pendente=aoFecharModal;
+  aoFecharModal=null;
+  if(pendente)pendente();
   root.innerHTML='';
   root.appendChild(overlay);
-  overlay.addEventListener('click',(e)=>{if(e.target===overlay) fecharModal();});
+  /* Clicar fora não fecha: é quase sempre acidente, e apagaria um formulário
+     inteiro em preenchimento. Sai pelo X ou pelo Esc. */
+  aoFecharModal=aoFechar;
+  document.addEventListener('keydown',teclaModal);
   overlay.querySelector('#modalCloseX').addEventListener('click',fecharModal);
   const foot=overlay.querySelector('#modalFoot');
   footButtons.forEach(b=>{
@@ -889,9 +908,10 @@ function confirmarAcao(mensagem){
     abrirModal({
       titulo:'Confirmar ação',
       bodyHtml:`<p style="font-size:13.5px">${mensagem}</p>`,
+      aoFechar:()=>resolve(false),
       footButtons:[
-        {label:'Cancelar',classe:'btn-secondary',onClick:()=>{fecharModal();resolve(false);}},
-        {label:'Confirmar',classe:'btn-primary',onClick:()=>{fecharModal();resolve(true);}}
+        {label:'Cancelar',classe:'btn-secondary',onClick:()=>responderModal(()=>resolve(false))},
+        {label:'Confirmar',classe:'btn-primary',onClick:()=>responderModal(()=>resolve(true))}
       ]
     });
   });
@@ -3962,11 +3982,12 @@ function escolherAbasModal(nomeArquivo,abas){
       titulo:`Selecionar abas &mdash; ${escapeHtml(nomeArquivo)}`,
       bodyHtml:`<p class="form-hint" style="margin-bottom:10px">Este arquivo possui múltiplas abas. Selecione quais deseja importar.</p>
         ${abas.map((a,i)=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="aba-check" value="${escapeHtml(a)}" checked> ${escapeHtml(a)}</label>`).join('')}`,
+      aoFechar:()=>resolve([]),
       footButtons:[
-        {label:'Cancelar',classe:'btn-secondary',onClick:()=>{fecharModal();resolve([]);}},
+        {label:'Cancelar',classe:'btn-secondary',onClick:()=>responderModal(()=>resolve([]))},
         {label:'Importar selecionadas',classe:'btn-primary',onClick:()=>{
           const sel=[...document.querySelectorAll('.aba-check:checked')].map(c=>c.value);
-          fecharModal();resolve(sel);
+          responderModal(()=>resolve(sel));
         }}
       ]
     });
