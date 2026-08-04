@@ -736,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.03.2';
+const APP_VERSAO='2026.08.04.1';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -3310,6 +3310,7 @@ async function renderTabelaFeriasSecao(){
       <td><span class="badge ${cls}">${lbl}</span></td>
       <td>${fmtBR(f.dataInicio)}</td><td>${fmtBR(f.dataFim)}</td>
       <td><div class="row-actions">
+        <button class="btn btn-ghost btn-icon" data-card="${f.id}" title="Gerar card do período">${icon('eye',15)}</button>
         <button class="btn btn-ghost btn-icon" data-edit="${f.id}" title="Editar">${icon('edit',15)}</button>
         <button class="btn btn-ghost btn-icon" data-del="${f.id}" title="Excluir">${icon('trash',15)}</button>
       </div></td>
@@ -3323,13 +3324,122 @@ async function renderTabelaFeriasSecao(){
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${badgeTipoAusencia(f.tipo)}<span class="badge ${cls}">${lbl}</span></div>
       </div>
       <div class="mcard-actions">
+        <button class="btn btn-secondary btn-sm" data-card="${f.id}">${icon('eye',14)} Card</button>
         <button class="btn btn-secondary btn-sm" data-edit="${f.id}">${icon('edit',14)} Editar</button>
         <button class="btn btn-danger btn-sm" data-del="${f.id}">${icon('trash',14)} Excluir</button>
       </div>
     </div>`;
   }).join('');
+  document.querySelectorAll('#tabelaFerias [data-card], #cardsFerias [data-card]').forEach(b=>b.addEventListener('click',()=>abrirCardAusencia(Number(b.dataset.card))));
   document.querySelectorAll('#tabelaFerias [data-edit], #cardsFerias [data-edit]').forEach(b=>b.addEventListener('click',()=>abrirModalFerias(Number(b.dataset.edit))));
   document.querySelectorAll('#tabelaFerias [data-del], #cardsFerias [data-del]').forEach(b=>b.addEventListener('click',()=>excluirFeriasConfirm(Number(b.dataset.del))));
+}
+/* Card do período de ausência, pronto para baixar como imagem e mandar no
+   grupo. Os números saem das mesmas regras da capacidade: domingo e feriado só
+   contam quando há plantão, então ficam de fora da conta de dias úteis. */
+async function abrirCardAusencia(feriasId){
+  const f=await dbGet('ferias',feriasId);
+  if(!f)return;
+  const tecnico=await dbGet('tecnicos',f.tecnicoId);
+  const config=await getConfig();
+  const feriados=await dbGetAll('feriados');
+  const feriadosSet=new Set(feriados.map(x=>x.data));
+  const tipo=tipoAusencia(f.tipo);
+
+  const ini=parseISO(f.dataInicio),fim=parseISO(f.dataFim);
+  const corridos=Math.round((fim-ini)/86400000)+1;
+  let uteis=0;
+  const feriadosNoPeriodo=[];
+  for(let d=new Date(ini);d<=fim;d=addDays(d,1)){
+    const iso=toISO(d);
+    const ehFeriado=feriadosSet.has(iso);
+    if(ehFeriado)feriadosNoPeriodo.push({iso,desc:(feriados.find(x=>x.data===iso)||{}).descricao||''});
+    if(d.getDay()!==0&&!ehFeriado)uteis++;
+  }
+  const hoje=toISO(new Date());
+  const sit=hoje<f.dataInicio?{lbl:'Agendado',cor:'#64748b',fundo:'#f1f5f9'}
+    :(hoje>f.dataFim?{lbl:'Concluído',cor:'#0d9968',fundo:'#e7f6f0'}
+    :{lbl:'Em curso',cor:'#d97706',fundo:'#fdf3e3'});
+  const retorno=toISO(addDays(fim,1));
+  const restantes=hoje<=f.dataFim?Math.max(0,Math.round((fim-parseISO(hoje))/86400000)+(hoje<f.dataInicio?0:1)):0;
+
+  const linha=(rot,val)=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #e8eef7">
+      <span style="font-size:12.5px;color:#64748b;font-weight:600">${rot}</span>
+      <span style="font-size:13px;color:#011355;font-weight:700;text-align:right">${val}</span></div>`;
+  const marca=config.logoDataUrl
+    ? `<img src="${config.logoDataUrl}" style="width:38px;height:38px;border-radius:9px;object-fit:cover">`
+    : `<div style="width:38px;height:38px;border-radius:9px;background:#0B5FD1;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px">${escapeHtml((config.nomeEmpresa||'L')[0].toUpperCase())}</div>`;
+
+  const cardHtml=`
+  <div id="cardAusenciaImg" style="width:390px;margin:0 auto;background:#fff;border:1px solid #dbe6f5;border-radius:16px;overflow:hidden;font-family:Inter,system-ui,sans-serif">
+    <div style="background:linear-gradient(135deg,#0B5FD1,#011355);padding:16px 18px;color:#fff">
+      <div style="display:flex;align-items:center;gap:11px">
+        ${marca}
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:800;line-height:1.2">${escapeHtml(config.nomeEmpresa||'Lumar Telecom')}</div>
+          <div style="font-size:10.5px;opacity:.85;letter-spacing:.09em;font-weight:600">EQUIPE DE MANUTENÇÃO</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:19px;font-weight:800;letter-spacing:.05em;text-transform:uppercase">${tipo.l}</div>
+    </div>
+    <div style="padding:16px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+        <div style="font-size:17px;font-weight:800;color:#011355">${escapeHtml(tecnico?tecnico.nome:'(técnico removido)')}</div>
+        <span style="font-size:11px;font-weight:700;color:${sit.cor};background:${sit.fundo};padding:4px 10px;border-radius:999px;white-space:nowrap">${sit.lbl}</span>
+      </div>
+      ${tecnico&&tecnico.login?`<div style="font-size:11.5px;color:#64748b;margin:-8px 0 12px;font-weight:600">${escapeHtml(tecnico.login)}</div>`:''}
+      <div style="display:flex;gap:9px;margin-bottom:14px">
+        <div style="flex:1;background:#F1F6FD;border-radius:11px;padding:11px 12px">
+          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.06em">INÍCIO</div>
+          <div style="font-size:15px;font-weight:800;color:#0B5FD1;margin-top:2px">${fmtBR(f.dataInicio)}</div>
+        </div>
+        <div style="flex:1;background:#F1F6FD;border-radius:11px;padding:11px 12px">
+          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.06em">TÉRMINO</div>
+          <div style="font-size:15px;font-weight:800;color:#0B5FD1;margin-top:2px">${fmtBR(f.dataFim)}</div>
+        </div>
+      </div>
+      ${linha('Dias corridos',corridos+' dia'+(corridos===1?'':'s'))}
+      ${linha('Dias que saem da capacidade',uteis+' dia'+(uteis===1?'':'s'))}
+      ${feriadosNoPeriodo.length?linha('Feriados no período',feriadosNoPeriodo.map(x=>fmtBR(x.iso)).join(', ')):''}
+      ${(()=>{
+        if(sit.lbl==='Concluído')return '';
+        const n=sit.lbl==='Em curso'?restantes:Math.round((ini-parseISO(hoje))/86400000);
+        return linha(sit.lbl==='Em curso'?'Dias restantes':'Começa em',n+' dia'+(n===1?'':'s'));
+      })()}
+      ${linha('Retorno previsto',fmtBR(retorno)+' ('+DIAS_SEMANA[parseISO(retorno).getDay()]+')')}
+      <div style="margin-top:13px;font-size:10.5px;color:#94a3b8;text-align:center;font-weight:600">
+        Emitido em ${fmtDateTimeBR(new Date().toISOString())}
+      </div>
+    </div>
+  </div>`;
+
+  abrirModal({
+    titulo:'Card do período',
+    bodyHtml:`<p class="form-hint" style="margin-bottom:14px">Baixe a imagem para enviar no grupo ou anexar ao controle de RH.</p>${cardHtml}`,
+    footButtons:[
+      {label:'Fechar',classe:'btn-secondary',onClick:fecharModal},
+      {label:'Baixar imagem',classe:'btn-primary',onClick:()=>baixarCardAusencia(tecnico?tecnico.nome:'tecnico',f)}
+    ]
+  });
+}
+async function baixarCardAusencia(nome,f){
+  if(!window.html2canvas){toast('Biblioteca de imagem não carregada. Verifique sua conexão.','erro');return;}
+  const el=document.getElementById('cardAusenciaImg');
+  if(!el)return;
+  try{
+    const canvas=await html2canvas(el,{scale:3,backgroundColor:'#ffffff'});
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    /* Sem acento no nome do arquivo: o navegador descarta o atributo quando
+       ele traz caracteres que não sabe representar, e o download sai como
+       "download". */
+    const semAcento=(t)=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    a.download=`${semAcento(tipoAusencia(f.tipo).l)}-${semAcento(nome)}-${f.dataInicio}.png`;
+    a.click();
+    toast('Card salvo como imagem','sucesso');
+  }catch(e){
+    toast('Não foi possível gerar a imagem: '+(e.message||e),'erro');
+  }
 }
 async function abrirModalFerias(feriasId=null){
   const ferias=feriasId?await dbGet('ferias',feriasId):null;
