@@ -736,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.04.1';
+const APP_VERSAO='2026.08.04.2';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1195,8 +1195,9 @@ async function atualizarStatusFerias(){
     if(f.status!==novoStatus){f.status=novoStatus;await dbPut('ferias',f);}
   }
 }
-async function salvarFerias(tecnicoId,dataInicio,dataFim,feriasId=null,tipo='ferias'){
-  const registro={tecnicoId,dataInicio,dataFim,tipo,status:'agendada',criadoEm:new Date().toISOString()};
+async function salvarFerias(tecnicoId,dataInicio,dataFim,feriasId=null,tipo='ferias',extras={}){
+  const registro=Object.assign({tecnicoId,dataInicio,dataFim,tipo,status:'agendada',
+    criadoEm:new Date().toISOString()},extras);
   if(feriasId){registro.id=feriasId;await dbPut('ferias',registro);}
   else{await dbAdd('ferias',registro);}
   await substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim);
@@ -3304,9 +3305,11 @@ async function renderTabelaFeriasSecao(){
   };
   tbody.innerHTML=lista.map(f=>{
     const {cls,lbl}=situacao(f);
+    const ref=(f.aquisitivoInicio&&f.aquisitivoFim)?`<div class="tec-login-sub">Ref. ${fmtBR(f.aquisitivoInicio)} a ${fmtBR(f.aquisitivoFim)}</div>`:'';
+    const vend=f.diasVendidos>0?` <span class="badge badge-slate">+${f.diasVendidos} vendido${f.diasVendidos===1?'':'s'}</span>`:'';
     return `<tr>
-      <td><strong>${escapeHtml(tecnicoNome(f.tecnicoId))}</strong></td>
-      <td>${badgeTipoAusencia(f.tipo)}</td>
+      <td><strong>${escapeHtml(tecnicoNome(f.tecnicoId))}</strong>${ref}</td>
+      <td>${badgeTipoAusencia(f.tipo)}${vend}</td>
       <td><span class="badge ${cls}">${lbl}</span></td>
       <td>${fmtBR(f.dataInicio)}</td><td>${fmtBR(f.dataFim)}</td>
       <td><div class="row-actions">
@@ -3320,7 +3323,7 @@ async function renderTabelaFeriasSecao(){
     const {cls,lbl}=situacao(f);
     return `<div class="mcard">
       <div class="mcard-head">
-        <div><div class="mcard-title">${escapeHtml(tecnicoNome(f.tecnicoId))}</div><div class="mcard-sub">${fmtBR(f.dataInicio)} &rarr; ${fmtBR(f.dataFim)}</div></div>
+        <div><div class="mcard-title">${escapeHtml(tecnicoNome(f.tecnicoId))}</div><div class="mcard-sub">${fmtBR(f.dataInicio)} &rarr; ${fmtBR(f.dataFim)}${f.diasVendidos>0?` &middot; +${f.diasVendidos} vendido${f.diasVendidos===1?'':'s'}`:''}</div></div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${badgeTipoAusencia(f.tipo)}<span class="badge ${cls}">${lbl}</span></div>
       </div>
       <div class="mcard-actions">
@@ -3360,11 +3363,16 @@ async function abrirCardAusencia(feriasId){
   const sit=hoje<f.dataInicio?{lbl:'Agendado',cor:'#64748b',fundo:'#f1f5f9'}
     :(hoje>f.dataFim?{lbl:'Concluído',cor:'#0d9968',fundo:'#e7f6f0'}
     :{lbl:'Em curso',cor:'#d97706',fundo:'#fdf3e3'});
-  const retorno=toISO(addDays(fim,1));
+  /* O dia seguinte ao término pode ser domingo ou feriado, quando ninguém volta.
+     O retorno útil é o primeiro dia depois disso em que se trabalha. */
+  let dRetorno=addDays(fim,1);
+  for(let i=0;i<15&&(dRetorno.getDay()===0||feriadosSet.has(toISO(dRetorno)));i++)dRetorno=addDays(dRetorno,1);
+  const retorno=toISO(dRetorno);
+  const retornoAdiado=retorno!==toISO(addDays(fim,1));
   const restantes=hoje<=f.dataFim?Math.max(0,Math.round((fim-parseISO(hoje))/86400000)+(hoje<f.dataInicio?0:1)):0;
 
   const linha=(rot,val)=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #e8eef7">
-      <span style="font-size:12.5px;color:#64748b;font-weight:600">${rot}</span>
+      <span style="font-size:12.5px;color:#64748b;font-weight:600;white-space:nowrap">${rot}</span>
       <span style="font-size:13px;color:#011355;font-weight:700;text-align:right">${val}</span></div>`;
   const marca=config.logoDataUrl
     ? `<img src="${config.logoDataUrl}" style="width:38px;height:38px;border-radius:9px;object-fit:cover">`
@@ -3398,7 +3406,10 @@ async function abrirCardAusencia(feriasId){
           <div style="font-size:15px;font-weight:800;color:#0B5FD1;margin-top:2px">${fmtBR(f.dataFim)}</div>
         </div>
       </div>
-      ${linha('Dias corridos',corridos+' dia'+(corridos===1?'':'s'))}
+      ${linha(f.tipo==='ferias'?'Dias de gozo (corridos)':'Dias corridos',corridos+' dia'+(corridos===1?'':'s'))}
+      ${f.diasVendidos>0?linha('Dias vendidos (abono)',f.diasVendidos+' dia'+(f.diasVendidos===1?'':'s')):''}
+      ${f.diasVendidos>0?linha('Total do direito',(corridos+f.diasVendidos)+' dias'):''}
+      ${(f.aquisitivoInicio&&f.aquisitivoFim)?linha('Período aquisitivo',fmtBR(f.aquisitivoInicio)+' a '+fmtBR(f.aquisitivoFim)):''}
       ${linha('Dias que saem da capacidade',uteis+' dia'+(uteis===1?'':'s'))}
       ${feriadosNoPeriodo.length?linha('Feriados no período',feriadosNoPeriodo.map(x=>fmtBR(x.iso)).join(', ')):''}
       ${(()=>{
@@ -3406,7 +3417,8 @@ async function abrirCardAusencia(feriasId){
         const n=sit.lbl==='Em curso'?restantes:Math.round((ini-parseISO(hoje))/86400000);
         return linha(sit.lbl==='Em curso'?'Dias restantes':'Começa em',n+' dia'+(n===1?'':'s'));
       })()}
-      ${linha('Retorno previsto',fmtBR(retorno)+' ('+DIAS_SEMANA[parseISO(retorno).getDay()]+')')}
+      ${linha('Retorno',fmtBR(retorno)+' ('+DIAS_SEMANA[parseISO(retorno).getDay()]+')'
+        +(retornoAdiado?'<div style="font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px">pula domingo/feriado após o término</div>':''))}
       <div style="margin-top:13px;font-size:10.5px;color:#94a3b8;text-align:center;font-weight:600">
         Emitido em ${fmtDateTimeBR(new Date().toISOString())}
       </div>
@@ -3441,9 +3453,34 @@ async function baixarCardAusencia(nome,f){
     toast('Não foi possível gerar a imagem: '+(e.message||e),'erro');
   }
 }
+/* Regra do art. 134 §3 da CLT: as férias não podem começar em fim de semana,
+   feriado, nem nos dois dias que antecedem feriado ou dia de repouso. Vale só
+   para férias — treinamento e afastamento não têm essa restrição. */
+function motivoInicioFeriasInvalido(iso,feriadosSet){
+  const d=parseISO(iso),dow=d.getDay();
+  if(dow===0)return 'um domingo';
+  if(dow===6)return 'um sábado';
+  if(feriadosSet.has(iso))return 'um feriado';
+  for(let k=1;k<=2;k++){
+    const prox=addDays(d,k);
+    if(prox.getDay()===0)return 'véspera de domingo (faltam '+k+' dia'+(k===1?'':'s')+')';
+    if(feriadosSet.has(toISO(prox)))return 'véspera de feriado (faltam '+k+' dia'+(k===1?'':'s')+')';
+  }
+  return null;
+}
+function proximoInicioFeriasValido(iso,feriadosSet){
+  let d=parseISO(iso);
+  for(let i=0;i<40;i++){
+    const cand=toISO(d);
+    if(!motivoInicioFeriasInvalido(cand,feriadosSet))return cand;
+    d=addDays(d,1);
+  }
+  return iso;
+}
 async function abrirModalFerias(feriasId=null){
   const ferias=feriasId?await dbGet('ferias',feriasId):null;
   const tecnicos=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const feriadosSet=new Set((await dbGetAll('feriados')).map(x=>x.data));
   const opts=tecnicos.map(t=>`<option value="${t.id}" ${ferias?.tecnicoId===t.id?'selected':''}>${escapeHtml(t.nome)}</option>`).join('');
   const optsTipo=TIPOS_AUSENCIA.map(t=>`<option value="${t.v}" ${(ferias?.tipo||'ferias')===t.v?'selected':''}>${t.l}</option>`).join('');
   abrirModal({
@@ -3457,7 +3494,20 @@ async function abrirModalFerias(feriasId=null){
         <div class="form-group"><label>Data início</label><input type="date" id="frInicio" value="${ferias?.dataInicio||''}"></div>
         <div class="form-group"><label>Data fim</label><input type="date" id="frFim" value="${ferias?.dataFim||''}"></div>
       </div>
-      <p class="form-hint">O técnico sai da capacidade da equipe em todos os dias do período e é substituído nos plantões que caírem dentro dele.</p>
+      <div id="frAvisoInicio" class="form-hint" style="display:none;background:#fdf3e3;border-left:3px solid var(--amber);padding:9px 11px;border-radius:6px;margin-bottom:12px"></div>
+      <div id="frBlocoFerias" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label>Dias de gozo</label><input type="number" id="frDiasGozo" min="1" max="30" placeholder="30"></div>
+          <div class="form-group"><label>Dias vendidos (abono)</label><input type="number" id="frDiasVendidos" min="0" max="10" value="${ferias?.diasVendidos??0}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Período aquisitivo &mdash; início</label><input type="date" id="frAqInicio" value="${ferias?.aquisitivoInicio||''}"></div>
+          <div class="form-group"><label>Período aquisitivo &mdash; fim</label><input type="date" id="frAqFim" value="${ferias?.aquisitivoFim||''}"></div>
+        </div>
+        <p class="form-hint" style="margin-top:-4px;margin-bottom:12px">Os 12 meses trabalhados que deram direito a estas férias. Aparece no card como referência.</p>
+        <div id="frResumo" class="form-hint" style="background:var(--brand-soft);padding:10px 12px;border-radius:8px;margin-bottom:12px"></div>
+      </div>
+      <p class="form-hint" id="frTextoPadrao">O técnico sai da capacidade da equipe em todos os dias do período e é substituído nos plantões que caírem dentro dele.</p>
       <div id="frErro" class="form-error" style="display:none"></div>`,
     footButtons:[
       {label:'Cancelar',classe:'btn-secondary',onClick:fecharModal},
@@ -3471,11 +3521,83 @@ async function abrirModalFerias(feriasId=null){
         const existentes=(await dbGetAll('ferias')).filter(f=>f.tecnicoId===tecnicoId&&f.id!==feriasId);
         const sobrepoe=existentes.some(f=>dataInicio<=f.dataFim&&dataFim>=f.dataInicio);
         if(sobrepoe){erroEl.style.display='block';erroEl.textContent='Este técnico já tem um período cadastrado que se sobrepõe a essas datas';return;}
-        await salvarFerias(tecnicoId,dataInicio,dataFim,feriasId,tipo);
+        const extras=tipo==='ferias'?{
+          diasVendidos:Math.max(0,Math.min(10,Number(document.getElementById('frDiasVendidos').value)||0)),
+          aquisitivoInicio:document.getElementById('frAqInicio').value||'',
+          aquisitivoFim:document.getElementById('frAqFim').value||''
+        }:{};
+        await salvarFerias(tecnicoId,dataInicio,dataFim,feriasId,tipo,extras);
         fecharModal();toast(`${tipoAusencia(tipo).l} salva(o) com sucesso`,'sucesso');renderPlantoes();
       }}
     ]
   });
+
+  /* --- comportamento do formulário --- */
+  const $=(id)=>document.getElementById(id);
+  const ehFerias=()=>$('frTipo').value==='ferias';
+  const diasEntre=(a,b)=>Math.round((parseISO(b)-parseISO(a))/86400000)+1;
+
+  function pintarAvisoInicio(){
+    const el=$('frAvisoInicio'),ini=$('frInicio').value;
+    if(!ini||!ehFerias()){el.style.display='none';return;}
+    const motivo=motivoInicioFeriasInvalido(ini,feriadosSet);
+    if(!motivo){el.style.display='none';return;}
+    const sugestao=proximoInicioFeriasValido(ini,feriadosSet);
+    el.style.display='block';
+    el.innerHTML=`<strong>Início não permitido pela CLT:</strong> ${fmtBR(ini)} é ${motivo}. As férias não podem começar em fim de semana, feriado, nem nos dois dias que os antecedem.
+      <button type="button" class="btn btn-secondary btn-sm" id="frAjustar" style="margin-top:8px">Ajustar para ${fmtBR(sugestao)}</button>`;
+    $('frAjustar').addEventListener('click',()=>{
+      const gozo=Number($('frDiasGozo').value)||(($('frInicio').value&&$('frFim').value)?diasEntre($('frInicio').value,$('frFim').value):0);
+      $('frInicio').value=sugestao;
+      if(gozo>0)$('frFim').value=toISO(addDays(parseISO(sugestao),gozo-1));
+      atualizar();
+    });
+  }
+  function atualizarResumo(){
+    const el=$('frResumo'),ini=$('frInicio').value,fim=$('frFim').value;
+    if(!ini||!fim||fim<ini){el.textContent='Informe o período para ver o resumo.';return;}
+    const gozo=diasEntre(ini,fim);
+    const vendidos=Math.max(0,Math.min(10,Number($('frDiasVendidos').value)||0));
+    const total=gozo+vendidos;
+    const aq=($('frAqInicio').value&&$('frAqFim').value)?`${fmtBR($('frAqInicio').value)} a ${fmtBR($('frAqFim').value)}`:'não informado';
+    /* Férias são contadas em dias corridos — sábado, domingo e feriado entram
+       no gozo. O que a regra do início evita é começar em cima deles. */
+    let alerta='';
+    if(total>30)alerta=`<div style="color:var(--red);font-weight:700;margin-top:6px">Gozo + vendidos dá ${total} dias, acima dos 30 do direito anual.</div>`;
+    else if(vendidos>0&&gozo<5)alerta=`<div style="color:var(--amber);font-weight:700;margin-top:6px">Cada período de férias precisa ter ao menos 5 dias corridos.</div>`;
+    el.innerHTML=`<strong>${gozo} dia(s) de gozo</strong> (corridos, incluindo fins de semana e feriados)
+      ${vendidos?` &middot; <strong>${vendidos} vendido(s)</strong> &middot; total do direito: <strong>${total} dias</strong>`:''}
+      <br>Referência: ${aq}${alerta}`;
+  }
+  function alternarBloco(){
+    const mostrar=ehFerias();
+    $('frBlocoFerias').style.display=mostrar?'':'none';
+    $('frTextoPadrao').style.display=mostrar?'none':'';
+    if(mostrar)atualizarResumo();
+  }
+  function atualizar(){alternarBloco();pintarAvisoInicio();if(ehFerias())atualizarResumo();}
+
+  $('frTipo').addEventListener('change',atualizar);
+  /* Digitar o número de dias fecha a data final, e mexer na data final reescreve
+     o número — os dois lados contam a mesma coisa. */
+  $('frDiasGozo').addEventListener('input',()=>{
+    const ini=$('frInicio').value,n=Number($('frDiasGozo').value)||0;
+    if(ini&&n>0)$('frFim').value=toISO(addDays(parseISO(ini),n-1));
+    atualizarResumo();
+  });
+  $('frInicio').addEventListener('change',()=>{
+    const n=Number($('frDiasGozo').value)||0;
+    if(n>0&&$('frInicio').value)$('frFim').value=toISO(addDays(parseISO($('frInicio').value),n-1));
+    atualizar();
+  });
+  $('frFim').addEventListener('change',()=>{
+    const ini=$('frInicio').value,fim=$('frFim').value;
+    if(ini&&fim&&fim>=ini)$('frDiasGozo').value=diasEntre(ini,fim);
+    atualizarResumo();
+  });
+  ['frDiasVendidos','frAqInicio','frAqFim'].forEach(id=>$(id).addEventListener('input',atualizarResumo));
+  if(ferias?.dataInicio&&ferias?.dataFim)$('frDiasGozo').value=diasEntre(ferias.dataInicio,ferias.dataFim);
+  atualizar();
 }
 async function excluirFeriasConfirm(id){
   const ok=await confirmarAcao('Excluir este período? Substituições já realizadas nos plantões não serão desfeitas automaticamente.');
