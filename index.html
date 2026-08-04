@@ -736,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.02.4';
+const APP_VERSAO='2026.08.03.1';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -3965,7 +3965,7 @@ const SYNC_DOC='gestao_manutencao';
 /* O documento do Firestore tem teto de ~1 MB. O snapshot inteiro (com as bases
    importadas) passa disso, então vai quebrado em documentos filhos e o
    documento-pai guarda só o cabeçalho. */
-const SYNC_TAMANHO_PEDACO=350000;
+const SYNC_TAMANHO_PEDACO=300000;   // 300k caracteres cabem em 1 MB mesmo se todos forem acentuados
 
 const SYNC_CARIMBO='lumar_sync_carimbo';        // quando este aparelho editou pela última vez
 const SYNC_BASE='lumar_sync_base';              // qual versão da nuvem este aparelho já tem
@@ -4060,8 +4060,13 @@ async function temDadosLocais(){
   const padrao=EQUIPE_REAL.map(t=>t.nome).sort();
   return nomes.length!==padrao.length||nomes.some((n,i)=>n!==padrao[i]);
 }
+/* Abrir o app grava várias coisas por conta própria (configuração padrão,
+   equipe semeada, escala derivada). Nada disso é edição do usuário, e tratar
+   como se fosse levava o aparelho a se achar "mais novo" que a nuvem e a subir
+   um estado pobre por cima do bom. */
+let appIniciando=true;
 function marcarAlteracaoLocal(){
-  if(syncAplicandoRemoto)return;          // eco da aplicação remota não conta
+  if(syncAplicandoRemoto||appIniciando)return;
   syncSujo=true;
   lsSet(SYNC_CARIMBO,new Date().toISOString());
   if(firestore())chipNuvem('trabalhando','Salvando…','Alterações pendentes de envio');
@@ -4072,23 +4077,36 @@ function agendarEnvioNuvem(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(()=>{enviarNuvem().catch(()=>{});},6000);
 }
-async function coletarEstadoSync(){
+/* Tudo menos as linhas das bases importadas, que sobem por fora. */
+async function coletarEstadoOperacional(){
   const dados={};
-  for(const st of TODAS_STORES)dados[st]=await dbGetAll(st);
+  for(const st of TODAS_STORES){
+    if(st==='importacoesDados')continue;
+    dados[st]=await dbGetAll(st);
+  }
   return dados;
 }
 async function aplicarEstadoSync(dados){
   syncAplicandoRemoto=true;
   try{
     for(const st of Object.keys(dados||{})){
-      if(!TODAS_STORES.includes(st))continue;
+      if(!TODAS_STORES.includes(st)||st==='importacoesDados')continue;
       await dbClear(st);
       for(const item of dados[st])await dbPut(st,item);
     }
   } finally { syncAplicandoRemoto=false; }
 }
-/* Grava os pedaços primeiro e o cabeçalho por último: quem estiver lendo só
-   enxerga o carimbo novo depois que o conteúdo inteiro já subiu. */
+/* As linhas das bases importadas respondem por quase todo o peso do snapshot —
+   megabytes contra dezenas de kilobytes de todo o resto. Se subissem junto a
+   cada alteração, cada mexida numa folga reenviaria a base inteira e o celular
+   baixaria tudo de novo. Por isso elas viajam separadas, identificadas por um
+   resumo do conteúdo: sobem uma vez e o aparelho que já tem aquela base nem a
+   pede. */
+function hashTexto(t){
+  let h=0x811c9dc5;
+  for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193);}
+  return (h>>>0).toString(36);
+}
 async function enviarNuvem(){
   const ref=docEstado();
   if(!ref){chipOffline();return false;}
@@ -4096,18 +4114,67 @@ async function enviarNuvem(){
   syncEmAndamento=true;
   try{
     chipNuvem('trabalhando','Salvando…');
+    let metaRemota=null;
+    try{const c=await ref.get();metaRemota=c.exists?c.data():null;}catch(e){}
+    /* Trava contra apagar o trabalho alheio: se a nuvem andou desde a última vez
+       que este aparelho a viu, e o que há aqui não é mais novo, então gravar por
+       cima destruiria o que o outro aparelho acabou de publicar. Puxa em vez de
+       sobrescrever. */
+    if(metaRemota&&metaRemota.carimbo&&metaRemota.carimbo!==lsGet(SYNC_BASE)){
+      const meu=lsGet(SYNC_CARIMBO)||'';
+      if(!meu||meu<=metaRemota.carimbo){
+        syncEmAndamento=false;
+        return await baixarNuvem();
+      }
+    }
     const carimbo=lsGet(SYNC_CARIMBO)||new Date().toISOString();
-    const texto=JSON.stringify(await coletarEstadoSync());
+
+    /* 1) Bases importadas: cada uma sobe uma única vez. */
+    const registros=await dbGetAll('importacoesDados');
+    const remotasPorChave={};
+    ((metaRemota&&metaRemota.bases)||[]).forEach(b=>{remotasPorChave[b.chave]=b;});
+    const bases=[];
+    for(const rec of registros){
+      const txt=JSON.stringify(rec.linhas||[]);
+      const chave=rec.chaveNuvem||hashTexto(txt);
+      const partes=quebrarEmPedacos(txt);
+      const jaNaNuvem=remotasPorChave[chave];
+      if(!jaNaNuvem||jaNaNuvem.pedacos!==partes.length){
+        for(let i=0;i<partes.length;i++)
+          await ref.collection('bases').doc(chave+'_p'+i).set({t:partes[i]});
+      }
+      bases.push({chave,importacaoId:rec.importacaoId,id:rec.id,
+        pedacos:partes.length,linhas:(rec.linhas||[]).length});
+      if(rec.chaveNuvem!==chave){
+        syncAplicandoRemoto=true;
+        try{await dbPut('importacoesDados',Object.assign({},rec,{chaveNuvem:chave}));}
+        finally{syncAplicandoRemoto=false;}
+      }
+    }
+
+    /* 2) Estado operacional: pequeno, sobe inteiro a cada alteração. */
+    const texto=JSON.stringify(await coletarEstadoOperacional());
     const partes=quebrarEmPedacos(texto);
-    let pedacosAntigos=0;
-    try{const atual=await ref.get();pedacosAntigos=(atual.exists&&atual.data().pedacos)||0;}catch(e){}
-    for(let i=0;i<partes.length;i++)await ref.collection('partes').doc('p'+i).set({t:partes[i]});
-    for(let i=partes.length;i<pedacosAntigos;i++){
+    for(let i=0;i<partes.length;i++)
+      await ref.collection('partes').doc('p'+i).set({t:partes[i]});
+    for(let i=partes.length;i<((metaRemota&&metaRemota.pedacos)||0);i++){
       try{await ref.collection('partes').doc('p'+i).delete();}catch(e){}
     }
+
+    /* 3) Cabeçalho por último: quem estiver lendo só enxerga o carimbo novo
+       depois que o conteúdo inteiro já subiu. */
     await ref.set({carimbo,dispositivo:idDispositivo(),app:APP_VERSAO,
-      pedacos:partes.length,tamanho:texto.length,
+      pedacos:partes.length,tamanho:texto.length,bases,
       atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+
+    /* 4) Só agora descarta as bases que ninguém mais usa. */
+    const vivas=new Set(bases.map(b=>b.chave));
+    for(const b of Object.values(remotasPorChave)){
+      if(vivas.has(b.chave))continue;
+      for(let i=0;i<b.pedacos;i++){
+        try{await ref.collection('bases').doc(b.chave+'_p'+i).delete();}catch(e){}
+      }
+    }
     lsSet(SYNC_BASE,carimbo);
     syncSujo=false;
     chipSincronizado();
@@ -4152,8 +4219,38 @@ async function baixarNuvem(){
       const d=await ref.collection('partes').doc('p'+i).get();
       partes.push(d.exists?(d.data().t||''):'');
     }
-    const dados=JSON.parse(partes.join(''));
-    await aplicarEstadoSync(dados);
+    await aplicarEstadoSync(JSON.parse(partes.join('')));
+
+    /* Bases importadas: baixa só as que faltam aqui. Numa segunda abertura não
+       se transfere nada, por maior que seja a base. */
+    const locais=await dbGetAll('importacoesDados');
+    const sobrando={};
+    for(const r of locais){
+      const chave=r.chaveNuvem||hashTexto(JSON.stringify(r.linhas||[]));
+      sobrando[chave]=r;
+    }
+    syncAplicandoRemoto=true;
+    try{
+      const daNuvem=meta.bases||[];
+      let n=0;
+      for(const b of daNuvem){
+        if(sobrando[b.chave]){delete sobrando[b.chave];continue;}
+        chipNuvem('trabalhando','Baixando base…','Base de '+(b.linhas||0).toLocaleString('pt-BR')+' linhas ('+(++n)+' de '+daNuvem.length+')');
+        const ps=[];
+        for(let i=0;i<b.pedacos;i++){
+          const d=await ref.collection('bases').doc(b.chave+'_p'+i).get();
+          ps.push(d.exists?(d.data().t||''):'');
+        }
+        await dbPut('importacoesDados',{id:b.id,importacaoId:b.importacaoId,
+          linhas:JSON.parse(ps.join('')),chaveNuvem:b.chave});
+      }
+      /* Base que saiu da nuvem sai daqui também — mas só se já tinha sido
+         sincronizada. Importação feita aqui e ainda não enviada é preservada. */
+      for(const r of Object.values(sobrando)){
+        if(r.chaveNuvem)await dbDelete('importacoesDados',r.id);
+      }
+    } finally { syncAplicandoRemoto=false; }
+
     lsSet(SYNC_BASE,meta.carimbo||'');
     lsSet(SYNC_CARIMBO,meta.carimbo||new Date().toISOString());
     syncSujo=false;
@@ -4395,6 +4492,7 @@ async function initApp(){
   });
 
   await sincronizarNaAbertura();
+  appIniciando=false;
   await renderInicio();
   iniciarVerificacaoDeVersao();
   iniciarSync();
