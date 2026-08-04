@@ -736,7 +736,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.03.1';
+const APP_VERSAO='2026.08.03.2';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -2107,8 +2107,10 @@ function equipeAtivaDia(ctx,iso){
     if(t.status==='desligado')return false;
     /* O período cadastrado manda: só tira o técnico nos dias que ele cobre. */
     if(ausenciaNoDia(ctx,t.id,iso))return false;
-    /* Marcado como afastado à mão, sem período: fica fora do mês inteiro. */
-    if(t.status==='afastado'&&!ctx.ferias.some(f=>f.tecnicoId===t.id))return false;
+    /* Marcado à mão como férias, treinamento ou afastamento, sem período
+       cadastrado: fica fora do mês inteiro. Mesma regra da capacidade
+       individual, senão o card e a tabela por técnico discordariam. */
+    if(STATUS_POR_AUSENCIA.includes(t.status)&&!ctx.ferias.some(f=>f.tecnicoId===t.id))return false;
     return true;
   }).length;
 }
@@ -2156,8 +2158,12 @@ function detalhesDiasPrevistosTecnico(ctx,tecnico){
       contabilizado=false;status='Desligado';
     } else if(ausencia){
       contabilizado=false;status=tipoAusencia(ausencia.tipo).l;
-    } else if(tecnico.status==='afastado'&&!ctx.ferias.some(f=>f.tecnicoId===tecnico.id)){
-      contabilizado=false;status='Afastado';
+    } else if(STATUS_POR_AUSENCIA.includes(tecnico.status)&&!ctx.ferias.some(f=>f.tecnicoId===tecnico.id)){
+      /* Marcado à mão como férias, treinamento ou afastamento, sem período
+         cadastrado: quem não está disponível não entra na capacidade. Antes só
+         "afastado" fazia isso, e férias marcada à mão contava o mês inteiro. */
+      contabilizado=false;
+      status=(OPCOES_STATUS_TECNICO.find(o=>o.v===tecnico.status)||{l:'Ausente'}).l;
     } else if(emFolga){
       contabilizado=false;status='Folga compensatória';
     }
@@ -2265,6 +2271,30 @@ async function calcularDadosDias(mesChave,minimo,config){
       contingencia:!g.tecnico
     };
     (g.tecnico?linhasTec:linhasCont).push(item);
+  });
+  /* Quem está de férias, treinamento ou afastado não tem linha na planilha, e até
+     aqui isso o fazia desaparecer da equipe. A lista passa a sair do cadastro:
+     todo técnico do quadro aparece, com zero dias e a situação em que está. */
+  const jaListados=new Set(linhasTec.map(t=>t.tecnicoId));
+  ctx.tecnicos.forEach(tec=>{
+    if(tec.status==='desligado'||jaListados.has(tec.id))return;
+    linhasTec.push({
+      chave:`t:${tec.id}`,
+      tecnicoId:tec.id,
+      nome:tec.nome,
+      nomePlanilha:'',
+      nomesMultiplos:false,
+      login:tec.login||'',
+      dt:0,
+      producao:0,
+      diasPrevistos:detalhesDiasPrevistosTecnico(ctx,tec).filter(i=>i.contabilizado).length,
+      diasTrabalhados:[],
+      contingencia:false
+    });
+  });
+  linhasTec.forEach(t=>{
+    const tec=t.tecnicoId?ctx.tecnicos.find(x=>x.id===t.tecnicoId):null;
+    t.situacao=situacaoCadastroTecnico(tec);
   });
   linhasTec.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   linhasCont.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
@@ -2441,19 +2471,20 @@ function renderTabelaDiasTecnicos(dados){
   const thead=document.querySelector('#tabelaDiasTecnicos thead');
   const tbody=document.querySelector('#tabelaDiasTecnicos tbody');
   const tfoot=document.querySelector('#tabelaDiasTecnicos tfoot');
-  thead.innerHTML='<tr><th>Técnico</th><th>Capacidade estipulada em dias</th><th>Dias efetivamente trabalhados</th></tr>';
+  thead.innerHTML='<tr><th>Técnico</th><th>Situação</th><th>Capacidade estipulada em dias</th><th>Dias efetivamente trabalhados</th></tr>';
   const rows=dados.ok?dados.linhasTec:[];
   if(!rows.length){
-    tbody.innerHTML=`<tr class="empty-row"><td colspan="3">${dados.ok?'Nenhum técnico com produção lançada na planilha deste mês.':'Não foi possível carregar os técnicos da planilha.'}</td></tr>`;
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="4">${dados.ok?'Nenhum técnico cadastrado na equipe de manutenção.':'Não foi possível carregar os técnicos da planilha.'}</td></tr>`;
     tfoot.innerHTML='';
     return;
   }
   tbody.innerHTML=rows.map(t=>`<tr>
     <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div>${t.login?`<div class="tec-login-sub">${escapeHtml(t.login)}</div>`:''}</div></div></td>
+    <td><span class="badge ${t.situacao.cls}">${t.situacao.label}</span></td>
     <td>${t.tecnicoId?`<button type="button" class="dias-link" data-cap-tec="${t.tecnicoId}">${t.diasPrevistos} dias</button>`:'<span class="form-hint">sem cadastro no sistema</span>'}</td>
-    <td><button type="button" class="dias-link" data-real-tec="${escapeHtml(t.chave)}">${t.diasTrabalhados.length} dias</button></td>
+    <td>${t.diasTrabalhados.length?`<button type="button" class="dias-link" data-real-tec="${escapeHtml(t.chave)}">${t.diasTrabalhados.length} dias</button>`:'<span class="form-hint">0 dias</span>'}</td>
   </tr>`).join('');
-  tfoot.innerHTML=`<tr><td>Total geral</td><td>${dados.totalPrevistos} dias</td><td>${dados.totalManutencao} dias</td></tr>`;
+  tfoot.innerHTML=`<tr><td>Total geral</td><td></td><td>${dados.totalPrevistos} dias</td><td>${dados.totalManutencao} dias</td></tr>`;
   tbody.querySelectorAll('[data-cap-tec]').forEach(b=>b.addEventListener('click',()=>abrirModalCapacidadeTecnicoDias(Number(b.dataset.capTec))));
   tbody.querySelectorAll('[data-real-tec]').forEach(b=>b.addEventListener('click',()=>abrirModalDiasRealizadosDias(b.dataset.realTec)));
 }
@@ -2649,13 +2680,11 @@ function abrirModalTecnicosAtivosDias(){
   abrirModal({
     titulo:'Técnicos de manutenção ativos no mês',
     wide:true,
-    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">${rows.length} técnico(s) do quadro de manutenção com produção lançada em ${escapeHtml(labelMesDias(mesInfoDiasAtual))}. A contingência aparece no card ao lado.</p>
+    bodyHtml:`<p class="form-hint" style="margin-bottom:12px">${rows.length} técnico(s) no quadro de manutenção em ${escapeHtml(labelMesDias(mesInfoDiasAtual))}. Quem está de férias, treinamento ou afastado continua na lista, com a situação do momento e zero dias. A contingência aparece à parte.</p>
       <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Nome na planilha</th><th>Situação</th><th>Dias trabalhados</th></tr></thead>
-      <tbody>${rows.map(t=>{
-        const tec=t.tecnicoId?dados.ctx.tecnicos.find(x=>x.id===t.tecnicoId):null;
-        const situacao=t.contingencia?'Contingência':(OPCOES_STATUS_TECNICO.find(s=>s.v===(tec?.status||'ativo'))?.l||'Ativo');
-        return `<tr><td><strong>${escapeHtml(t.nome)}</strong></td><td>${escapeHtml(t.nomePlanilha)}</td><td><span class="badge ${t.contingencia?'badge-amber':'badge-green'}">${situacao}</span></td><td>${t.diasTrabalhados.length} dias</td></tr>`;
-      }).join('')}</tbody></table></div>`,
+      <tbody>${rows.map(t=>
+        `<tr><td><strong>${escapeHtml(t.nome)}</strong></td><td>${t.nomePlanilha?escapeHtml(t.nomePlanilha):'<span class="form-hint">sem lançamento neste mês</span>'}</td><td><span class="badge ${t.situacao.cls}">${t.situacao.label}</span></td><td>${t.diasTrabalhados.length} dias</td></tr>`
+      ).join('')}</tbody></table></div>`,
     footButtons:[{label:'Fechar',classe:'btn-secondary',onClick:fecharModal}]
   });
 }
@@ -3629,6 +3658,16 @@ async function salvarStatusCompliance(tecnicoId,campo,valor){
   await dbPut('tecnicos',t);
 }
 const OPCOES_STATUS_TECNICO=[{v:'ativo',l:'Ativo'},{v:'ferias',l:'Férias'},{v:'treinamento',l:'Treinamento'},{v:'noturno',l:'Técnico noturno'},{v:'afastado',l:'Afastado'},{v:'desligado',l:'Desligado'}];
+/* Situação cadastral do técnico — diferente da coluna "Situação" da aba
+   Técnicos, que fala de certificação nos indicadores. */
+const CLASSE_STATUS_TECNICO={ativo:'badge-green',ferias:'badge-blue',treinamento:'badge-blue',
+  noturno:'badge-slate',afastado:'badge-amber',desligado:'badge-red'};
+function situacaoCadastroTecnico(tec){
+  if(!tec)return{v:'contingencia',label:'Contingência',cls:'badge-amber'};
+  const v=tec.status||'ativo';
+  return{v,label:(OPCOES_STATUS_TECNICO.find(o=>o.v===v)||{l:'Ativo'}).l,
+    cls:CLASSE_STATUS_TECNICO[v]||'badge-slate'};
+}
 function selectStatusTecnico(tecnicoId,statusAtual){
   const opts=OPCOES_STATUS_TECNICO.map(s=>`<option value="${s.v}" ${statusAtual===s.v?'selected':''}>${s.l}</option>`).join('');
   return `<select class="status-tecnico-sel" data-tid="${tecnicoId}" style="padding:2px 4px;font-size:11px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface)">${opts}</select>`;
