@@ -750,7 +750,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.06.9';
+const APP_VERSAO='2026.08.07.2';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1049,8 +1049,9 @@ function tecnicoEmFerias(tecnicoId,dataISO,feriasList){
       Esta nunca é relaxada: preferimos a vaga vazia.
    2. Ninguém escalado na semana que antecede as próprias férias.
    3. Ninguém repetido nos dois plantões seguidos anteriores.
-   Dentro do que sobra, quem tem MENOS plantões no ano vem primeiro — é o que
-   mantém o equilíbrio anual e compensa nos meses seguintes quem ficou para trás.
+   Dentro do que sobra, vai quem tem menos plantões no mês que está sendo
+   montado, respeitando o teto de cada mês — cada mês fecha o mais parelho
+   possível, sem arrastar dívida de um mês para o outro.
    As regras 2 e 3 são afrouxadas, nessa ordem, só quando não sobra ninguém.
 
    Escolha manual do usuário nunca é tocada por nada disto. */
@@ -1092,8 +1093,14 @@ async function sincronizarContadoresPlantao(ano){
    trás recuperar nos meses seguintes; depois quantas vezes o candidato já fez
    dupla recentemente com quem já está nesta data, senão a escala congela em
    pares fixos o ano todo. */
-function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,ultimaData,recentes1,recentes2,penalidadeDupla}){
+function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,tetoMes,ultimaData,recentes1,recentes2,penalidadeDupla}){
   if(!candidatos.length)return null;
+  /* Teto do mês, sem exceção: ninguém passa da parte que lhe cabe enquanto
+     houver quem esteja abaixo dela. Cada mês fecha o mais parelho possível. */
+  if(tetoMes&&contagemMes){
+    const abaixo=candidatos.filter(t=>(contagemMes.get(t.id)||0)<tetoMes);
+    if(abaixo.length)candidatos=abaixo;
+  }
   const perto=(t)=>proximoDeFerias(t.id,iso,feriasList);
   /* Só o plantão imediatamente anterior é impedimento duro — é o que a regra
      pede. Barrar também o retrasado deixava exatamente dois candidatos numa
@@ -1108,11 +1115,16 @@ function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,ultimaD
   const mes=(t)=>contagemMes?(contagemMes.get(t.id)||0):0;
   const dupla=(t)=>penalidadeDupla?penalidadeDupla(t):0;
   const retrasado=(t)=>recentes2.has(t.id)?1:0;
+  /* Dentro do mês: quem tem menos plantões no mês, depois quem está há mais
+     tempo sem pegar um, evitando repetir a mesma dupla. */
   const ordem=(lista)=>lista.slice().sort((a,b)=>
     (mes(a)-mes(b))
-    ||((contagem.get(a.id)||0)-(contagem.get(b.id)||0))
     ||(dupla(a)-dupla(b))
     ||(retrasado(a)-retrasado(b))
+    /* O total do ano entra só aqui, para desempatar quem está empatado em tudo.
+       Nessa posição ele nunca desequilibra um mês — apenas evita que a sobra do
+       mês caia sempre nas mesmas pessoas ao longo do ano. */
+    ||((contagem.get(a.id)||0)-(contagem.get(b.id)||0))
     ||((ultimaData.get(a.id)||'').localeCompare(ultimaData.get(b.id)||''))
     ||a.nome.localeCompare(b.nome,'pt-BR'));
   for(const c of camadas)if(c.length)return ordem(c)[0];
@@ -1160,6 +1172,20 @@ async function montarEscala(dataInicioISO,dataFimISO){
     ultimaData.set(id,no.iso);
   };
 
+  /* Quantas vagas cada mês tem e entre quantos técnicos disponíveis elas se
+     dividem — daí sai o teto de cada mês. */
+  const tetoPorMes=new Map();
+  for(const m of new Set([...datasAno].map(d=>d.slice(0,7)))){
+    const datasM=[...datasAno].filter(d=>d.slice(0,7)===m);
+    let vagas=0;
+    datasM.forEach(d=>{
+      const ex=porData.get(d);
+      vagas+=aRecalcular.has(d)?qtd:(ex?ex.tecnicoIds.filter(Boolean).length:0);
+    });
+    const disp=tecnicos.filter(t=>datasM.some(d=>tecnicoDisponivelNaData(t,d,feriasList))).length;
+    tetoPorMes.set(m,disp?Math.ceil(vagas/disp):Infinity);
+  }
+
   let criados=0,ajustados=0,vagasVazias=0;
   for(const no of linha){
     const existente=porData.get(no.iso);
@@ -1193,7 +1219,8 @@ async function montarEscala(dataInicioISO,dataFimISO){
       const penalidadeDupla=(t)=>janela.reduce((acc,ant)=>
         acc+([...no.ids].some(j=>ant.ids.has(j)&&ant.ids.has(t.id))?1:0),0);
       const escolhido=escolherTecnico({candidatos,iso:no.iso,feriasList,contagem,
-        contagemMes:mesDe(no.iso),ultimaData,recentes1,recentes2,penalidadeDupla});
+        contagemMes:mesDe(no.iso),tetoMes:tetoPorMes.get(no.iso.slice(0,7)),
+        ultimaData,recentes1,recentes2,penalidadeDupla});
       if(escolhido){alvo.tecnicoIds[i]=escolhido.id;marcar(no,escolhido.id);}
       else vagasVazias++;
     }
