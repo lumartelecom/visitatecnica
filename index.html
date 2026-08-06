@@ -277,6 +277,8 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .tec-resumo-chips{display:flex;flex-wrap:wrap;gap:8px}
 .tec-chip{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--brand-light);background:var(--brand-soft);border-radius:20px;font-size:12px;font-weight:600;color:var(--brand-dark)}
 .tec-chip strong{font-family:'IBM Plex Mono',monospace}
+/* Quem está com menos plantões no ano — a fila de prioridade da próxima geração. */
+.tec-chip-baixo{border-color:var(--green);background:var(--green-light);color:var(--green)}
 .plantoes-main-head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:14px}
 .plantoes-mes-titulo{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--brand-dark);background:var(--brand-soft);border:1px solid var(--brand-light);flex:1;min-width:200px;padding:10px 14px;border-radius:8px}
 .plantoes-kpi-row{display:flex;gap:10px;margin-left:auto}
@@ -290,8 +292,14 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .feriado-desc{display:block;font-size:10px;color:var(--text-muted);white-space:normal;max-width:150px;margin-top:2px}
 .exportando-imagem .row-actions,.exportando-imagem .btn-extra-add{display:none}
 #view-plantoes .card-title{background:var(--brand-soft);color:var(--brand-dark);border:1px solid var(--brand-light);border-radius:8px;padding:10px 14px;margin-bottom:14px}
-#tabelaPlantoes{font-size:11px;min-width:0;border-collapse:separate;border-spacing:0}
-#tabelaPlantoes thead th{background:var(--brand);color:#fff;border-bottom:2px solid var(--brand-dark)}
+/* As três planilhas — escala, técnicos e valores — usam a mesma cabeça e a mesma
+   escala de fonte. O clamp faz a letra acompanhar a largura da tela sem estourar
+   nem sumir nos extremos. */
+#tabelaPlantoes,#tabelaValores,#tabelaTecnicos{font-size:clamp(9.5px,.82vw,11.5px);min-width:0;border-collapse:separate;border-spacing:0}
+#tabelaPlantoes thead th,#tabelaValores thead th,#tabelaTecnicos thead th{
+  background:var(--brand-dark);color:#fff;border-bottom:none;cursor:default;vertical-align:middle;
+  font-size:clamp(8px,.68vw,10px);letter-spacing:.04em;padding:7px 4px}
+#tabelaPlantoes thead th{white-space:normal}
 #tabelaPlantoes tbody tr{border-bottom:1px solid var(--border)}
 #tabelaPlantoes tbody tr:nth-child(even){background:var(--surface-alt)}
 #tabelaPlantoes tbody tr:hover{background:var(--brand-soft)}
@@ -305,29 +313,30 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 
 /* ===== VALORES (comissão) ===== */
 #cardTabelaValores{padding:14px 15px}
-#tabelaValores{font-size:11px;min-width:0;border-collapse:separate;border-spacing:0}
-#tabelaValores thead th{background:var(--brand-dark);color:#fff;padding:7px 4px;text-align:center;border-bottom:none;cursor:default;vertical-align:middle;white-space:normal}
-#tabelaValores thead th:first-child{text-align:left;padding-left:9px}
-#tabelaValores .val-th-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1.3}
-#tabelaValores .val-th-sub{font-size:8.5px;font-weight:600;opacity:.78;margin-top:2px;font-family:'IBM Plex Mono',monospace}
-#tabelaValores tbody tr{border-bottom:1px solid var(--border)}
-#tabelaValores tbody tr:nth-child(even){background:var(--surface-alt)}
-#tabelaValores tbody tr:hover{background:var(--brand-soft)}
-#tabelaValores td{padding:7px 4px;text-align:center;vertical-align:middle}
-#tabelaValores td:first-child{text-align:left;padding-left:9px}
-#tabelaValores .tec-cell{gap:7px}
-#tabelaValores .tec-avatar{width:21px;height:21px}
-#tabelaValores .tec-avatar svg{width:12px;height:12px}
-#tabelaValores .tec-cell strong{font-size:11px}
-#tabelaValores .tec-login-sub{font-size:9px}
-#tabelaValores .badge{padding:2px 6px;font-size:9.5px;gap:3px}
-#tabelaValores .badge svg{width:9px;height:9px;stroke-width:2.8}
+#tabelaValores thead th,#tabelaTecnicos thead th{text-align:center;white-space:normal}
+#tabelaValores thead th:first-child,#tabelaTecnicos thead th:first-child{text-align:left;padding-left:9px}
+#tabelaValores .val-th-title,#tabelaTecnicos .val-th-title{font-size:inherit;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1.25;
+  white-space:normal;max-width:88px;margin:0 auto}
+#tabelaValores thead th:first-child .val-th-title,#tabelaTecnicos thead th:first-child .val-th-title{max-width:none;margin:0}
+#tabelaValores .val-th-sub,#tabelaTecnicos .val-th-sub{font-size:.8em;font-weight:600;opacity:.72;margin-top:2px;font-family:'IBM Plex Mono',monospace}
+#tabelaValores tbody tr,#tabelaTecnicos tbody tr{border-bottom:1px solid var(--border)}
+#tabelaValores tbody tr:nth-child(even),#tabelaTecnicos tbody tr:nth-child(even){background:var(--surface-alt)}
+#tabelaValores tbody tr:hover,#tabelaTecnicos tbody tr:hover{background:var(--brand-soft)}
+#tabelaValores td,#tabelaTecnicos td{padding:7px 4px;text-align:center;vertical-align:middle}
+#tabelaValores td:first-child,#tabelaTecnicos td:first-child{text-align:left;padding-left:9px}
+#tabelaValores .tec-cell,#tabelaTecnicos .tec-cell{gap:7px}
+#tabelaValores .tec-avatar,#tabelaTecnicos .tec-avatar{width:21px;height:21px}
+#tabelaValores .tec-avatar svg,#tabelaTecnicos .tec-avatar svg{width:12px;height:12px}
+#tabelaValores .tec-cell strong,#tabelaTecnicos .tec-cell strong{font-size:1em}
+#tabelaValores .tec-login-sub,#tabelaTecnicos .tec-login-sub{font-size:.82em}
+#tabelaValores .badge,#tabelaTecnicos .badge{padding:2px 6px;font-size:.86em;gap:3px}
+#tabelaValores .badge svg,#tabelaTecnicos .badge svg{width:9px;height:9px;stroke-width:2.8}
 .valor-sub{font-size:9px;font-weight:700;margin-top:3px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace}
 .valor-sub.ok{color:var(--green)}
 .valor-sub.fail{color:var(--red-dark)}
 .valor-total-box{display:inline-block;padding:5px 9px;border-radius:6px;border:1.5px solid var(--green);color:var(--green);font-weight:800;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--green-light);white-space:nowrap}
 .valor-total-box.baixo{border-color:var(--red-dark);color:var(--red-dark);background:var(--red-light)}
-#tabelaValores .status-compliance-sel{font-size:9.5px;padding:2px 3px;width:100%;max-width:88px}
+#tabelaValores .status-compliance-sel,#tabelaTecnicos .status-compliance-sel{font-size:.86em;padding:2px 3px;width:100%;max-width:88px}
 
 /* ===== DIAS TRABALHADOS ===== */
 .dias-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
@@ -424,6 +433,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
   .mobile-cards{display:flex}
   #cardTabelaPlantoes .table-wrap{display:block}
   #cardTabelaValores .table-wrap{display:block}
+  #cardTabelaTecnicos .table-wrap{display:block}
   .toolbar{gap:8px}
   .search-box{max-width:none;min-width:100%;order:-1}
 }
@@ -495,12 +505,12 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         <div class="toolbar">
           <div class="form-hint" id="competenciaTecnicosLabel" style="font-size:13px"></div>
         </div>
-        <div class="table-wrap">
-          <table id="tabelaTecnicos"><thead></thead><tbody></tbody></table>
+        <p class="form-hint" id="avisoIndicadoresTecnicos" style="margin-bottom:10px;display:none"></p>
+        <div class="card" id="cardTabelaTecnicos">
+          <div class="table-wrap">
+            <table id="tabelaTecnicos"><thead></thead><tbody></tbody></table>
+          </div>
         </div>
-        <div class="mobile-cards" id="cardsTecnicos"></div>
-        <p class="form-hint" id="avisoIndicadoresTecnicos" style="margin-top:10px;display:none"></p>
-
       </section>
 
       <section class="view" id="view-plantoes">
@@ -521,7 +531,11 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
             <label>Dias permitidos para folga</label>
             <div class="dias-permitidos-row" id="diasPermitidosRow"></div>
           </div>
-          <div class="tec-resumo-chips" id="resumoFolgasTecnicos" style="margin-top:14px"></div>
+          <div class="plantoes-dias-permitidos" style="margin-top:12px">
+            <label id="resumoPlantoesRotulo">Plantões no mês</label>
+            <div class="tec-resumo-chips" id="resumoFolgasTecnicos"></div>
+            <p class="form-hint" id="resumoPlantoesNota" style="margin-top:8px;font-size:11.5px"></p>
+          </div>
         </div>
 
         <!-- 2. Escala de Plantões + 3. Folgas (mesma planilha) -->
@@ -736,7 +750,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.04.3';
+const APP_VERSAO='2026.08.06.9';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1029,37 +1043,206 @@ function filtrarPlantoesNaoBloqueados(plantoes,config){
 function tecnicoEmFerias(tecnicoId,dataISO,feriasList){
   return feriasList.some(f=>f.tecnicoId===tecnicoId && dataISO>=f.dataInicio && dataISO<=f.dataFim);
 }
-async function tecnicoIdsPlantaoAnterior(dataRefISO){
-  const anteriores=(await dbGetAll('plantoes')).filter(p=>p.data<dataRefISO);
-  if(anteriores.length===0)return [];
-  const maisRecente=anteriores.reduce((a,b)=>a.data>b.data?a:b);
-  return maisRecente.tecnicoIds.filter(Boolean);
+/* ===================== MOTOR DA ESCALA =====================
+   Regras, em ordem de força:
+   1. Ninguém escalado durante um período de férias/treinamento/afastamento.
+      Esta nunca é relaxada: preferimos a vaga vazia.
+   2. Ninguém escalado na semana que antecede as próprias férias.
+   3. Ninguém repetido nos dois plantões seguidos anteriores.
+   Dentro do que sobra, quem tem MENOS plantões no ano vem primeiro — é o que
+   mantém o equilíbrio anual e compensa nos meses seguintes quem ficou para trás.
+   As regras 2 e 3 são afrouxadas, nessa ordem, só quando não sobra ninguém.
+
+   Escolha manual do usuário nunca é tocada por nada disto. */
+const DIAS_ANTES_FERIAS=7;
+
+function diasEntreISO(a,b){return Math.round((parseISO(b)-parseISO(a))/86400000);}
+function proximoDeFerias(tecnicoId,iso,feriasList){
+  return feriasList.some(f=>f.tecnicoId===tecnicoId&&f.dataInicio>iso&&diasEntreISO(iso,f.dataInicio)<=DIAS_ANTES_FERIAS);
 }
+/* Disponível de verdade naquela data: não é o status de hoje que manda, e sim o
+   período cadastrado contra a data do plantão. */
+function tecnicoDisponivelNaData(t,iso,feriasList){
+  if(t.status==='desligado'||t.status==='noturno')return false;
+  if(STATUS_POR_AUSENCIA.includes(t.status)&&!feriasList.some(f=>f.tecnicoId===t.id))return false;
+  if(tecnicoEmFerias(t.id,iso,feriasList))return false;
+  return true;
+}
+/* O total que aparece na tela e que orienta a distribuição sai sempre dos
+   plantões gravados — nunca de um contador que vai desviando a cada edição. */
+async function contagemPlantoesAno(ano){
+  const mapa=new Map();
+  for(const p of await dbGetAll('plantoes')){
+    if(!p.data.startsWith(String(ano)))continue;
+    for(const id of p.tecnicoIds)if(id)mapa.set(id,(mapa.get(id)||0)+1);
+  }
+  return mapa;
+}
+async function sincronizarContadoresPlantao(ano){
+  const mapa=await contagemPlantoesAno(ano);
+  for(const t of await dbGetAll('tecnicos')){
+    const n=mapa.get(t.id)||0;
+    if(t.contadorPlantoes!==n){t.contadorPlantoes=n;await dbPut('tecnicos',t);}
+  }
+  return mapa;
+}
+/* Escolhe um técnico para uma vaga, aplicando as camadas de regra.
+   A ordem de desempate importa: primeiro o mês, para ninguém fechar novembro com
+   4 enquanto outro fica com 2; depois o ano, que é o que faz quem ficou para
+   trás recuperar nos meses seguintes; depois quantas vezes o candidato já fez
+   dupla recentemente com quem já está nesta data, senão a escala congela em
+   pares fixos o ano todo. */
+function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,ultimaData,recentes1,recentes2,penalidadeDupla}){
+  if(!candidatos.length)return null;
+  const perto=(t)=>proximoDeFerias(t.id,iso,feriasList);
+  /* Só o plantão imediatamente anterior é impedimento duro — é o que a regra
+     pede. Barrar também o retrasado deixava exatamente dois candidatos numa
+     equipe de seis, e a escala congelava nas mesmas três duplas o ano inteiro.
+     O retrasado vira preferência, não proibição. */
+  const camadas=[
+    candidatos.filter(t=>!perto(t)&&!recentes1.has(t.id)),
+    candidatos.filter(t=>!perto(t)),
+    candidatos.filter(t=>!recentes1.has(t.id)),
+    candidatos
+  ];
+  const mes=(t)=>contagemMes?(contagemMes.get(t.id)||0):0;
+  const dupla=(t)=>penalidadeDupla?penalidadeDupla(t):0;
+  const retrasado=(t)=>recentes2.has(t.id)?1:0;
+  const ordem=(lista)=>lista.slice().sort((a,b)=>
+    (mes(a)-mes(b))
+    ||((contagem.get(a.id)||0)-(contagem.get(b.id)||0))
+    ||(dupla(a)-dupla(b))
+    ||(retrasado(a)-retrasado(b))
+    ||((ultimaData.get(a.id)||'').localeCompare(ultimaData.get(b.id)||''))
+    ||a.nome.localeCompare(b.nome,'pt-BR'));
+  for(const c of camadas)if(c.length)return ordem(c)[0];
+  return null;
+}
+/* Reconstrói as vagas automáticas de um intervalo inteiro de uma vez. Ver a
+   escala como um todo é o que permite equilibrar o ano; decidir data a data,
+   como antes, só equilibrava dentro do mês. */
+async function montarEscala(dataInicioISO,dataFimISO){
+  if(!dataInicioISO||!dataFimISO||dataInicioISO>dataFimISO)return{criados:0,ajustados:0,vagasVazias:0};
+  const config=await getConfig();
+  const qtd=Math.max(1,config.qtdTecnicosPorPlantao||2);
+  const feriados=await listaFeriadosISO();
+  const tecnicos=await dbGetAll('tecnicos');
+  const feriasList=await dbGetAll('ferias');
+  const ano=Number(dataInicioISO.slice(0,4));
+  const plantoesAno=(await dbGetAll('plantoes')).filter(p=>p.data.startsWith(String(ano)));
+  const porData=new Map(plantoesAno.map(p=>[p.data,p]));
+
+  /* Datas do intervalo que precisam de plantão, fora os meses bloqueados. */
+  const aRecalcular=new Set();
+  for(let d=parseISO(dataInicioISO);d<=parseISO(dataFimISO);d=addDays(d,1)){
+    const iso=toISO(d);
+    if(mesEscalaBloqueado(config,iso.slice(0,7)))continue;
+    if(d.getDay()===0||feriados.has(iso))aRecalcular.add(iso);
+  }
+
+  /* Linha do tempo do ano inteiro: o que está fora do intervalo entra fixo e
+     conta para o equilíbrio, porque já aconteceu ou está bloqueado. */
+  const datasAno=new Set([...porData.keys(),...aRecalcular]);
+  const linha=[...datasAno].sort().map(iso=>({iso,ids:new Set()}));
+  const contagem=new Map(tecnicos.map(t=>[t.id,0]));
+  const contagemPorMes=new Map();   // 'AAAA-MM' -> Map(id -> plantões no mês)
+  const ultimaData=new Map();
+  const mesDe=(iso)=>{
+    const m=iso.slice(0,7);
+    if(!contagemPorMes.has(m))contagemPorMes.set(m,new Map());
+    return contagemPorMes.get(m);
+  };
+  const marcar=(no,id)=>{
+    no.ids.add(id);
+    contagem.set(id,(contagem.get(id)||0)+1);
+    const cm=mesDe(no.iso);
+    cm.set(id,(cm.get(id)||0)+1);
+    ultimaData.set(id,no.iso);
+  };
+
+  let criados=0,ajustados=0,vagasVazias=0;
+  for(const no of linha){
+    const existente=porData.get(no.iso);
+    if(!aRecalcular.has(no.iso)){
+      /* Fora do recálculo: entra como está. */
+      if(existente)existente.tecnicoIds.forEach(id=>{if(id)marcar(no,id);});
+      continue;
+    }
+    const alvo=existente||{data:no.iso,diaSemana:DIAS_SEMANA[parseISO(no.iso).getDay()],
+      tipo:feriados.has(no.iso)?'feriado':'domingo',tecnicoIds:[],origem:[],
+      status:'gerado',criadoEm:new Date().toISOString()};
+    if(!alvo.origem)alvo.origem=alvo.tecnicoIds.map(()=>'auto');
+    while(alvo.origem.length<alvo.tecnicoIds.length)alvo.origem.push('auto');
+    while(alvo.tecnicoIds.length<qtd){alvo.tecnicoIds.push(null);alvo.origem.push('auto');}
+    const antes=[...alvo.tecnicoIds];
+
+    /* Primeiro as escolhas manuais: elas são intocáveis e já ocupam vaga. */
+    for(let i=0;i<alvo.tecnicoIds.length;i++){
+      if(alvo.origem[i]==='manual'&&alvo.tecnicoIds[i])marcar(no,alvo.tecnicoIds[i]);
+      else if(alvo.origem[i]!=='manual')alvo.tecnicoIds[i]=null;
+    }
+    const idx=linha.indexOf(no);
+    const recentes1=idx>0?linha[idx-1].ids:new Set();
+    const recentes2=idx>1?linha[idx-2].ids:new Set();
+    for(let i=0;i<alvo.tecnicoIds.length;i++){
+      if(alvo.origem[i]==='manual')continue;
+      const candidatos=tecnicos.filter(t=>!no.ids.has(t.id)&&tecnicoDisponivelNaData(t,no.iso,feriasList));
+      /* Quantas vezes, nos últimos plantões, o candidato dividiu a data com
+         alguém que já está escalado aqui. */
+      const janela=linha.slice(Math.max(0,idx-4),idx);
+      const penalidadeDupla=(t)=>janela.reduce((acc,ant)=>
+        acc+([...no.ids].some(j=>ant.ids.has(j)&&ant.ids.has(t.id))?1:0),0);
+      const escolhido=escolherTecnico({candidatos,iso:no.iso,feriasList,contagem,
+        contagemMes:mesDe(no.iso),ultimaData,recentes1,recentes2,penalidadeDupla});
+      if(escolhido){alvo.tecnicoIds[i]=escolhido.id;marcar(no,escolhido.id);}
+      else vagasVazias++;
+    }
+
+    /* Quem saiu de uma vaga automática perde a folga daquele plantão. */
+    if(existente){
+      for(const antigo of antes){
+        if(antigo&&!alvo.tecnicoIds.includes(antigo))await removerFolgaSeExistir(alvo.id,antigo);
+      }
+      const mudou=antes.some((v,i)=>v!==alvo.tecnicoIds[i]);
+      if(mudou){alvo.status='editado';await dbPut('plantoes',alvo);ajustados++;}
+    } else {
+      const id=await dbAdd('plantoes',alvo);
+      for(const tid of alvo.tecnicoIds)if(tid)await addHistoricoPlantao(id,tid,'escalado',`Escalado automaticamente para ${fmtBR(no.iso)}`);
+      criados++;
+    }
+  }
+  await sincronizarContadoresPlantao(ano);
+  return{criados,ajustados,vagasVazias};
+}
+/* Usado nas substituições pontuais (férias cadastradas, técnico removido de uma
+   vaga). Segue as mesmas regras da geração para não desequilibrar o ano. */
 async function selecionarProximosTecnicos(n,excluir=[],dataRef=null){
   const tecnicos=await dbGetAll('tecnicos');
   const feriasList=await dbGetAll('ferias');
-  const idsPlantaoAnterior=dataRef?await tecnicoIdsPlantaoAnterior(dataRef):[];
-  const elegivelBase=(t)=>{
-    if(excluir.includes(t.id))return false;
-    if(t.status!=='ativo')return false;
-    if(dataRef && tecnicoEmFerias(t.id,dataRef,feriasList))return false;
-    return true;
-  };
-  let elegiveis=tecnicos.filter(t=>elegivelBase(t)&&!idsPlantaoAnterior.includes(t.id));
-  if(elegiveis.length<n){
-    elegiveis=tecnicos.filter(elegivelBase);
+  const iso=dataRef||toISO(new Date());
+  const contagem=await contagemPlantoesAno(Number(iso.slice(0,4)));
+  const plantoes=ordenarLista(await dbGetAll('plantoes'),'data',1);
+  const contagemMes=new Map();
+  plantoes.filter(p=>p.data.slice(0,7)===iso.slice(0,7))
+    .forEach(p=>p.tecnicoIds.forEach(id=>{if(id)contagemMes.set(id,(contagemMes.get(id)||0)+1);}));
+  const anteriores=plantoes.filter(p=>p.data<iso);
+  const recentes1=new Set((anteriores[anteriores.length-1]||{tecnicoIds:[]}).tecnicoIds.filter(Boolean));
+  const recentes2=new Set((anteriores[anteriores.length-2]||{tecnicoIds:[]}).tecnicoIds.filter(Boolean));
+  const ultimaData=new Map();
+  plantoes.forEach(p=>p.tecnicoIds.forEach(id=>{if(id)ultimaData.set(id,p.data);}));
+  const escolhidos=[];
+  const fora=new Set(excluir);
+  for(let k=0;k<n;k++){
+    const candidatos=tecnicos.filter(t=>!fora.has(t.id)&&tecnicoDisponivelNaData(t,iso,feriasList));
+    const t=escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,ultimaData,recentes1,recentes2});
+    if(!t)break;
+    escolhidos.push(t.id);
+    fora.add(t.id);
+    contagem.set(t.id,(contagem.get(t.id)||0)+1);
+    contagemMes.set(t.id,(contagemMes.get(t.id)||0)+1);
+    ultimaData.set(t.id,iso);
   }
-  elegiveis.sort((a,b)=>(a.contadorPlantoes-b.contadorPlantoes)||((a.ultimaOrdem||0)-(b.ultimaOrdem||0))||a.nome.localeCompare(b.nome,'pt-BR'));
-  const selecionados=elegiveis.slice(0,n);
-  const config=await getConfig();
-  for(const t of selecionados){
-    t.contadorPlantoes=(t.contadorPlantoes||0)+1;
-    config.sequenciaGlobal=(config.sequenciaGlobal||0)+1;
-    t.ultimaOrdem=config.sequenciaGlobal;
-    await dbPut('tecnicos',t);
-  }
-  await dbPut('configuracoes',config);
-  return selecionados.map(t=>t.id);
+  return escolhidos;
 }
 async function listaFeriadosISO(){
   const fs=await dbGetAll('feriados');
@@ -1104,49 +1287,11 @@ async function garantirFeriadosAno(ano){
   if(criados>0)await registrarHistoricoGeral('config','feriado',`${criados} feriado(s) de ${ano} adicionados automaticamente (calendário de Teresina/PI)`);
   return criados;
 }
-async function gerarEscala(dataInicioISO,dataFimISO){
-  if(!dataInicioISO||!dataFimISO||dataInicioISO>dataFimISO){toast('Informe um período válido','erro');return [];}
-  const feriados=await listaFeriadosISO();
-  const existentes=await dbGetAll('plantoes');
-  const datasExistentes=new Set(existentes.map(p=>p.data));
-  const config=await getConfig();
-  const qtd=config.qtdTecnicosPorPlantao||2;
-  let cur=parseISO(dataInicioISO);
-  const fim=parseISO(dataFimISO);
-  const criados=[];
-  while(cur<=fim){
-    const iso=toISO(cur);
-    const feriado=feriados.has(iso);
-    const domingo=cur.getDay()===0;
-    /* Mês bloqueado não recebe plantão novo, nem pela varredura automática do ano. */
-    if(mesEscalaBloqueado(config,iso.slice(0,7))){cur=addDays(cur,1);continue;}
-    if((domingo||feriado)&&!datasExistentes.has(iso)){
-      const ids=await selecionarProximosTecnicos(qtd,[],iso);
-      if(ids.length<qtd) await registrarHistoricoGeral('plantoes','alerta',`Técnicos insuficientes para escalar ${fmtBR(iso)} (necessário ${qtd}, disponível ${ids.length})`);
-      const plantao={data:iso,diaSemana:DIAS_SEMANA[cur.getDay()],tipo:feriado?'feriado':'domingo',tecnicoIds:ids,origem:ids.map(()=>'auto'),status:'gerado',criadoEm:new Date().toISOString()};
-      const id=await dbAdd('plantoes',plantao);
-      for(const tid of ids) await addHistoricoPlantao(id,tid,'escalado',`Escalado automaticamente para ${fmtBR(iso)}`);
-      criados.push(plantao);
-    }
-    cur=addDays(cur,1);
-  }
-  if(criados.length>0)await registrarHistoricoGeral('plantoes','geracao',`Escala gerada de ${fmtBR(dataInicioISO)} a ${fmtBR(dataFimISO)}: ${criados.length} plantão(ões) novo(s)`);
-  return criados;
-}
-async function garantirEscalaAnoAtual(){
-  const ano=new Date().getFullYear();
-  await gerarEscala(`${ano}-01-01`,`${ano}-12-31`);
-}
 async function trocarTecnicoPlantao(plantaoId,idx,antigoId,novoId){
   const plantao=await dbGet('plantoes',plantaoId);
-  if(antigoId){
-    const antigo=await dbGet('tecnicos',antigoId);
-    if(antigo){antigo.contadorPlantoes=Math.max(0,(antigo.contadorPlantoes||0)-1);await dbPut('tecnicos',antigo);}
-  }
   const config=await getConfig();
   const novo=await dbGet('tecnicos',novoId);
   config.sequenciaGlobal=(config.sequenciaGlobal||0)+1;
-  novo.contadorPlantoes=(novo.contadorPlantoes||0)+1;
   novo.ultimaOrdem=config.sequenciaGlobal;
   await dbPut('tecnicos',novo);
   await dbPut('configuracoes',config);
@@ -1164,8 +1309,6 @@ async function excluirPlantao(plantaoId){
   if(!plantao)return;
   for(const tid of plantao.tecnicoIds){
     if(!tid)continue;
-    const t=await dbGet('tecnicos',tid);
-    if(t){t.contadorPlantoes=Math.max(0,(t.contadorPlantoes||0)-1);await dbPut('tecnicos',t);}
     await removerFolgaSeExistir(plantaoId,tid);
   }
   await addHistoricoPlantao(plantaoId,null,'excluido',`Plantão de ${fmtBR(plantao.data)} excluído`);
@@ -1179,8 +1322,6 @@ async function substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim){
   const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=dataInicio&&p.data<=dataFim),cfgBloq);
   for(const p of afetados){
     const idx=p.tecnicoIds.indexOf(tecnicoId);
-    const tecnico=await dbGet('tecnicos',tecnicoId);
-    if(tecnico){tecnico.contadorPlantoes=Math.max(0,(tecnico.contadorPlantoes||0)-1);await dbPut('tecnicos',tecnico);}
     const excluir=p.tecnicoIds.filter((x,i)=>i!==idx&&x);
     excluir.push(tecnicoId);
     const [novoId]=await selecionarProximosTecnicos(1,excluir,p.data);
@@ -1248,7 +1389,7 @@ async function removerFolgaSeExistir(plantaoId,tecnicoId){
 const MENU=[
   {id:'inicio',label:'Início',icon:'home'},
   {id:'tecnicos',label:'Técnicos',icon:'users'},
-  {id:'plantoes',label:'Plantões',icon:'calendar'},
+  {id:'plantoes',label:'Controle Operacional',icon:'calendar'},
   {id:'valores',label:'Valores',icon:'cash'},
   {id:'diastrabalhados',label:'Dias Trabalhados',icon:'clock'},
   {id:'importacao',label:'Importação de Bases',icon:'upload'},
@@ -1271,7 +1412,7 @@ async function irParaView(viewId){
   document.getElementById('sidebarBackdrop').classList.remove('show');
   if(viewId==='inicio')await renderInicio();
   else if(viewId==='tecnicos')await renderTecnicos();
-  else if(viewId==='plantoes'){await garantirEscalaAnoAtual();await renderPlantoes();}
+  else if(viewId==='plantoes')await renderPlantoes();
   else if(viewId==='valores')await renderValores();
   else if(viewId==='diastrabalhados')await renderDiasTrabalhados();
   else if(viewId==='importacao')await renderImportacao();
@@ -1454,7 +1595,6 @@ function abrirModalIndicador(tipo,indicadores){
 }
 
 /* ===================== VIEW: TÉCNICOS ===================== */
-let ordTecnicos={key:'login',dir:1};
 function avatarTecnico(nome){
   return `<span class="tec-avatar">${icon('user',15)}</span>`;
 }
@@ -1617,20 +1757,11 @@ function renderVolumeDiarioTecnicos(linhas,competenciaAlvo){
   });
 }
 
+/* Mesmas colunas e mesmo layout da aba Valores, sem nada em reais: aqui só o
+   desempenho de cada técnico. O dinheiro que esses indicadores geram fica na aba
+   Valores. A lista traz todos os técnicos do cadastro, inclusive desligados,
+   porque esta é a aba do quadro. */
 async function renderTecnicos(){
-  const tbody=document.querySelector('#tabelaTecnicos tbody');
-  const thead=document.querySelector('#tabelaTecnicos thead');
-  thead.innerHTML=`<tr>
-    <th data-key="login">Técnico</th>
-    <th>Contratos</th><th>Produção</th><th>% Rev.</th><th>Rev. 10d</th><th>TEC1</th><th>Fora Jan.</th><th>NR35</th><th>T1</th><th>Situação</th></tr>`;
-  thead.querySelectorAll('th[data-key]').forEach(th=>th.addEventListener('click',()=>{
-    ordTecnicos.dir=ordTecnicos.key===th.dataset.key?-ordTecnicos.dir:1;
-    ordTecnicos.key=th.dataset.key;
-    renderTecnicos();
-  }));
-  let lista=await dbGetAll('tecnicos');
-  lista=ordenarLista(lista,ordTecnicos.key,ordTecnicos.dir);
-
   const competencias=await garantirCompetenciaSelecionada();
   const compLabelEl=document.getElementById('competenciaTecnicosLabel');
   if(competencias.length===0){
@@ -1645,69 +1776,46 @@ async function renderTecnicos(){
   const avisoEl=document.getElementById('avisoIndicadoresTecnicos');
   if(indicadores.ok){avisoEl.style.display='none';}
   else{avisoEl.style.display='block';avisoEl.innerHTML=mensagemIndicadoresIndisponiveis(indicadores.motivo);}
-  const celulaInd=(t,chave,fmt)=>{
-    const ind=porId[t.id];
-    return ind?fmt(ind[chave]):'—';
-  };
-  const celulaIndCor=(t,chave,tipo,fmt)=>{
-    const ind=porId[t.id];
-    const valor=ind?ind[chave]:null;
-    if(valor==null)return '—';
-    return `<span class="badge ${badgeClasseNivel(nivelIndicador(valor,tipo))}">${fmt(valor)}</span>`;
-  };
 
-  const cards=document.getElementById('cardsTecnicos');
+  const thead=document.querySelector('#tabelaTecnicos thead');
+  thead.innerHTML=`<tr>
+    <th>Técnico</th>
+    ${CRITERIOS_VALORES.map(c=>`<th><div class="val-th-title">${c.label}</div></th>`).join('')}
+    <th><div class="val-th-title">Situação</div></th>
+  </tr>`;
+
+  const lista=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const tbody=document.querySelector('#tabelaTecnicos tbody');
   if(lista.length===0){
-    tbody.innerHTML=`<tr class="empty-row"><td colspan="10">Nenhum técnico encontrado</td></tr>`;
-    cards.innerHTML=`<div class="mcard-empty">Nenhum técnico encontrado</div>`;
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="${CRITERIOS_VALORES.length+2}">Nenhum técnico encontrado</td></tr>`;
     return;
   }
   tbody.innerHTML=lista.map(t=>{
-    const sit=situacaoTecnico(porId[t.id]);
-    return `
-    <tr>
+    const ind=porId[t.id]||null;
+    return`<tr>
       <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)||'sem login'}</div></div></div></td>
-      <td>${celulaInd(t,'total',v=>v)}</td>
-      <td>${celulaIndCor(t,'mediaProducao','producao',fmtNum2)}</td>
-      <td>${celulaIndCor(t,'revPct','revisita',fmtPct1)}</td>
-      <td>${celulaInd(t,'revisitas',v=>v)}</td>
-      <td>${celulaIndCor(t,'tec1Pct','tec1',fmtPct1)}</td>
-      <td>${celulaInd(t,'tecFora',v=>v)}</td>
-      <td>${celulaIndCor(t,'nr35Pct','nr35',fmtPct1)}</td>
-      <td>${selectStatusCompliance(t.id,'statusT1',t.statusT1||'pendente')}</td>
-      <td><span class="badge ${sit.cls}">${sit.label}</span></td>
-    </tr>`;}).join('');
-  cards.innerHTML=lista.map(t=>{
-    const sit=situacaoTecnico(porId[t.id]);
-    return `
-    <div class="mcard">
-      <div class="mcard-head">
-        <div class="tec-cell">${avatarTecnico(t.nome)}<div><div class="mcard-title">${escapeHtml(t.nome)}</div><div class="mcard-sub">${escapeHtml(t.login)||'sem login'}</div></div></div>
-        <span class="badge ${sit.cls}">${sit.label}</span>
-      </div>
-      <div class="mcard-body">
-        <div class="mcard-row"><span class="lbl">Contratos</span><span class="val">${celulaInd(t,'total',v=>v)}</span></div>
-        <div class="mcard-row"><span class="lbl">Produção</span><span class="val">${celulaIndCor(t,'mediaProducao','producao',fmtNum2)}</span></div>
-        <div class="mcard-row"><span class="lbl">% Rev. / Rev. 10d</span><span class="val">${celulaIndCor(t,'revPct','revisita',fmtPct1)} / ${celulaInd(t,'revisitas',v=>v)}</span></div>
-        <div class="mcard-row"><span class="lbl">TEC1</span><span class="val">${celulaIndCor(t,'tec1Pct','tec1',fmtPct1)}</span></div>
-        <div class="mcard-row"><span class="lbl">Fora Jan.</span><span class="val">${celulaInd(t,'tecFora',v=>v)}</span></div>
-        <div class="mcard-row"><span class="lbl">NR35</span><span class="val">${celulaIndCor(t,'nr35Pct','nr35',fmtPct1)}</span></div>
-        <div class="mcard-row"><span class="lbl">T1</span><span class="val">${selectStatusCompliance(t.id,'statusT1',t.statusT1||'pendente')}</span></div>
-      </div>
-    </div>`;}).join('');
-  document.querySelectorAll('#view-tecnicos .status-compliance-sel').forEach(sel=>sel.addEventListener('change',async()=>{
+      ${CRITERIOS_VALORES.map(c=>`<td>${celulaCriterioIndicador(c,ind,t)}</td>`).join('')}
+      <td><span class="badge ${situacaoTecnico(ind).cls}">${situacaoTecnico(ind).label}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('#tabelaTecnicos .status-compliance-sel').forEach(sel=>sel.addEventListener('change',async()=>{
     await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value);
     toast('Status atualizado','sucesso');
+    renderTecnicos();
   }));
 }
 
 /* ===================== VIEW: VALORES (comissão dos técnicos) ===================== */
+/* A ordem desta lista é a ordem das colunas nas abas Técnicos e Valores. O peso
+   de cada critério continua valendo no cálculo, só não aparece mais no
+   cabeçalho. */
 const CRITERIOS_VALORES=[
-  {key:'revisita',label:'% Rev.',pct:30,campo:'revPct',tipoNivel:'revisita',fmt:fmtPct1},
-  {key:'tec1',label:'TEC1',pct:25,campo:'tec1Pct',tipoNivel:'tec1',fmt:fmtPct1},
   {key:'producao',label:'Produção',pct:20,campo:'mediaProducao',tipoNivel:'producao',fmt:fmtNum2},
+  {key:'revisita',label:'Revisita',pct:30,campo:'revPct',tipoNivel:'revisita',fmt:fmtPct1},
+  {key:'tec1',label:'TEC1',pct:25,campo:'tec1Pct',tipoNivel:'tec1',fmt:fmtPct1},
   {key:'nr35',label:'NR35',pct:10,campo:'nr35Pct',tipoNivel:'nr35',fmt:fmtPct1},
-  {key:'certidao',label:'Certidão',pct:10,statusCampo:'statusCertidao'},
+  {key:'certidao',label:'Certidão de atendimento',pct:10,statusCampo:'statusCertidao'},
   {key:'t1',label:'T1',pct:5,statusCampo:'statusT1'}
 ];
 function calcularValorTecnico(tecnico,ind,valorTotal){
@@ -1727,6 +1835,18 @@ function calcularValorTecnico(tecnico,ind,valorTotal){
     return{...crit,valorMax,ganho,atingido,indisponivel};
   });
   return{detalhes,total};
+}
+/* Mesma célula da aba Valores, sem a linha de dinheiro: a aba Técnicos mostra
+   só o desempenho. */
+function celulaCriterioIndicador(crit,ind,tecnico){
+  if(crit.statusCampo){
+    const valorAtual=tecnico[crit.statusCampo]||'pendente';
+    return selectStatusCompliance(tecnico.id,crit.statusCampo,valorAtual);
+  }
+  const valor=ind?ind[crit.campo]:null;
+  if(valor==null)return`<span class="badge badge-slate">—</span>`;
+  const nivel=nivelIndicador(valor,crit.tipoNivel);
+  return`<span class="badge ${badgeClasseNivel(nivel)}">${crit.fmt(valor)} ${icon(nivel!=='vermelho'?'check':'x',11)}</span>`;
 }
 function celulaCriterioValor(crit,ind,tecnico,valorTotal){
   const valorMax=valorTotal*crit.pct/100;
@@ -1769,12 +1889,13 @@ async function renderValores(){
   const thead=document.querySelector('#tabelaValores thead');
   thead.innerHTML=`<tr>
     <th>Técnico</th>
-    ${CRITERIOS_VALORES.map(c=>`<th><div class="val-th-title">${c.label} &middot; ${c.pct}%</div><div class="val-th-sub">${fmtMoeda(valorTotal*c.pct/100)}</div></th>`).join('')}
+    ${CRITERIOS_VALORES.map(c=>`<th><div class="val-th-title">${c.label}</div><div class="val-th-sub">${fmtMoeda(valorTotal*c.pct/100)}</div></th>`).join('')}
     <th><div class="val-th-title">Total a receber</div></th>
   </tr>`;
 
-  let lista=await dbGetAll('tecnicos');
-  lista=lista.filter(t=>t.status!=='desligado').sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  /* Mesma lista e mesma ordem da aba Técnicos, para as duas telas poderem ser
+     lidas lado a lado sem conferir nome por nome. */
+  const lista=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const tbody=document.querySelector('#tabelaValores tbody');
   if(lista.length===0){
     tbody.innerHTML=`<tr class="empty-row"><td colspan="${CRITERIOS_VALORES.length+2}">Nenhum técnico encontrado</td></tr>`;
@@ -2798,11 +2919,33 @@ async function excluirTecnicoConfirm(id){
 }
 
 /* ===================== VIEW: PLANTÕES ===================== */
-async function tecnicosAtivosOptions(selecionadoId,excluirIds){
+/* A lista dependia do status de HOJE, então quem estivesse de férias agora
+   sumia do seletor de qualquer data do ano — inclusive de meses em que já teria
+   voltado. Agora vale a data do plantão. E quem está indisponível naquele dia
+   aparece desabilitado com o motivo, em vez de simplesmente não existir: sumir
+   sem explicação era o que dava a impressão de técnico faltando. */
+async function tecnicosAtivosOptions(selecionadoId,excluirIds,dataISO=null){
   const tecnicos=await dbGetAll('tecnicos');
-  return tecnicos.filter(t=>t.status==='ativo'||t.id===selecionadoId).filter(t=>!excluirIds.includes(t.id)||t.id===selecionadoId)
+  const feriasList=await dbGetAll('ferias');
+  const iso=dataISO||toISO(new Date());
+  const motivo=(t)=>{
+    const aus=feriasList.find(f=>f.tecnicoId===t.id&&iso>=f.dataInicio&&iso<=f.dataFim);
+    if(aus)return tipoAusencia(aus.tipo).l.toLowerCase();
+    if(STATUS_POR_AUSENCIA.includes(t.status)&&!feriasList.some(f=>f.tecnicoId===t.id))
+      return (OPCOES_STATUS_TECNICO.find(o=>o.v===t.status)||{l:''}).l.toLowerCase();
+    return null;
+  };
+  return tecnicos
+    .filter(t=>t.status!=='desligado'||t.id===selecionadoId)
+    .filter(t=>!excluirIds.includes(t.id)||t.id===selecionadoId)
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'))
-    .map(t=>`<option value="${t.id}" ${t.id===selecionadoId?'selected':''}>${escapeHtml(t.nome)}</option>`).join('');
+    .map(t=>{
+      const m=t.id===selecionadoId?null:motivo(t);
+      /* Noturno fica fora do rodízio automático, mas continua escolhível à mão:
+         alteração manual tem prioridade sobre qualquer regra do sistema. */
+      const nota=m?` — ${m}`:(t.status==='noturno'&&t.id!==selecionadoId?' — noturno':'');
+      return `<option value="${t.id}" ${t.id===selecionadoId?'selected':''} ${m?'disabled':''}>${escapeHtml(t.nome)}${nota}</option>`;
+    }).join('');
 }
 let mesSelecionadoPlantoes=null;
 function chaveMesPlantao(dataISO){return dataISO.slice(0,7);}
@@ -2810,7 +2953,13 @@ function labelMesPlantao(chave){
   const [ano,mes]=chave.split('-').map(Number);
   return `${MESES_COMPETENCIA[mes-1]}/${ano}`;
 }
-const DIAS_PERMITIDOS_PADRAO=['segunda','terca','quarta','quinta','sexta'];
+/* O seletor divide a linha com seis botões e fica estreito: "Agosto/2026" não
+   cabe e sai cortado. Nas mensagens o nome continua por extenso. */
+function labelMesPlantaoCurto(chave){
+  const [ano,mes]=chave.split('-').map(Number);
+  return `${MESES_COMPETENCIA[mes-1].slice(0,3)}/${ano}`;
+}
+const DIAS_PERMITIDOS_PADRAO=['segunda','terca','quarta','quinta','sexta','sabado'];
 /* ---- Bloqueio da escala ----
    Com o mês fechado, nada mais altera plantões e folgas: os botões de gerar,
    limpar e técnico extra ficam travados e os seletores da tabela viram leitura. */
@@ -2858,14 +3007,35 @@ function aplicarBloqueioNaTela(bloqueado){
   if(bloqueado&&!jaTem)titulo.insertAdjacentHTML('beforeend',' <span class="badge badge-red">Bloqueada</span>');
   else if(!bloqueado&&jaTem)jaTem.remove();
 }
-function renderResumoFolgasTecnicos(tecnicos,folgasDoMes){
+/* Os chips mostram o mês que está aberto. A distribuição continua se equilibrando
+   pelo ano inteiro — o que aparece aqui é a leitura do mês, não o critério. */
+function renderResumoPlantoesTecnicos(tecnicos,listaMes,mesChave){
   const box=document.getElementById('resumoFolgasTecnicos');
+  const rotulo=document.getElementById('resumoPlantoesRotulo');
+  if(rotulo)rotulo.textContent=`Plantões em ${mesChave?labelMesPlantao(mesChave):'—'}`;
   const contagem=new Map();
-  folgasDoMes.forEach(f=>contagem.set(f.tecnicoId,(contagem.get(f.tecnicoId)||0)+1));
-  const itens=tecnicos.filter(t=>t.status!=='desligado')
+  (listaMes||[]).forEach(p=>p.tecnicoIds.forEach(id=>{if(id)contagem.set(id,(contagem.get(id)||0)+1);}));
+  const itens=tecnicos.filter(t=>t.status!=='desligado'&&t.status!=='noturno')
     .map(t=>({nome:t.nome,qtd:contagem.get(t.id)||0}))
-    .sort((a,b)=>b.qtd-a.qtd||a.nome.localeCompare(b.nome,'pt-BR'));
-  box.innerHTML=itens.length?itens.map(it=>`<div class="tec-chip"><span>${escapeHtml(it.nome)}</span><strong>${it.qtd}</strong></div>`).join(''):'<div class="tec-chip"><span>Sem dados</span><strong>0</strong></div>';
+    .sort((a,b)=>a.qtd-b.qtd||a.nome.localeCompare(b.nome,'pt-BR'));
+  const nota=document.getElementById('resumoPlantoesNota');
+  if(!itens.length){
+    box.innerHTML='<div class="tec-chip"><span>Sem técnicos</span><strong>0</strong></div>';
+    if(nota)nota.textContent='';
+    return;
+  }
+  const menor=itens[0].qtd,maior=itens[itens.length-1].qtd;
+  const vagas=(listaMes||[]).reduce((a,p)=>a+p.tecnicoIds.filter(Boolean).length,0);
+  const rotuloMes=mesChave?labelMesPlantao(mesChave):'o mês';
+  const dica=maior>menor
+    ?`Em verde, quem ficou com menos plantões — entra na frente na próxima geração.`
+    :`Todos com a mesma quantidade neste mês.`;
+  /* A pergunta "por que fulano ficou com 1?" quase sempre é a divisão não fechar:
+     vale deixar a conta à vista em vez de deixar o verde se explicando sozinho. */
+  if(nota)nota.textContent=`${(listaMes||[]).length} data(s) × ${vagas&&(listaMes||[]).length?Math.round(vagas/(listaMes||[]).length):0} vaga(s) = ${vagas} lugares para ${itens.length} técnicos. ${dica}`;
+  box.innerHTML=itens.map(it=>
+    `<div class="tec-chip${maior>menor&&it.qtd===menor?' tec-chip-baixo':''}" title="${escapeHtml(it.nome)}: ${it.qtd} plantão(ões) em ${escapeHtml(rotuloMes)}${maior>menor&&it.qtd===menor?' — menor do mês, prioridade na próxima geração':''}"><span>${escapeHtml(it.nome)}</span><strong>${it.qtd}</strong></div>`
+  ).join('');
 }
 async function prepararLinhasPlantoesMes(mesChave){
   const todasPlantoes=ordenarLista(await dbGetAll('plantoes'),'data',1);
@@ -2890,14 +3060,21 @@ function sincronizarSelecaoMesAno(){
     const hojeChave=`${new Date().getFullYear()}-${pad(new Date().getMonth()+1)}`;
     mesSelecionadoPlantoes=MESES_ESCALA_DISPONIVEIS.includes(hojeChave)?hojeChave:MESES_ESCALA_DISPONIVEIS[0];
   }
-  selMes.innerHTML=MESES_ESCALA_DISPONIVEIS.map(chave=>`<option value="${chave}" ${chave===mesSelecionadoPlantoes?'selected':''}>${labelMesPlantao(chave)}</option>`).join('');
+  selMes.innerHTML=MESES_ESCALA_DISPONIVEIS.map(chave=>`<option value="${chave}" ${chave===mesSelecionadoPlantoes?'selected':''}>${labelMesPlantaoCurto(chave)}</option>`).join('');
 }
 async function sincronizarConfigEscala(){
   const config=await getConfig();
+  /* Sábado passou a ser dia de folga válido. Quem já tinha a configuração salva
+     não o teria em lugar nenhum, então ele entra uma vez — e some dali em diante
+     se for desmarcado. */
+  if(config.diasFolgaPermitidos&&config.diasFolgaPermitidos.length&&!config.sabadoLiberado){
+    if(!config.diasFolgaPermitidos.includes('sabado'))config.diasFolgaPermitidos.push('sabado');
+    config.sabadoLiberado=true;
+    await dbPut('configuracoes',config);
+  }
   const diasPermitidos=(config.diasFolgaPermitidos&&config.diasFolgaPermitidos.length)?config.diasFolgaPermitidos:DIAS_PERMITIDOS_PADRAO;
-  const diasPainel=DIAS_FOLGA.filter(d=>d.v!=='sabado');
   const row=document.getElementById('diasPermitidosRow');
-  row.innerHTML=diasPainel.map(d=>{
+  row.innerHTML=DIAS_FOLGA.map(d=>{
     const checked=diasPermitidos.includes(d.v);
     return `<label class="dia-check-pill ${checked?'checked':''}"><input type="checkbox" value="${d.v}" ${checked?'checked':''}> ${d.l}</label>`;
   }).join('');
@@ -2915,81 +3092,80 @@ async function sincronizarConfigEscala(){
     chk.closest('.dia-check-pill').classList.toggle('checked',chk.checked);
   }));
 }
+/* Sorteio estável: mesma semana, mesma ordem. Assim a folga varia de semana para
+   semana sem mudar de lugar toda vez que a geração roda de novo. */
+function embaralharComSemente(lista,semente){
+  const arr=lista.slice();
+  let h=2166136261;
+  for(let i=0;i<semente.length;i++)h=Math.imul(h^semente.charCodeAt(i),16777619)>>>0;
+  for(let i=arr.length-1;i>0;i--){
+    h=(Math.imul(h,1103515245)+12345)>>>0;
+    const j=h%(i+1);
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+/* Antes devolvia sempre o primeiro dia livre da lista. Com dois técnicos por
+   plantão isso significava usar eternamente os dois primeiros dias marcados e
+   deixar o resto da semana vazio. Agora entra o dia menos usado até aqui, e o
+   empate é resolvido por um sorteio próprio de cada semana — o uso se espalha
+   por todos os dias que você marcou. */
 async function proximoDiaFolgaLivre(dataPlantaoISO){
   const config=await getConfig();
   const diasPermitidos=(config.diasFolgaPermitidos&&config.diasFolgaPermitidos.length)?config.diasFolgaPermitidos:DIAS_PERMITIDOS_PADRAO;
   const monday=toISO(segundaDaSemanaFolga(dataPlantaoISO));
   const saturday=toISO(addDays(segundaDaSemanaFolga(dataPlantaoISO),5));
-  const folgasDaSemana=(await dbGetAll('folgas')).filter(f=>f.diaFolga>=monday&&f.diaFolga<=saturday);
-  const ocupados=new Set(folgasDaSemana.map(f=>f.diaSemana));
-  return diasPermitidos.find(d=>!ocupados.has(d))||null;
+  const todas=await dbGetAll('folgas');
+  const ocupados=new Set(todas.filter(f=>f.diaFolga>=monday&&f.diaFolga<=saturday).map(f=>f.diaSemana));
+  const livres=diasPermitidos.filter(d=>!ocupados.has(d));
+  if(!livres.length)return null;
+  /* O uso é contado dentro do próprio mês. Contar o ano inteiro fazia o
+     resultado depender do que já existia nos outros meses, e regerar o mesmo mês
+     duas vezes devolvia distribuições diferentes. */
+  const mes=dataPlantaoISO.slice(0,7);
+  const uso=new Map(diasPermitidos.map(d=>[d,0]));
+  todas.forEach(f=>{if(f.diaFolga.slice(0,7)===mes&&uso.has(f.diaSemana))uso.set(f.diaSemana,uso.get(f.diaSemana)+1);});
+  /* O sort é estável, então o sorteio da semana sobrevive aos empates de uso. */
+  return embaralharComSemente(livres,monday).sort((a,b)=>(uso.get(a)||0)-(uso.get(b)||0))[0];
 }
-async function redistribuirSlotsAutomaticos(dataInicioISO,dataFimISO,qtd){
-  const plantoes=ordenarLista((await dbGetAll('plantoes')).filter(p=>p.data>=dataInicioISO&&p.data<=dataFimISO),'data',1);
-  let mudancas=0;
-  for(const p of plantoes){
-    if(!p.origem)p.origem=p.tecnicoIds.map(()=>'auto');
-    while(p.origem.length<p.tecnicoIds.length)p.origem.push('auto');
-    while(p.tecnicoIds.length<qtd){p.tecnicoIds.push(null);p.origem.push('auto');}
-    const antigos=[...p.tecnicoIds];
-    for(let i=0;i<qtd;i++){
-      if(p.origem[i]==='manual')continue;
-      const tid=p.tecnicoIds[i];
-      if(tid){
-        const t=await dbGet('tecnicos',tid);
-        if(t){t.contadorPlantoes=Math.max(0,(t.contadorPlantoes||0)-1);await dbPut('tecnicos',t);}
-        await removerFolgaSeExistir(p.id,tid);
-      }
-      p.tecnicoIds[i]=null;
-    }
-    for(let i=0;i<qtd;i++){
-      if(p.origem[i]==='manual')continue;
-      const excluir=p.tecnicoIds.filter(Boolean);
-      const [novoId]=await selecionarProximosTecnicos(1,excluir,p.data);
-      p.tecnicoIds[i]=novoId||null;
-    }
-    let mudou=false;
-    for(let i=0;i<qtd;i++){
-      if(antigos[i]!==p.tecnicoIds[i]){
-        mudou=true;
-        if(p.tecnicoIds[i])await addHistoricoPlantao(p.id,p.tecnicoIds[i],'escalado',`Reorganizado automaticamente para ${fmtBR(p.data)}`);
-      }
-    }
-    if(mudou)mudancas++;
-    p.status='editado';
-    await dbPut('plantoes',p);
-  }
-  return mudancas;
-}
+/* O botão é o único caminho que recalcula a escala, e ele recalcula do mês
+   escolhido até 31 de dezembro — é assim que o equilíbrio anual se sustenta. */
 async function gerarEscalaSelecionada(){
   if(await bloquearSeNecessario())return;
   const [anoStr,mesStr]=document.getElementById('selMesEscala').value.split('-');
   const ano=Number(anoStr),mes=Number(mesStr);
   if(!ano||!mes)return;
-  const config=await getConfig();
-  const qtd=Math.max(1,config.qtdTecnicosPorPlantao||2);
   await garantirFeriadosAno(ano);
   const inicio=`${ano}-${pad(mes)}-01`;
-  const ultimoDia=new Date(ano,mes,0).getDate();
-  const fim=`${ano}-${pad(mes)}-${pad(ultimoDia)}`;
-  const criados=await gerarEscala(inicio,fim);
-  const mudancas=await redistribuirSlotsAutomaticos(inicio,fim,qtd);
+  const fim=`${ano}-12-31`;
+  const r=await montarEscala(inicio,fim);
   mesSelecionadoPlantoes=`${ano}-${pad(mes)}`;
   const partes=[];
-  if(criados.length)partes.push(`${criados.length} plantão(ões) novo(s)`);
-  if(mudancas)partes.push(`${mudancas} plantão(ões) reorganizado(s)`);
-  toast(partes.length?partes.join(' · '):'Escala já está de acordo com as regras (nada automático para alterar)','sucesso');
+  if(r.criados)partes.push(`${r.criados} plantão(ões) criado(s)`);
+  if(r.ajustados)partes.push(`${r.ajustados} reorganizado(s)`);
+  if(r.vagasVazias)partes.push(`${r.vagasVazias} vaga(s) sem técnico disponível`);
+  if(r.criados||r.ajustados){
+    await registrarHistoricoGeral('plantoes','geracao',
+      `Escala recalculada de ${labelMesPlantao(mesSelecionadoPlantoes)} até dezembro: ${r.criados} criado(s), ${r.ajustados} reorganizado(s)`);
+  }
+  toast(partes.length?partes.join(' · '):'Escala já estava equilibrada — nada a alterar',r.vagasVazias?'erro':'sucesso');
   renderPlantoes();
 }
 async function gerarFolgasAutomaticasMes(mesChave){
   const {listaMes}=await prepararLinhasPlantoesMes(mesChave);
   let geradas=0,falhas=0;
+  /* Apaga tudo que é automático no mês antes de recomeçar. Apagar e recriar uma
+     a uma fazia a escolha do dia contar as folgas velhas que ainda não tinham
+     sido substituídas, e a distribuição saía enviesada pelo estado anterior. */
+  for(const p of listaMes){
+    for(const f of await dbGetAllByIndex('folgas','plantaoId',p.id)){
+      if(f.origem!=='manual')await dbDelete('folgas',f.id);
+    }
+  }
   for(const p of listaMes){
     for(const tid of p.tecnicoIds.filter(Boolean)){
       const folgasP=await dbGetAllByIndex('folgas','plantaoId',p.id);
-      const existente=folgasP.find(f=>f.tecnicoId===tid);
-      if(existente&&existente.origem==='manual')continue;
-      if(existente)await dbDelete('folgas',existente.id);
+      if(folgasP.some(f=>f.tecnicoId===tid&&f.origem==='manual'))continue;
       const dia=await proximoDiaFolgaLivre(p.data);
       if(!dia){falhas++;continue;}
       const dataFolga=dataDoDiaFolga(p.data,dia);
@@ -3048,7 +3224,7 @@ async function abrirModalAdicionarExtra(plantaoIdPreSelecionado=null){
   const atualizarOpcoesTecnico=async()=>{
     const plantaoId=Number(document.getElementById('extraPlantao').value);
     const plantao=elegiveis.find(p=>p.id===plantaoId);
-    const opts=await tecnicosAtivosOptions(null,plantao.tecnicoIds.filter(Boolean));
+    const opts=await tecnicosAtivosOptions(null,plantao.tecnicoIds.filter(Boolean),plantao.data);
     document.getElementById('extraTecnico').innerHTML=`<option value="">Selecione...</option>${opts}`;
   };
   document.getElementById('extraPlantao').addEventListener('change',atualizarOpcoesTecnico);
@@ -3063,7 +3239,6 @@ async function adicionarTecnicoExtra(plantaoId,tecnicoId){
   while(plantao.tecnicoIds.length<qtdBase){plantao.tecnicoIds.push(null);plantao.origem.push('auto');}
   const tecnico=await dbGet('tecnicos',tecnicoId);
   config.sequenciaGlobal=(config.sequenciaGlobal||0)+1;
-  tecnico.contadorPlantoes=(tecnico.contadorPlantoes||0)+1;
   tecnico.ultimaOrdem=config.sequenciaGlobal;
   await dbPut('tecnicos',tecnico);
   await dbPut('configuracoes',config);
@@ -3111,8 +3286,6 @@ async function removerTecnicoExtra(plantaoId){
   const idx=qtdBase;
   const tecnicoId=plantao.tecnicoIds[idx];
   if(tecnicoId){
-    const tecnico=await dbGet('tecnicos',tecnicoId);
-    if(tecnico){tecnico.contadorPlantoes=Math.max(0,(tecnico.contadorPlantoes||0)-1);await dbPut('tecnicos',tecnico);}
     await removerFolgaSeExistir(plantaoId,tecnicoId);
     await addHistoricoPlantao(plantaoId,tecnicoId,'extra_removido',`Técnico extra removido do plantão de ${fmtBR(plantao.data)}`);
   }
@@ -3155,7 +3328,7 @@ async function renderTabelaEscala(){
     btnExtra.classList.add('btn-danger');
     btnExtra.onclick=()=>abrirModalRemoverExtra();
   } else {
-    btnExtra.innerHTML=icon('plus',15)+' Adicionar técnico extra';
+    btnExtra.innerHTML=icon('plus',15)+' Técnico extra';
     btnExtra.classList.remove('btn-danger');
     btnExtra.classList.add('btn-success');
     btnExtra.onclick=()=>abrirModalAdicionarExtra();
@@ -3172,7 +3345,7 @@ async function renderTabelaEscala(){
       const baseTecCells=await Promise.all(Array.from({length:qtdBase},(_,i)=>i).map(async i=>{
         const tid=p.tecnicoIds[i]||null;
         const excluir=p.tecnicoIds.filter((x,idx)=>idx!==i&&x);
-        const opts=await tecnicosAtivosOptions(tid,excluir);
+        const opts=await tecnicosAtivosOptions(tid,excluir,p.data);
         return `<td><select class="tec-select" data-plantao="${p.id}" data-idx="${i}" data-old="${tid||''}"><option value="">(vaga em aberto)</option>${opts}</select></td>`;
       }));
       const baseFolgaCells=Array.from({length:qtdBase},(_,i)=>i).map(i=>{
@@ -3187,7 +3360,7 @@ async function renderTabelaEscala(){
           const i=qtdBase;
           const tid=p.tecnicoIds[i]||null;
           const excluir=p.tecnicoIds.filter((x,idx)=>idx!==i&&x);
-          const opts=await tecnicosAtivosOptions(tid,excluir);
+          const opts=await tecnicosAtivosOptions(tid,excluir,p.data);
           extraTecCell=`<td><select class="tec-select" data-plantao="${p.id}" data-idx="${i}" data-old="${tid||''}"><option value="">(vaga em aberto)</option>${opts}</select></td>`;
           const folgaRecExtra=tid?folgasP.find(f=>f.tecnicoId===tid):null;
           const diasOcupadosExtra=new Set(folgasP.filter(f=>f.tecnicoId!==tid).map(f=>f.diaSemana));
@@ -3247,7 +3420,9 @@ async function renderTabelaEscala(){
   const plantaoIdsDoMes=new Set(listaMes.map(p=>p.id));
   const todasFolgas=await dbGetAll('folgas');
   const folgasDoMes=todasFolgas.filter(f=>plantaoIdsDoMes.has(f.plantaoId));
-  renderResumoFolgasTecnicos(tecnicos,folgasDoMes);
+  const anoEscala=Number(String(mesSelecionadoPlantoes||'').slice(0,4))||new Date().getFullYear();
+  await sincronizarContadoresPlantao(anoEscala);   // mantém o total anual certo por trás
+  renderResumoPlantoesTecnicos(tecnicos,listaMes,mesSelecionadoPlantoes);
   document.getElementById('kpiPlantoesTotal').textContent=listaMes.reduce((a,p)=>a+p.tecnicoIds.filter(Boolean).length,0);
   document.getElementById('kpiFolgasTotal').textContent=folgasDoMes.length;
   aplicarBloqueioNaTela(mesEscalaBloqueado(config,mesSelecionadoPlantoes));
@@ -3937,8 +4112,6 @@ async function salvarStatusTecnico(tecnicoId,novoStatus){
     const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=hoje),cfgBloq);
     for(const p of afetados){
       const idx=p.tecnicoIds.indexOf(tecnicoId);
-      t.contadorPlantoes=Math.max(0,(t.contadorPlantoes||0)-1);
-      await dbPut('tecnicos',t);
       const excluir=p.tecnicoIds.filter((x,i)=>i!==idx&&x);
       excluir.push(tecnicoId);
       const [novoId]=await selecionarProximosTecnicos(1,excluir,p.data);
