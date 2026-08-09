@@ -750,7 +750,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.07.2';
+const APP_VERSAO='2026.08.09.1';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -2055,6 +2055,10 @@ function tecnicoExcluidoDias(nome){
 }
 function tecnicoAppPorNomePlanilha(tecnicos,nomePlanilha){
   const alvo=headDias(nomePlanilha);
+  /* Primeiro os apelidos cadastrados no próprio técnico: é o que permite ligar
+     alguém novo à planilha sem depender da tabela fixa aqui embaixo. */
+  const porCadastro=tecnicos.find(t=>(t.nomesPlanilha||[]).some(n=>headDias(n)===alvo));
+  if(porCadastro)return porCadastro;
   const alias=ALIAS_PLANILHA_DIAS.find(a=>a.planilha.some(n=>headDias(n)===alvo));
   const nomeApp=alias?headDias(alias.app):alvo;
   return tecnicos.find(t=>headDias(t.nome)===nomeApp)||null;
@@ -2880,16 +2884,17 @@ function abrirModalTecnico(id=null){
       bodyHtml:`
         <div class="form-group"><label>Nome</label><input type="text" id="mtNome" value="${tecnico?escapeHtml(tecnico.nome):''}"></div>
         <div class="form-row">
-          <div class="form-group"><label>Login</label><input type="text" id="mtLogin" value="${tecnico?escapeHtml(tecnico.login):''}"></div>
+          <div class="form-group"><label>Login</label><input type="text" id="mtLogin" value="${tecnico?escapeHtml(tecnico.login):''}" placeholder="Z000000"></div>
           <div class="form-group"><label>Telefone</label><input type="text" id="mtTelefone" value="${tecnico?escapeHtml(tecnico.telefone):''}"></div>
         </div>
+        <p class="form-hint" style="margin:-6px 0 12px">O login é a chave que liga o técnico à base importada. Sem ele, o técnico não aparece nos indicadores nem na aba Valores.</p>
         <div class="form-group"><label>Status</label>
-          <select id="mtStatus">
-            <option value="ativo">Ativo</option><option value="ferias">Férias</option>
-            <option value="noturno">Técnico noturno (não pega plantão)</option>
-            <option value="afastado">Afastado</option><option value="desligado">Desligado</option>
-          </select>
+          <select id="mtStatus">${OPCOES_STATUS_TECNICO.map(o=>`<option value="${o.v}">${o.l}${o.v==='noturno'?' (não pega plantão)':''}</option>`).join('')}</select>
         </div>
+        <div class="form-group"><label>Nome(s) na planilha de dias trabalhados</label>
+          <input type="text" id="mtNomesPlanilha" value="${tecnico?escapeHtml((tecnico.nomesPlanilha||[]).join(', ')):''}" placeholder="Ex: KLEYTON, KLEYTON SOUSA">
+        </div>
+        <p class="form-hint" style="margin:-6px 0 4px">Preencha se a planilha online escreve o nome dele de forma diferente. Separe por vírgula. Sem isso, o lançamento dele cai como contingência em vez de contar para a equipe.</p>
         <div id="mtErro" class="form-error" style="display:none"></div>`,
       footButtons:[
         ...(tecnico?[{label:'Excluir',classe:'btn-danger',onClick:async()=>{fecharModal();await excluirTecnicoConfirm(tecnico.id);}}]:[]),
@@ -2898,26 +2903,62 @@ function abrirModalTecnico(id=null){
           const nome=document.getElementById('mtNome').value.trim();
           const erroEl=document.getElementById('mtErro');
           if(!nome){erroEl.style.display='block';erroEl.textContent='Informe o nome do técnico';return;}
+          const login=document.getElementById('mtLogin').value.trim();
+          if(!login){
+            const seguir=await confirmarAcao('Sem o login, este técnico <strong>não vai aparecer nos indicadores nem na aba Valores</strong>, porque é o login que liga o cadastro à base importada. Salvar mesmo assim?');
+            if(!seguir)return;
+          }
+          /* Nada de `id:undefined` aqui: a store usa keyPath 'id' com
+             autoIncrement, e mandar a propriedade presente porém vazia faz o
+             IndexedDB recusar a gravação — era por isso que cadastrar técnico
+             novo não salvava nada. O id só entra quando já existe. */
           const registro={
-            id:tecnico?.id,nome,
-            login:document.getElementById('mtLogin').value.trim(),
+            nome,login,
             telefone:document.getElementById('mtTelefone').value.trim(),
             status:document.getElementById('mtStatus').value,
+            nomesPlanilha:document.getElementById('mtNomesPlanilha').value.split(',').map(x=>x.trim()).filter(Boolean),
             contadorPlantoes:tecnico?.contadorPlantoes||0,
             ultimaOrdem:tecnico?.ultimaOrdem||0,
             criadoEm:tecnico?.criadoEm||new Date().toISOString()
           };
-          if(tecnico){await dbPut('tecnicos',registro);await registrarHistoricoGeral('tecnicos','edicao',`Técnico ${nome} atualizado`);}
+          const ehNovo=!tecnico;
+          if(tecnico){registro.id=tecnico.id;await dbPut('tecnicos',registro);await registrarHistoricoGeral('tecnicos','edicao',`Técnico ${nome} atualizado`);}
           else{await dbAdd('tecnicos',registro);await registrarHistoricoGeral('tecnicos','cadastro',`Técnico ${nome} cadastrado`);}
           fecharModal();
-          toast('Técnico salvo com sucesso','sucesso');
           await atualizarStatusFerias();
           renderCadastroTecnicos();
+          /* Cadastrar já coloca o técnico no seletor de plantões e nas contas da
+             equipe, mas a escala que já está gravada não muda sozinha — só o
+             botão recalcula. Em vez de deixar o usuário descobrir isso, o
+             recálculo é oferecido aqui. */
+          if(ehNovo&&registro.status!=='desligado'&&registro.status!=='noturno'){
+            await incluirTecnicoNaEscala(nome);
+          } else {
+            toast('Técnico salvo com sucesso','sucesso');
+          }
         }}
       ]
     });
-    if(tecnico)document.getElementById('mtStatus').value=tecnico.status;
+    document.getElementById('mtStatus').value=tecnico?tecnico.status:'ativo';
   })();
+}
+/* Oferece incluir o técnico recém-cadastrado na escala já gravada. Manter o
+   recálculo atrás de uma pergunta preserva a regra de que a escala só muda
+   quando o usuário manda. */
+async function incluirTecnicoNaEscala(nome){
+  const hoje=new Date();
+  const mes=`${hoje.getFullYear()}-${pad(hoje.getMonth()+1)}`;
+  const existentes=(await dbGetAll('plantoes')).filter(p=>p.data>=`${mes}-01`);
+  if(!existentes.length){
+    toast('Técnico salvo. Ele já entra na próxima escala que você gerar.','sucesso');
+    return;
+  }
+  const ok=await confirmarAcao(`<strong>${escapeHtml(nome)}</strong> já faz parte da equipe e aparece no seletor de plantões, nos indicadores e nas contas de capacidade.<br><br>A escala de ${labelMesPlantao(mes)} em diante já está gravada e não muda sozinha. Deseja recalculá-la agora para incluí-lo no rodízio? Suas alterações manuais e os meses bloqueados são preservados.`);
+  if(!ok){toast('Técnico salvo. A escala atual ficou como estava.','sucesso');return;}
+  const r=await montarEscala(`${mes}-01`,`${hoje.getFullYear()}-12-31`);
+  await registrarHistoricoGeral('plantoes','geracao',`Escala recalculada para incluir ${nome}: ${r.criados} criado(s), ${r.ajustados} reorganizado(s)`);
+  toast(`Técnico incluído na escala · ${r.ajustados} plantão(ões) reorganizado(s)`,'sucesso');
+  if(viewAtual==='plantoes')renderPlantoes();
 }
 async function excluirTecnicoConfirm(id){
   const tecnico=await dbGet('tecnicos',id);
