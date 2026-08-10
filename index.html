@@ -351,6 +351,9 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .dias-kpi.meta{background:var(--brand-soft);border-color:var(--brand-light)}
 .dias-kpi.ok>strong{color:var(--green)}
 .dias-kpi.warn>strong{color:var(--amber)}
+.dias-kpi.ruim>strong{color:var(--red)}
+#slaKpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:820px){#slaKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dias-kpi.bad>strong{color:var(--red-dark)}
 .dias-kpi.click{cursor:pointer;transition:border-color .12s,transform .12s}
 .dias-kpi.click:hover{border-color:var(--brand);transform:translateY(-1px)}
@@ -510,6 +513,30 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           <div class="table-wrap">
             <table id="tabelaTecnicos"><thead></thead><tbody></tbody></table>
           </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-sla">
+        <div class="toolbar">
+          <div class="form-hint" id="competenciaSlaLabel" style="font-size:13px"></div>
+          <span class="spacer"></span>
+          <div class="form-hint" id="slaChaveLabel" style="font-size:12px;text-align:right"></div>
+          <div class="form-group" style="margin-bottom:0;max-width:110px">
+            <label style="margin-bottom:4px;font-size:10px">Log alto a partir de</label>
+            <input type="number" min="2" max="20" id="slaLimiteLog" style="width:100%;padding:6px 9px;font-size:12.5px">
+          </div>
+        </div>
+        <p class="form-hint" id="avisoSla" style="margin-bottom:10px;display:none"></p>
+        <div id="slaKpis" class="dias-kpis"></div>
+        <div class="card" id="cardSlaReincidencia" style="margin-top:16px">
+          <div class="card-title">Reincidências dentro de 30 dias</div>
+          <p class="form-hint" id="slaReincidenciaDesc" style="margin-bottom:14px"></p>
+          <div class="table-wrap"><table id="tabelaSlaTecnicos"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
+        </div>
+        <div class="card" id="cardSlaLog" style="margin-top:16px">
+          <div class="card-title">Clientes com log alto</div>
+          <p class="form-hint" id="slaLogDesc" style="margin-bottom:14px"></p>
+          <div class="table-wrap"><table id="tabelaSlaClientes"><thead></thead><tbody></tbody></table></div>
         </div>
       </section>
 
@@ -750,7 +777,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.09.1';
+const APP_VERSAO='2026.08.09.6';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1000,6 +1027,18 @@ async function getConfig(){
   if(c.minimoDiarioProducao===undefined){c.minimoDiarioProducao=MINIMO_DIARIO_PADRAO;await dbPut('configuracoes',c);}
   if(c.mesesBloqueados===undefined){c.mesesBloqueados={};await dbPut('configuracoes',c);}
   return c;
+}
+/* Ordem única de técnico em todo o sistema: por login crescente, que é a ordem
+   das planilhas oficiais. Quem não tem login vai para o fim, por nome — assim a
+   lista nunca fica sem critério. Usada em toda tabela, seletor e resumo, para
+   que dê para ler duas telas lado a lado sem procurar nome por nome. */
+function ordemTecnicos(a,b){
+  const la=String((a&&a.login)||'').trim().toUpperCase();
+  const lb=String((b&&b.login)||'').trim().toUpperCase();
+  if(la&&lb&&la!==lb)return la<lb?-1:1;
+  if(la&&!lb)return -1;
+  if(!la&&lb)return 1;
+  return String((a&&a.nome)||'').localeCompare(String((b&&b.nome)||''),'pt-BR');
 }
 const EQUIPE_REAL=[
   {nome:'Apolinario',login:'Z132322'},
@@ -1416,6 +1455,7 @@ async function removerFolgaSeExistir(plantaoId,tecnicoId){
 const MENU=[
   {id:'inicio',label:'Início',icon:'home'},
   {id:'tecnicos',label:'Técnicos',icon:'users'},
+  {id:'sla',label:'SLA 30 dias',icon:'repeat'},
   {id:'plantoes',label:'Controle Operacional',icon:'calendar'},
   {id:'valores',label:'Valores',icon:'cash'},
   {id:'diastrabalhados',label:'Dias Trabalhados',icon:'clock'},
@@ -1439,6 +1479,7 @@ async function irParaView(viewId){
   document.getElementById('sidebarBackdrop').classList.remove('show');
   if(viewId==='inicio')await renderInicio();
   else if(viewId==='tecnicos')await renderTecnicos();
+  else if(viewId==='sla')await renderSla();
   else if(viewId==='plantoes')await renderPlantoes();
   else if(viewId==='valores')await renderValores();
   else if(viewId==='diastrabalhados')await renderDiasTrabalhados();
@@ -1593,15 +1634,15 @@ async function renderInicio(){
 }
 function abrirModalIndicador(tipo,indicadores){
   const cfgs={
-    revisita:{titulo:'Revisita por técnico',cols:['Técnico','% Rev.','Rev. 10d'],ordenar:(a,b)=>b.revPct-a.revPct,
+    revisita:{titulo:'Revisita por técnico',cols:['Técnico','% Rev.','Rev. 10d'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),fmtPct1(t.revPct),t.revisitas]},
-    tec1:{titulo:'TEC1 por técnico',cols:['Técnico','TEC1','Fora Jan.'],ordenar:(a,b)=>a.tec1Pct-b.tec1Pct,
+    tec1:{titulo:'TEC1 por técnico',cols:['Técnico','TEC1','Fora Jan.'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),fmtPct1(t.tec1Pct),t.tecFora]},
-    producao:{titulo:'Produção por técnico',cols:['Técnico','Contratos','Produção'],ordenar:(a,b)=>a.mediaProducao-b.mediaProducao,
+    producao:{titulo:'Produção por técnico',cols:['Técnico','Contratos','Produção'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),t.total,fmtNum2(t.mediaProducao)]},
-    nr35:{titulo:'NR35 por técnico',cols:['Técnico','NR35'],ordenar:(a,b)=>(a.nr35Pct==null?101:a.nr35Pct)-(b.nr35Pct==null?101:b.nr35Pct),
+    nr35:{titulo:'NR35 por técnico',cols:['Técnico','NR35'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),t.nr35Pct==null?'—':fmtPct1(t.nr35Pct)]},
-    t1:{titulo:'T1 por técnico',cols:['Técnico','T1'],ordenar:(a,b)=>a.nome.localeCompare(b.nome,'pt-BR'),
+    t1:{titulo:'T1 por técnico',cols:['Técnico','T1'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),selectStatusCompliance(t.tecnicoId,'statusT1',t.statusT1)]}
   };
   const cfg=cfgs[tipo];
@@ -1811,7 +1852,7 @@ async function renderTecnicos(){
     <th><div class="val-th-title">Situação</div></th>
   </tr>`;
 
-  const lista=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const lista=(await dbGetAll('tecnicos')).sort(ordemTecnicos);
   const tbody=document.querySelector('#tabelaTecnicos tbody');
   if(lista.length===0){
     tbody.innerHTML=`<tr class="empty-row"><td colspan="${CRITERIOS_VALORES.length+2}">Nenhum técnico encontrado</td></tr>`;
@@ -1831,6 +1872,235 @@ async function renderTecnicos(){
     toast('Status atualizado','sucesso');
     renderTecnicos();
   }));
+}
+
+
+/* ===================== VIEW: SLA 30 DIAS =====================
+   Duas perguntas sobre a mesma base já importada:
+
+   1. Reincidência dentro de 30 dias. Um atendimento que volta para o mesmo
+      cliente em até 30 dias significa que o problema não foi resolvido de
+      verdade. Aqui a OS marcada é a PRIMEIRA — a que deveria ter resolvido —
+      porque é o trabalho dela que está sendo avaliado.
+
+   2. Clientes com log alto: quem aparece muitas vezes no período. É o mesmo
+      dado visto pelo lado do cliente em vez do lado do técnico, e serve para
+      separar problema de execução de problema de rede ou de instalação.
+
+   A base não tem uma coluna de cliente com nome fixo — cada relatório usa a sua.
+   Em vez de chutar, o sistema procura as colunas com cara de identificador e
+   deixa a escolha à vista, gravada na configuração. */
+const SLA_DIAS=30;
+const SLA_LOG_PADRAO=2;
+/* Nomes que costumam identificar o cliente ou o ponto de atendimento. */
+const SLA_PISTAS=/CONTRATO|CLIENTE|ASSINANTE|CPF|CNPJ|TERMINAL|CODIGO|COD_|_COD|INSTALACAO|ENDERECO|CHAMADO|PROTOCOLO|OS\b|ORDEM/;
+
+/* Uma coluna serve como identificador quando repete o suficiente para haver
+   recorrência e ainda distingue clientes — nem valor único por linha, nem um
+   punhado de categorias. */
+function colunasCandidatasSla(linhas){
+  if(!linhas.length)return [];
+  const total=linhas.length;
+  return Object.keys(linhas[0]).map(col=>{
+    const vistos=new Set();
+    let vazios=0;
+    for(const r of linhas){
+      const v=String(r[col]??'').trim();
+      if(!v){vazios++;continue;}
+      vistos.add(v);
+    }
+    const preenchidos=total-vazios;
+    const distintos=vistos.size;
+    const razao=preenchidos?distintos/preenchidos:0;
+    const nome=normalizarCabecalho(col);
+    /* O contrato é o identificador oficial do cliente nesta operação: quando a
+       base traz essa coluna, ela vem na frente de qualquer heurística. */
+    const ehContrato=nome==='CONTRATO'?1000:(nome.includes('CONTRATO')?500:0);
+    return {col,distintos,preenchidos,razao,
+      pontos:ehContrato+(SLA_PISTAS.test(nome)?100:0)+(razao>0.1&&razao<0.98?40:0)+(distintos>=10?10:0)};
+  }).filter(c=>c.preenchidos>0&&c.distintos>1&&c.pontos>0)
+    .sort((a,b)=>b.pontos-a.pontos||b.distintos-a.distintos);
+}
+
+/* Recebe TODAS as linhas do arquivo e a competência escolhida.
+
+   A separação importa: uma janela de 30 dias medida dentro de uma competência
+   de ~30 dias perderia toda reincidência que atravessa a virada do mês — o
+   atendimento do dia 18 que volta no dia 2 seguinte simplesmente sumiria. Então
+   as OS avaliadas são as da competência, mas o retorno pode ser qualquer
+   atendimento posterior que exista no arquivo. */
+function calcularSla(linhas,chave,limiteLog,competencia){
+  const porCliente=new Map();
+  linhas.forEach(row=>{
+    const id=String(row[chave]??'').trim();
+    const data=parseDataAgendaBR(row.DATA_AGENDA);
+    if(!id||!data)return;
+    if(!porCliente.has(id))porCliente.set(id,[]);
+    porCliente.get(id).push({row,data,login:String(row.LOGIN_TECNICO||'').trim().toUpperCase(),
+      naCompetencia:!competencia||competenciaDeData(data)===competencia});
+  });
+
+  const reincidentes=new Set();     // OS que tiveram retorno dentro da janela
+  const retornos=[];                // pares (origem, retorno) para detalhamento
+  const clientes=[];
+  for(const [id,lista] of porCliente){
+    lista.sort((a,b)=>a.data-b.data);
+    for(let i=0;i<lista.length;i++){
+      if(!lista[i].naCompetencia)continue;   // só avaliamos OS da competência
+      for(let j=i+1;j<lista.length;j++){
+        const dias=Math.round((lista[j].data-lista[i].data)/86400000);
+        if(dias<=0)continue;
+        if(dias>SLA_DIAS)break;
+        reincidentes.add(lista[i]);
+        retornos.push({cliente:id,origem:lista[i],retorno:lista[j],dias});
+        break;
+      }
+    }
+    /* O log é o que aconteceu dentro da competência; o intervalo olha tudo, para
+       o retorno logo depois da virada não passar batido. */
+    const naComp=lista.filter(x=>x.naCompetencia);
+    if(!naComp.length)continue;
+    const intervalos=[];
+    for(let i=1;i<lista.length;i++)intervalos.push(Math.round((lista[i].data-lista[i-1].data)/86400000));
+    clientes.push({
+      id,
+      atendimentos:naComp.length,
+      primeira:naComp[0].data,
+      ultima:naComp[naComp.length-1].data,
+      menorIntervalo:intervalos.length?Math.min(...intervalos):null,
+      intervaloMedio:intervalos.length?Math.round(intervalos.reduce((a,b)=>a+b,0)/intervalos.length):null,
+      tecnicos:[...new Set(naComp.map(x=>x.login).filter(Boolean))],
+      dentroDaJanela:intervalos.filter(d=>d>0&&d<=SLA_DIAS).length
+    });
+  }
+
+  const totalOS=[...porCliente.values()].reduce((a,l)=>a+l.filter(x=>x.naCompetencia).length,0);
+  const comRetorno=reincidentes.size;
+  const porTecnico=new Map();
+  for(const [,lista] of porCliente){
+    lista.forEach(item=>{
+      if(!item.login||!item.naCompetencia)return;
+      if(!porTecnico.has(item.login))porTecnico.set(item.login,{os:0,retornos:0});
+      const t=porTecnico.get(item.login);
+      t.os++;
+      if(reincidentes.has(item))t.retornos++;
+    });
+  }
+  const logAlto=clientes.filter(c=>c.atendimentos>=limiteLog)
+    .sort((a,b)=>b.atendimentos-a.atendimentos||(a.menorIntervalo??999)-(b.menorIntervalo??999));
+
+  return{
+    totalOS, comRetorno,
+    dentroDoSla: totalOS-comRetorno,
+    pctSla: totalOS?((totalOS-comRetorno)/totalOS*100):null,
+    clientes, logAlto, retornos, porTecnico,
+    clientesDistintos: clientes.length
+  };
+}
+
+async function renderSla(){
+  const config=await getConfig();
+  const competencias=await garantirCompetenciaSelecionada();
+  const label=document.getElementById('competenciaSlaLabel');
+  label.innerHTML=competencias.length===0?'Sem base importada'
+    :`Competência: <strong>${escapeHtml(competenciaSelecionadaGlobal)} (${formatarIntervaloCompetencia(competenciaSelecionadaGlobal)})</strong> &middot; altere em Início`;
+
+  const limite=Math.max(2,Number(config.slaLimiteLog)||SLA_LOG_PADRAO);
+  const inputLimite=document.getElementById('slaLimiteLog');
+  if(document.activeElement!==inputLimite)inputLimite.value=limite;
+
+  const aviso=document.getElementById('avisoSla');
+  const kpis=document.getElementById('slaKpis');
+  const limpar=(msg)=>{
+    aviso.style.display='block';aviso.innerHTML=msg;
+    kpis.innerHTML='';
+    document.querySelector('#tabelaSlaTecnicos tbody').innerHTML='';
+    document.querySelector('#tabelaSlaTecnicos thead').innerHTML='';
+    document.querySelector('#tabelaSlaTecnicos tfoot').innerHTML='';
+    document.querySelector('#tabelaSlaClientes tbody').innerHTML='';
+    document.querySelector('#tabelaSlaClientes thead').innerHTML='';
+  };
+
+  const base=await obterLinhasBaseEquipe();
+  let linhas=[];
+  if(competenciaSelecionadaGlobal){
+    const lista=await listarCompetenciasDisponiveis();
+    const alvo=lista.find(c=>c.competencia===competenciaSelecionadaGlobal);
+    if(alvo){
+      const tecnicos=await dbGetAll('tecnicos');
+      const logins=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
+      const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',alvo.importacaoId))[0];
+      linhas=linhasEquipeOuNull(dados?dados.linhas:[],config,logins)||[];
+    }
+  } else if(base.ok) linhas=base.linhas;
+
+  if(!linhas.length){limpar(mensagemIndicadoresIndisponiveis(base.ok?'sem_registros':base.motivo));return;}
+  if(competenciaSelecionadaGlobal&&!linhasDaCompetencia(linhas,competenciaSelecionadaGlobal).length){
+    limpar('Esta base não tem atendimentos na competência selecionada.');return;
+  }
+
+  /* A coluna de contrato é escolhida sozinha — não havia razão para pedir isso
+     ao usuário toda vez. O nome escolhido continua à vista, para o número nunca
+     sair de uma origem que ninguém sabe qual é. */
+  const candidatas=colunasCandidatasSla(linhas);
+  const rotuloChave=document.getElementById('slaChaveLabel');
+  if(!candidatas.length){
+    rotuloChave.textContent='';
+    limpar('Não encontrei nenhuma coluna que sirva para identificar o cliente nesta base. A recorrência precisa de contrato, código de cliente ou número de OS — sem isso não há como agrupar os atendimentos.');
+    return;
+  }
+  const chave=candidatas[0].col;
+  rotuloChave.innerHTML=`Agrupando por <strong>${escapeHtml(chave)}</strong> &middot; ${candidatas[0].distintos} valores distintos`;
+  aviso.style.display='none';
+
+  const r=calcularSla(linhas,chave,limite,competenciaSelecionadaGlobal);
+  const nivel=r.pctSla==null?null:(r.pctSla>=95?'verde':(r.pctSla>=90?'amarelo':'vermelho'));
+  kpis.innerHTML=`
+    <div class="dias-kpi"><span>OS analisadas</span><strong>${r.totalOS}</strong><small>${r.clientesDistintos} cliente(s)</small></div>
+    <div class="dias-kpi ${nivel==='verde'?'ok':(nivel==='amarelo'?'warn':'ruim')}"><span>Dentro do SLA</span><strong>${r.pctSla==null?'—':fmtPct1(r.pctSla)}</strong><small>sem retorno em ${SLA_DIAS} dias</small></div>
+    <div class="dias-kpi ${r.comRetorno?'ruim':'ok'}"><span>Reincidências</span><strong>${r.comRetorno}</strong><small>voltaram em até ${SLA_DIAS} dias</small></div>
+    <div class="dias-kpi ${r.logAlto.length?'warn':'ok'}"><span>Log alto</span><strong>${r.logAlto.length}</strong><small>log ${limite} ou mais</small></div>`;
+
+  /* Por técnico: a taxa é sobre as OS dele que voltaram, não sobre o total da
+     equipe — senão quem atende mais parece pior só por atender mais. */
+  const tecnicos=await dbGetAll('tecnicos');
+  const porLogin=new Map(tecnicos.filter(t=>t.login).map(t=>[t.login.trim().toUpperCase(),t.nome]));
+  const linhasTec=[...r.porTecnico.entries()]
+    .map(([login,v])=>({login,nome:porLogin.get(login)||login,...v,pct:v.os?v.retornos/v.os*100:0}))
+    .sort(ordemTecnicos);
+  document.querySelector('#tabelaSlaTecnicos thead').innerHTML=
+    '<tr><th>Técnico</th><th>OS no período</th><th>Voltaram em 30 dias</th><th>Taxa de reincidência</th></tr>';
+  document.querySelector('#tabelaSlaTecnicos tbody').innerHTML=linhasTec.length?linhasTec.map(t=>{
+    const n=t.pct<=5?'verde':(t.pct<=10?'amarelo':'vermelho');
+    return `<tr><td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)}</div></div></div></td>
+      <td>${t.os}</td><td>${t.retornos}</td>
+      <td><span class="badge ${badgeClasseNivel(n)}">${fmtPct1(t.pct)}</span></td></tr>`;
+  }).join(''):'<tr class="empty-row"><td colspan="4">Nenhum técnico com OS neste período</td></tr>';
+  document.querySelector('#tabelaSlaTecnicos tfoot').innerHTML=
+    `<tr><td>Total</td><td>${r.totalOS}</td><td>${r.comRetorno}</td><td>${r.totalOS?fmtPct1(r.comRetorno/r.totalOS*100):'—'}</td></tr>`;
+  document.getElementById('slaReincidenciaDesc').textContent=
+    `Conta a OS que teve novo atendimento para o mesmo ${chave} em até ${SLA_DIAS} dias. A OS marcada é a primeira — a que deveria ter resolvido.`;
+
+  document.querySelector('#tabelaSlaClientes thead').innerHTML=
+    `<tr><th>${escapeHtml(chave)}</th><th>Log</th><th>Primeiro</th><th>Último</th><th>Menor intervalo</th><th>Técnicos</th></tr>`;
+  document.querySelector('#tabelaSlaClientes tbody').innerHTML=r.logAlto.length?r.logAlto.slice(0,500).map(c=>{
+    const n=c.menorIntervalo!=null&&c.menorIntervalo<=SLA_DIAS?'vermelho':'verde';
+    return `<tr><td><strong>${escapeHtml(c.id)}</strong></td>
+      <td><span class="badge ${c.atendimentos>=limite+2?'badge-red':'badge-amber'}">${c.atendimentos}</span></td>
+      <td>${fmtBR(toISO(c.primeira))}</td><td>${fmtBR(toISO(c.ultima))}</td>
+      <td>${c.menorIntervalo==null?'—':`<span class="badge ${badgeClasseNivel(n)}">${c.menorIntervalo} dia(s)</span>`}</td>
+      <td>${c.tecnicos.map(l=>escapeHtml(porLogin.get(l)||l)).join(', ')||'—'}</td></tr>`;
+  }).join(''):`<tr class="empty-row"><td colspan="6">Nenhum ${escapeHtml(chave)} com log ${limite} ou mais no período</td></tr>`;
+  document.getElementById('slaLogDesc').innerHTML=
+    `Log é a quantidade de atendimentos no mesmo ${chave} dentro da competência. Aqui, quem tem <strong>log ${limite} ou mais</strong>, do maior para o menor. `+
+    `Intervalo curto entre visitas costuma apontar problema de rede ou de instalação, não de execução.`+
+    (r.logAlto.length>500?' Mostrando os 500 primeiros.':'');
+}
+async function salvarSlaLimite(){
+  const config=await getConfig();
+  config.slaLimiteLog=Math.max(2,Number(document.getElementById('slaLimiteLog').value)||SLA_LOG_PADRAO);
+  await dbPut('configuracoes',config);
+  renderSla();
 }
 
 /* ===================== VIEW: VALORES (comissão dos técnicos) ===================== */
@@ -1922,7 +2192,7 @@ async function renderValores(){
 
   /* Mesma lista e mesma ordem da aba Técnicos, para as duas telas poderem ser
      lidas lado a lado sem conferir nome por nome. */
-  const lista=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const lista=(await dbGetAll('tecnicos')).sort(ordemTecnicos);
   const tbody=document.querySelector('#tabelaValores tbody');
   if(lista.length===0){
     tbody.innerHTML=`<tr class="empty-row"><td colspan="${CRITERIOS_VALORES.length+2}">Nenhum técnico encontrado</td></tr>`;
@@ -2469,8 +2739,8 @@ async function calcularDadosDias(mesChave,minimo,config){
     const tec=t.tecnicoId?ctx.tecnicos.find(x=>x.id===t.tecnicoId):null;
     t.situacao=situacaoCadastroTecnico(tec);
   });
-  linhasTec.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  linhasCont.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  linhasTec.sort(ordemTecnicos);
+  linhasCont.sort(ordemTecnicos);
 
   /* Manutenção e contingência são somadas separadamente, mas o realizado que vai
      contra a meta é o total geral (manutenção + apoio). */
@@ -3006,7 +3276,7 @@ async function tecnicosAtivosOptions(selecionadoId,excluirIds,dataISO=null){
   return tecnicos
     .filter(t=>t.status!=='desligado'||t.id===selecionadoId)
     .filter(t=>!excluirIds.includes(t.id)||t.id===selecionadoId)
-    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'))
+    .sort(ordemTecnicos)
     .map(t=>{
       const m=t.id===selecionadoId?null:motivo(t);
       /* Noturno fica fora do rodízio automático, mas continua escolhível à mão:
@@ -3084,8 +3354,8 @@ function renderResumoPlantoesTecnicos(tecnicos,listaMes,mesChave){
   const contagem=new Map();
   (listaMes||[]).forEach(p=>p.tecnicoIds.forEach(id=>{if(id)contagem.set(id,(contagem.get(id)||0)+1);}));
   const itens=tecnicos.filter(t=>t.status!=='desligado'&&t.status!=='noturno')
-    .map(t=>({nome:t.nome,qtd:contagem.get(t.id)||0}))
-    .sort((a,b)=>a.qtd-b.qtd||a.nome.localeCompare(b.nome,'pt-BR'));
+    .map(t=>({nome:t.nome,login:t.login,qtd:contagem.get(t.id)||0}))
+    .sort(ordemTecnicos);
   const nota=document.getElementById('resumoPlantoesNota');
   if(!itens.length){
     box.innerHTML='<div class="tec-chip"><span>Sem técnicos</span><strong>0</strong></div>';
@@ -3742,7 +4012,7 @@ function proximoInicioFeriasValido(iso,feriadosSet){
 }
 async function abrirModalFerias(feriasId=null){
   const ferias=feriasId?await dbGet('ferias',feriasId):null;
-  const tecnicos=(await dbGetAll('tecnicos')).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const tecnicos=(await dbGetAll('tecnicos')).sort(ordemTecnicos);
   const feriadosSet=new Set((await dbGetAll('feriados')).map(x=>x.data));
   const opts=tecnicos.map(t=>`<option value="${t.id}" ${ferias?.tecnicoId===t.id?'selected':''}>${escapeHtml(t.nome)}</option>`).join('');
   const optsTipo=TIPOS_AUSENCIA.map(t=>`<option value="${t.v}" ${(ferias?.tipo||'ferias')===t.v?'selected':''}>${t.l}</option>`).join('');
@@ -4043,23 +4313,52 @@ async function obterLinhasBaseEquipe(){
   }
   return {ok:false,motivo:encontrouColunas?'sem_registros':'sem_colunas'};
 }
+/* Fica só com as linhas cuja data cai na competência pedida. */
+function linhasDaCompetencia(linhas,competencia){
+  if(!competencia)return linhas;
+  return linhas.filter(r=>{
+    const d=parseDataAgendaBR(r.DATA_AGENDA);
+    return d&&competenciaDeData(d)===competencia;
+  });
+}
+/* A competência de uma importação saía da MAIOR data do arquivo. Bastava um
+   agendamento futuro no meio da base — coisa normal em campo — para o arquivo
+   inteiro ser etiquetado com o mês daquela linha solta, e um mês que nem
+   começou aparecer na lista com os dados de outro. Agora a competência é lida
+   linha a linha: uma base pode alimentar mais de um mês, cada um só com o que é
+   dele. Competência no futuro não entra: indicador de mês que não aconteceu não
+   quer dizer nada. */
 async function listarCompetenciasDisponiveis(){
   const importacoes=ordenarLista(await dbGetAll('importacoes'),'dataImportacao',-1).filter(i=>i.status!=='Erro');
   const config=await getConfig();
   const tecnicos=await dbGetAll('tecnicos');
   const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
+  const competenciaDeHoje=competenciaDeData(new Date());
+  const limite=intervaloCompetencia(competenciaDeHoje);
   const porCompetencia=new Map();
   for(const imp of importacoes){
     const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',imp.id))[0];
     const linhas=dados?dados.linhas:[];
     const filtradas=linhasEquipeOuNull(linhas,config,loginsEquipe);
     if(filtradas===null||filtradas.length===0)continue;
-    const datas=filtradas.map(r=>parseDataAgendaBR(r.DATA_AGENDA)).filter(Boolean);
-    const maxData=datas.length?new Date(Math.max(...datas.map(d=>d.getTime()))):null;
-    const competencia=maxData?competenciaDeData(maxData):'Sem data';
-    const atual=porCompetencia.get(competencia);
-    if(!atual||(maxData&&(!atual.maxData||maxData>atual.maxData))){
-      porCompetencia.set(competencia,{competencia,importacaoId:imp.id,maxData});
+    const porMes=new Map();
+    for(const r of filtradas){
+      const d=parseDataAgendaBR(r.DATA_AGENDA);
+      if(!d)continue;
+      const c=competenciaDeData(d);
+      const at=porMes.get(c)||{qtd:0,maxData:null};
+      at.qtd++;
+      if(!at.maxData||d>at.maxData)at.maxData=d;
+      porMes.set(c,at);
+    }
+    for(const [competencia,info] of porMes){
+      const faixa=intervaloCompetencia(competencia);
+      if(limite&&faixa&&faixa.inicio>limite.inicio)continue;   // mês futuro
+      /* As importações vêm da mais recente para a mais antiga, então a primeira
+         que traz a competência é a que vale. */
+      if(!porCompetencia.has(competencia)){
+        porCompetencia.set(competencia,{competencia,importacaoId:imp.id,maxData:info.maxData,qtd:info.qtd});
+      }
     }
   }
   return [...porCompetencia.values()].sort((a,b)=>(b.maxData?.getTime()||0)-(a.maxData?.getTime()||0));
@@ -4075,7 +4374,7 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
     const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
     const importacao=await dbGet('importacoes',alvo.importacaoId);
     const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',alvo.importacaoId))[0];
-    const linhas=linhasEquipeOuNull(dados?dados.linhas:[],config,loginsEquipe)||[];
+    const linhas=linhasDaCompetencia(linhasEquipeOuNull(dados?dados.linhas:[],config,loginsEquipe)||[],competenciaEscolhida);
     base={ok:true,linhas,importacao,tecnicos};
   } else {
     base=await obterLinhasBaseEquipe();
@@ -4364,7 +4663,7 @@ async function renderCadastroTecnicos(){
   const cards=document.getElementById('cardsCadastroTecnicos');
   if(!thead||!tbody)return;
   thead.innerHTML=`<tr><th>Técnico</th><th>Status</th><th></th></tr>`;
-  const lista=ordenarLista(await dbGetAll('tecnicos'),'login',1);
+  const lista=(await dbGetAll('tecnicos')).sort(ordemTecnicos);
   if(lista.length===0){
     tbody.innerHTML=`<tr class="empty-row"><td colspan="3">Nenhum técnico cadastrado</td></tr>`;
     cards.innerHTML=`<div class="mcard-empty">Nenhum técnico cadastrado</div>`;
@@ -4940,6 +5239,7 @@ async function initApp(){
   document.getElementById('btnLimparEscala').addEventListener('click',limparEscalaSelecionada);
   document.getElementById('btnBloquearEscala').innerHTML=icon('lock',14)+' Bloquear';
   document.getElementById('btnBloquearEscala').addEventListener('click',alternarBloqueioEscala);
+  document.getElementById('slaLimiteLog').addEventListener('change',salvarSlaLimite);
   document.getElementById('selMesEscala').addEventListener('change',()=>{
     mesSelecionadoPlantoes=document.getElementById('selMesEscala').value;
     renderPlantoes();
