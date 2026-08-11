@@ -521,10 +521,6 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           <div class="form-hint" id="competenciaSlaLabel" style="font-size:13px"></div>
           <span class="spacer"></span>
           <div class="form-hint" id="slaChaveLabel" style="font-size:12px;text-align:right"></div>
-          <div class="form-group" style="margin-bottom:0;max-width:110px">
-            <label style="margin-bottom:4px;font-size:10px">Log alto a partir de</label>
-            <input type="number" min="2" max="20" id="slaLimiteLog" style="width:100%;padding:6px 9px;font-size:12.5px">
-          </div>
         </div>
         <p class="form-hint" id="avisoSla" style="margin-bottom:10px;display:none"></p>
         <div id="slaKpis" class="dias-kpis"></div>
@@ -777,7 +773,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.09.6';
+const APP_VERSAO='2026.08.10.1';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1999,15 +1995,14 @@ function calcularSla(linhas,chave,limiteLog,competencia){
 }
 
 async function renderSla(){
-  const config=await getConfig();
   const competencias=await garantirCompetenciaSelecionada();
   const label=document.getElementById('competenciaSlaLabel');
   label.innerHTML=competencias.length===0?'Sem base importada'
     :`Competência: <strong>${escapeHtml(competenciaSelecionadaGlobal)} (${formatarIntervaloCompetencia(competenciaSelecionadaGlobal)})</strong> &middot; altere em Início`;
 
-  const limite=Math.max(2,Number(config.slaLimiteLog)||SLA_LOG_PADRAO);
-  const inputLimite=document.getElementById('slaLimiteLog');
-  if(document.activeElement!==inputLimite)inputLimite.value=limite;
+  /* Log alto é todo contrato atendido mais de uma vez na competência. Fixo em
+     dois: não havia razão para pedir esse número ao usuário. */
+  const limite=SLA_LOG_PADRAO;
 
   const aviso=document.getElementById('avisoSla');
   const kpis=document.getElementById('slaKpis');
@@ -2021,18 +2016,12 @@ async function renderSla(){
     document.querySelector('#tabelaSlaClientes thead').innerHTML='';
   };
 
-  const base=await obterLinhasBaseEquipe();
-  let linhas=[];
-  if(competenciaSelecionadaGlobal){
-    const lista=await listarCompetenciasDisponiveis();
-    const alvo=lista.find(c=>c.competencia===competenciaSelecionadaGlobal);
-    if(alvo){
-      const tecnicos=await dbGetAll('tecnicos');
-      const logins=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
-      const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',alvo.importacaoId))[0];
-      linhas=linhasEquipeOuNull(dados?dados.linhas:[],config,logins)||[];
-    }
-  } else if(base.ok) linhas=base.linhas;
+  /* Aqui entram TODAS as linhas da equipe, de todas as importações: a janela de
+     30 dias precisa enxergar o retorno que cai depois da virada do mês, e ele
+     costuma estar no arquivo seguinte. Quem recorta a competência é o
+     calcularSla, que separa as OS avaliadas dos retornos. */
+  const base=await reunirLinhasEquipe();
+  const linhas=base.ok?base.linhas:[];
 
   if(!linhas.length){limpar(mensagemIndicadoresIndisponiveis(base.ok?'sem_registros':base.motivo));return;}
   if(competenciaSelecionadaGlobal&&!linhasDaCompetencia(linhas,competenciaSelecionadaGlobal).length){
@@ -2050,7 +2039,11 @@ async function renderSla(){
     return;
   }
   const chave=candidatas[0].col;
-  rotuloChave.innerHTML=`Agrupando por <strong>${escapeHtml(chave)}</strong> &middot; ${candidatas[0].distintos} valores distintos`;
+  /* A contagem exibida é a da competência, não a do arquivo inteiro: ela fica ao
+     lado do total de clientes do mês e as duas precisam falar do mesmo período. */
+  const daComp=linhasDaCompetencia(linhas,competenciaSelecionadaGlobal);
+  const distintosNaComp=new Set(daComp.map(r=>String(r[chave]??'').trim()).filter(Boolean)).size;
+  rotuloChave.innerHTML=`Agrupando por <strong>${escapeHtml(chave)}</strong> &middot; ${distintosNaComp} valores distintos`;
   aviso.style.display='none';
 
   const r=calcularSla(linhas,chave,limite,competenciaSelecionadaGlobal);
@@ -2059,7 +2052,7 @@ async function renderSla(){
     <div class="dias-kpi"><span>OS analisadas</span><strong>${r.totalOS}</strong><small>${r.clientesDistintos} cliente(s)</small></div>
     <div class="dias-kpi ${nivel==='verde'?'ok':(nivel==='amarelo'?'warn':'ruim')}"><span>Dentro do SLA</span><strong>${r.pctSla==null?'—':fmtPct1(r.pctSla)}</strong><small>sem retorno em ${SLA_DIAS} dias</small></div>
     <div class="dias-kpi ${r.comRetorno?'ruim':'ok'}"><span>Reincidências</span><strong>${r.comRetorno}</strong><small>voltaram em até ${SLA_DIAS} dias</small></div>
-    <div class="dias-kpi ${r.logAlto.length?'warn':'ok'}"><span>Log alto</span><strong>${r.logAlto.length}</strong><small>log ${limite} ou mais</small></div>`;
+    <div class="dias-kpi ${r.logAlto.length?'warn':'ok'}"><span>Log alto</span><strong>${r.logAlto.length}</strong><small>atendidos mais de uma vez</small></div>`;
 
   /* Por técnico: a taxa é sobre as OS dele que voltaram, não sobre o total da
      equipe — senão quem atende mais parece pior só por atender mais. */
@@ -2095,12 +2088,6 @@ async function renderSla(){
     `Log é a quantidade de atendimentos no mesmo ${chave} dentro da competência. Aqui, quem tem <strong>log ${limite} ou mais</strong>, do maior para o menor. `+
     `Intervalo curto entre visitas costuma apontar problema de rede ou de instalação, não de execução.`+
     (r.logAlto.length>500?' Mostrando os 500 primeiros.':'');
-}
-async function salvarSlaLimite(){
-  const config=await getConfig();
-  config.slaLimiteLog=Math.max(2,Number(document.getElementById('slaLimiteLog').value)||SLA_LOG_PADRAO);
-  await dbPut('configuracoes',config);
-  renderSla();
 }
 
 /* ===================== VIEW: VALORES (comissão dos técnicos) ===================== */
@@ -4168,6 +4155,65 @@ function detectarDelimitadorCSV(text){
   }
   return maior>0?melhor:',';
 }
+/* O relatório do TOA vem em CSV com data no formato brasileiro. Entregar esse
+   texto ao leitor de planilhas custou caro: ele tenta adivinhar o que é data e
+   adivinha no formato americano, então 02/07/2026 (2 de julho) virava 7 de
+   fevereiro. Só as datas com dia até 12 são ambíguas, então um terço das linhas
+   do arquivo trocava de mês em silêncio — daí competência errada, mês que nunca
+   existiu no seletor e SLA contando reincidência entre datas que não eram
+   aquelas. Aqui o CSV é lido letra a letra e todo valor fica como texto: o que
+   está escrito no arquivo é o que o sistema enxerga. */
+function lerCSV(text){
+  const sep=detectarDelimitadorCSV(text);
+  const campos=[];
+  let atual='',linha=[],dentroDeAspas=false;
+  const fecharCampo=()=>{linha.push(atual);atual='';};
+  const fecharLinha=()=>{fecharCampo();campos.push(linha);linha=[];};
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(dentroDeAspas){
+      if(c==='"'){
+        if(text[i+1]==='"'){atual+='"';i++;}   // aspas escapada
+        else dentroDeAspas=false;
+      } else atual+=c;
+      continue;
+    }
+    if(c==='"'&&atual===''){dentroDeAspas=true;continue;}
+    if(c===sep){fecharCampo();continue;}
+    if(c==='\r'){if(text[i+1]==='\n')i++;fecharLinha();continue;}
+    if(c==='\n'){fecharLinha();continue;}
+    atual+=c;
+  }
+  if(atual!==''||linha.length)fecharLinha();
+  if(!campos.length)return [];
+  const cabecalho=campos[0].map(h=>String(h).replace(/^﻿/,'').trim());
+  const linhas=[];
+  for(let i=1;i<campos.length;i++){
+    const c=campos[i];
+    if(c.length===1&&!String(c[0]).trim())continue;   // linha em branco no fim
+    const obj={};
+    cabecalho.forEach((nome,j)=>{if(nome)obj[nome]=(c[j]??'').trim();});
+    linhas.push(obj);
+  }
+  return linhas;
+}
+/* Planilha de verdade (XLSX) guarda data como data, sem ambiguidade — mas chega
+   como objeto Date. Vira texto dd/mm/aaaa aqui para o resto do sistema ver um
+   formato só, venha o arquivo de onde vier. */
+function normalizarDatasImportadas(linhas){
+  const doisDigitos=(n)=>String(n).padStart(2,'0');
+  for(const row of linhas){
+    for(const col of Object.keys(row)){
+      const v=row[col];
+      if(v instanceof Date&&!isNaN(v)){
+        const dia=`${doisDigitos(v.getDate())}/${doisDigitos(v.getMonth()+1)}/${v.getFullYear()}`;
+        const temHora=v.getHours()||v.getMinutes()||v.getSeconds();
+        row[col]=temHora?`${dia} ${doisDigitos(v.getHours())}:${doisDigitos(v.getMinutes())}:${doisDigitos(v.getSeconds())}`:dia;
+      }
+    }
+  }
+  return linhas;
+}
 function linhasEquipeOuNull(linhas,config,loginsEquipe){
   if(!linhas.length)return null;
   const primeira=linhas[0];
@@ -4250,10 +4296,16 @@ async function calcularNR35PorTecnico(){
 function normalizarCabecalho(v){
   return String(v??'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_');
 }
+/* QT_REVISITA marca a OS que GEROU o retorno, não o retorno em si: conferimos
+   na base que a WO apontada em WO_REVISITA é sempre posterior e do mesmo
+   contrato. A revisita fica, então, com o técnico da linha marcada — que é quem
+   atendeu e teve de voltar. Antes só contavam as marcadas como Visita Técnica;
+   qualquer serviço pode gerar retorno, e o filtro por tipo só escondia caso. */
+function qtdRevisitaLinha(row){
+  return Math.max(0,Number(row.QT_REVISITA)||0);
+}
 function ehRevisitaLinha(row){
-  const qt=Number(row.QT_REVISITA)||0;
-  const tipo=normalizarCabecalho(row.TIPO_SERVICO);
-  return qt>0&&(tipo.includes('VISITA_TECNICA')||tipo.includes('ATENDIMENTO_PRIORITARIO_MANUT'));
+  return qtdRevisitaLinha(row)>0;
 }
 const MESES_COMPETENCIA=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function limiteInicioProximaCompetencia(d){
@@ -4287,6 +4339,7 @@ function formatarIntervaloCompetencia(competenciaLabel){
   return `${f(intervalo.inicio)} a ${f(intervalo.fim)}`;
 }
 function parseDataAgendaBR(valor){
+  if(valor instanceof Date)return isNaN(valor)?null:new Date(valor.getFullYear(),valor.getMonth(),valor.getDate());
   if(typeof valor==='number'&&isFinite(valor)){
     const utcMs=Math.floor(valor-25569)*86400*1000;
     const d=new Date(utcMs);
@@ -4296,22 +4349,45 @@ function parseDataAgendaBR(valor){
   if(!m)return null;
   return new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));
 }
-async function obterLinhasBaseEquipe(){
+/* Identifica uma OS. O TOA numera a ordem de serviço em WORKORDER; sem ela,
+   vale a linha inteira. Serve para a mesma OS não ser contada duas vezes quando
+   dois arquivos se sobrepõem — ou quando o mesmo arquivo é importado de novo. */
+function chaveLinhaBase(row){
+  const wo=String(row.WORKORDER??'').trim();
+  return wo||JSON.stringify(row);
+}
+/* Junta as linhas da equipe de TODAS as importações, sem repetir OS.
+   O relatório do TOA é tirado por período, então uma competência quase nunca
+   cabe num arquivo só: a de agosto começa em 22/07 e o arquivo puxado no dia 8
+   para no dia 8. Ler apenas a importação mais recente descartava, em silêncio,
+   a primeira metade do mês. */
+async function reunirLinhasEquipe(){
   const importacoes=ordenarLista(await dbGetAll('importacoes'),'dataImportacao',-1).filter(i=>i.status!=='Erro');
   if(importacoes.length===0)return {ok:false,motivo:'sem_importacao'};
   const config=await getConfig();
   const tecnicos=await dbGetAll('tecnicos');
   const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
-  let encontrouColunas=false;
+  let encontrouColunas=false,principal=null;
+  const vistas=new Set(),linhas=[];
   for(const imp of importacoes){
     const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',imp.id))[0];
-    const linhas=dados?dados.linhas:[];
-    const filtradas=linhasEquipeOuNull(linhas,config,loginsEquipe);
+    const filtradas=linhasEquipeOuNull(dados?dados.linhas:[],config,loginsEquipe);
     if(filtradas===null)continue;
     encontrouColunas=true;
-    if(filtradas.length>0)return {ok:true,linhas:filtradas,importacao:imp,tecnicos};
+    if(!filtradas.length)continue;
+    if(!principal)principal=imp;
+    for(const row of filtradas){
+      const chave=chaveLinhaBase(row);
+      if(vistas.has(chave))continue;
+      vistas.add(chave);
+      linhas.push(row);
+    }
   }
-  return {ok:false,motivo:encontrouColunas?'sem_registros':'sem_colunas'};
+  if(!linhas.length)return {ok:false,motivo:encontrouColunas?'sem_registros':'sem_colunas'};
+  return {ok:true,linhas,importacao:principal,tecnicos};
+}
+async function obterLinhasBaseEquipe(){
+  return reunirLinhasEquipe();
 }
 /* Fica só com as linhas cuja data cai na competência pedida. */
 function linhasDaCompetencia(linhas,competencia){
@@ -4325,61 +4401,43 @@ function linhasDaCompetencia(linhas,competencia){
    agendamento futuro no meio da base — coisa normal em campo — para o arquivo
    inteiro ser etiquetado com o mês daquela linha solta, e um mês que nem
    começou aparecer na lista com os dados de outro. Agora a competência é lida
-   linha a linha: uma base pode alimentar mais de um mês, cada um só com o que é
-   dele. Competência no futuro não entra: indicador de mês que não aconteceu não
-   quer dizer nada. */
+   linha a linha, sobre as linhas de todas as importações juntas: uma base pode
+   alimentar mais de um mês, e um mês pode vir de mais de uma base. Competência
+   no futuro não entra: indicador de mês que não aconteceu não quer dizer nada. */
 async function listarCompetenciasDisponiveis(){
-  const importacoes=ordenarLista(await dbGetAll('importacoes'),'dataImportacao',-1).filter(i=>i.status!=='Erro');
-  const config=await getConfig();
-  const tecnicos=await dbGetAll('tecnicos');
-  const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
-  const competenciaDeHoje=competenciaDeData(new Date());
-  const limite=intervaloCompetencia(competenciaDeHoje);
-  const porCompetencia=new Map();
-  for(const imp of importacoes){
-    const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',imp.id))[0];
-    const linhas=dados?dados.linhas:[];
-    const filtradas=linhasEquipeOuNull(linhas,config,loginsEquipe);
-    if(filtradas===null||filtradas.length===0)continue;
-    const porMes=new Map();
-    for(const r of filtradas){
-      const d=parseDataAgendaBR(r.DATA_AGENDA);
-      if(!d)continue;
-      const c=competenciaDeData(d);
-      const at=porMes.get(c)||{qtd:0,maxData:null};
-      at.qtd++;
-      if(!at.maxData||d>at.maxData)at.maxData=d;
-      porMes.set(c,at);
-    }
-    for(const [competencia,info] of porMes){
-      const faixa=intervaloCompetencia(competencia);
-      if(limite&&faixa&&faixa.inicio>limite.inicio)continue;   // mês futuro
-      /* As importações vêm da mais recente para a mais antiga, então a primeira
-         que traz a competência é a que vale. */
-      if(!porCompetencia.has(competencia)){
-        porCompetencia.set(competencia,{competencia,importacaoId:imp.id,maxData:info.maxData,qtd:info.qtd});
-      }
-    }
+  const base=await reunirLinhasEquipe();
+  if(!base.ok)return [];
+  const limite=intervaloCompetencia(competenciaDeData(new Date()));
+  const porMes=new Map();
+  for(const r of base.linhas){
+    const d=parseDataAgendaBR(r.DATA_AGENDA);
+    if(!d)continue;
+    const competencia=competenciaDeData(d);
+    const at=porMes.get(competencia)||{competencia,qtd:0,maxData:null};
+    at.qtd++;
+    if(!at.maxData||d>at.maxData)at.maxData=d;
+    porMes.set(competencia,at);
   }
-  return [...porCompetencia.values()].sort((a,b)=>(b.maxData?.getTime()||0)-(a.maxData?.getTime()||0));
+  /* Um reagendamento antigo perdido no arquivo não é um mês de trabalho: meia
+     dúzia de linhas soltas não viram competência. O corte é baixo de propósito —
+     um mês só pela metade, que é o normal quando o relatório é puxado no meio do
+     período, precisa continuar aparecendo. */
+  const maior=Math.max(...[...porMes.values()].map(x=>x.qtd),0);
+  return [...porMes.values()]
+    .filter(info=>{
+      const faixa=intervaloCompetencia(info.competencia);
+      if(limite&&faixa&&faixa.inicio>limite.inicio)return false;   // mês futuro
+      return info.qtd>=10||info.qtd>=maior*0.02;
+    })
+    .sort((a,b)=>(b.maxData?.getTime()||0)-(a.maxData?.getTime()||0));
 }
 async function calcularIndicadoresEquipe(competenciaEscolhida){
-  let base;
-  if(competenciaEscolhida){
-    const lista=await listarCompetenciasDisponiveis();
-    const alvo=lista.find(c=>c.competencia===competenciaEscolhida);
-    if(!alvo)return {ok:false,motivo:'sem_registros'};
-    const config=await getConfig();
-    const tecnicos=await dbGetAll('tecnicos');
-    const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
-    const importacao=await dbGet('importacoes',alvo.importacaoId);
-    const dados=(await dbGetAllByIndex('importacoesDados','importacaoId',alvo.importacaoId))[0];
-    const linhas=linhasDaCompetencia(linhasEquipeOuNull(dados?dados.linhas:[],config,loginsEquipe)||[],competenciaEscolhida);
-    base={ok:true,linhas,importacao,tecnicos};
-  } else {
-    base=await obterLinhasBaseEquipe();
-  }
+  const base=await reunirLinhasEquipe();
   if(!base.ok)return base;
+  if(competenciaEscolhida){
+    base.linhas=linhasDaCompetencia(base.linhas,competenciaEscolhida);
+    if(!base.linhas.length)return {ok:false,motivo:'sem_registros'};
+  }
   const {linhas,tecnicos}=base;
   const porLogin={};
   linhas.forEach(row=>{
@@ -4388,11 +4446,14 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
     if(!porLogin[login])porLogin[login]={total:0,revisitas:0,tecOk:0,tecBase:0,tecFora:0,diasSet:new Set()};
     const t=porLogin[login];
     t.total++;
-    if(ehRevisitaLinha(row))t.revisitas++;
+    t.revisitas+=qtdRevisitaLinha(row);
     const tecNum=Number(row.TOTAL_OS_TEC1_PADRAO)||0;
     const tecDen=Number(row.QTD_TOTAL_OS_TEC1)||0;
     if(tecDen>0){t.tecOk+=tecNum;t.tecBase+=tecDen;t.tecFora+=Math.max(0,tecDen-tecNum);}
-    if(row.DATA_AGENDA)t.diasSet.add(row.DATA_AGENDA);
+    /* Dia de atendimento é dia do calendário: a chave precisa ser a data em si,
+       não o que estava escrito na célula. */
+    const dia=parseDataAgendaBR(row.DATA_AGENDA);
+    if(dia)t.diasSet.add(dia.getTime());
   });
   const nr35Resultado=await calcularNR35PorTecnico();
   const porTecnico=tecnicos.filter(t=>t.login).map(t=>{
@@ -4492,28 +4553,30 @@ async function salvarStatusTecnico(tecnicoId,novoStatus){
   }
   await registrarHistoricoGeral('tecnicos','edicao',`Status de ${t.nome} alterado para ${novoStatus}`);
 }
+async function registrarImportacao(linhas,nomeFinal,ext,deZip,aba){
+  normalizarDatasImportadas(linhas);
+  const config=await getConfig();
+  const tecnicos=await dbGetAll('tecnicos');
+  const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
+  const tipoBase=detectarTipoBase(linhas);
+  const qtdRegistrosValidos=tipoBase==='nr35'
+    ?calcularRegistrosValidosNR35(linhas,config,loginsEquipe)
+    :calcularRegistrosValidos(linhas,config,loginsEquipe);
+  const rotuloBase=tipoBase==='nr35'?'NR35':(tipoBase==='toa'?'Revisita/TEC1':'');
+  const importacao={nomeArquivo:nomeFinal,dataImportacao:new Date().toISOString(),tipoArquivo:ext.toUpperCase()+(deZip?' (ZIP)':''),qtdRegistros:linhas.length,qtdRegistrosValidos,tipoBase,rotuloBase,status:'Concluído',aba:aba||''};
+  const importacaoId=await dbAdd('importacoes',importacao);
+  await dbAdd('importacoesDados',{importacaoId,linhas});
+  await registrarHistoricoGeral('importacao','importado',`Arquivo ${nomeFinal} importado com ${linhas.length} registro(s)${qtdRegistrosValidos!=null?` (${qtdRegistrosValidos} válido(s) para a equipe)`:''}`);
+}
 async function processarWorkbook(wb,nomeArquivo,ext,deZip=false){
   let abas=wb.SheetNames;
   if(abas.length>1){
     abas=await escolherAbasModal(nomeArquivo,abas);
     if(!abas||abas.length===0)return;
   }
-  const config=await getConfig();
-  const tecnicos=await dbGetAll('tecnicos');
-  const loginsEquipe=new Set(tecnicos.filter(t=>t.login).map(t=>t.login.trim().toUpperCase()));
   for(const aba of abas){
-    const ws=wb.Sheets[aba];
-    const linhas=XLSX.utils.sheet_to_json(ws,{defval:''});
-    const nomeFinal=nomeArquivo+(wb.SheetNames.length>1?` [${aba}]`:'');
-    const tipoBase=detectarTipoBase(linhas);
-    const qtdRegistrosValidos=tipoBase==='nr35'
-      ?calcularRegistrosValidosNR35(linhas,config,loginsEquipe)
-      :calcularRegistrosValidos(linhas,config,loginsEquipe);
-    const rotuloBase=tipoBase==='nr35'?'NR35':(tipoBase==='toa'?'Revisita/TEC1':'');
-    const importacao={nomeArquivo:nomeFinal,dataImportacao:new Date().toISOString(),tipoArquivo:ext.toUpperCase()+(deZip?' (ZIP)':''),qtdRegistros:linhas.length,qtdRegistrosValidos,tipoBase,rotuloBase,status:'Concluído',aba};
-    const importacaoId=await dbAdd('importacoes',importacao);
-    await dbAdd('importacoesDados',{importacaoId,linhas});
-    await registrarHistoricoGeral('importacao','importado',`Arquivo ${nomeFinal} importado com ${linhas.length} registro(s)${qtdRegistrosValidos!=null?` (${qtdRegistrosValidos} válido(s) para a equipe)`:''}`);
+    const linhas=XLSX.utils.sheet_to_json(wb.Sheets[aba],{defval:''});
+    await registrarImportacao(linhas,nomeArquivo+(wb.SheetNames.length>1?` [${aba}]`:''),ext,deZip,aba);
   }
 }
 function escolherAbasModal(nomeArquivo,abas){
@@ -4541,19 +4604,23 @@ async function processarZip(file){
   for(const entrada of entradas){
     const ext=extensao(entrada.name);
     let wb;
-    if(ext==='csv'){const text=removerBOM(await entrada.async('string'));wb=XLSX.read(text,{type:'string',FS:detectarDelimitadorCSV(text)});}
-    else{const buf2=await entrada.async('arraybuffer');wb=XLSX.read(new Uint8Array(buf2),{type:'array'});}
+    if(ext==='csv'){await registrarImportacao(lerCSV(removerBOM(await entrada.async('string'))),entrada.name,ext,true,'');continue;}
+    const buf2=await entrada.async('arraybuffer');
+    wb=XLSX.read(new Uint8Array(buf2),{type:'array',cellDates:true});
     await processarWorkbook(wb,entrada.name,ext,true);
   }
 }
 async function processarArquivos(fileList){
-  if(!window.XLSX){toast('Leitor de planilhas não carregado. Conecte-se à internet e recarregue a página.','erro');return;}
   for(const file of Array.from(fileList)){
     const ext=extensao(file.name);
+    /* CSV agora é lido pelo próprio sistema; só XLSX/XLS dependem da biblioteca
+       externa, e ZIP da que descompacta. */
+    if((ext==='xlsx'||ext==='xls'||ext==='zip')&&!window.XLSX){toast('Leitor de planilhas não carregado. Conecte-se à internet e recarregue a página.','erro');continue;}
+    if(ext==='zip'&&!window.JSZip){toast('Leitor de arquivos ZIP não carregado. Conecte-se à internet e recarregue a página.','erro');continue;}
     try{
       if(ext==='zip'){await processarZip(file);}
-      else if(ext==='xlsx'||ext==='xls'){const buf=await file.arrayBuffer();const wb=XLSX.read(new Uint8Array(buf),{type:'array'});await processarWorkbook(wb,file.name,ext);}
-      else if(ext==='csv'){const text=removerBOM(await file.text());const wb=XLSX.read(text,{type:'string',FS:detectarDelimitadorCSV(text)});await processarWorkbook(wb,file.name,ext);}
+      else if(ext==='xlsx'||ext==='xls'){const buf=await file.arrayBuffer();const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:true});await processarWorkbook(wb,file.name,ext);}
+      else if(ext==='csv'){await registrarImportacao(lerCSV(removerBOM(await file.text())),file.name,ext,false,'');}
       else{toast(`Tipo de arquivo não suportado: ${file.name}`,'erro');continue;}
       toast(`${file.name} importado com sucesso`,'sucesso');
     }catch(e){
@@ -5239,7 +5306,6 @@ async function initApp(){
   document.getElementById('btnLimparEscala').addEventListener('click',limparEscalaSelecionada);
   document.getElementById('btnBloquearEscala').innerHTML=icon('lock',14)+' Bloquear';
   document.getElementById('btnBloquearEscala').addEventListener('click',alternarBloqueioEscala);
-  document.getElementById('slaLimiteLog').addEventListener('change',salvarSlaLimite);
   document.getElementById('selMesEscala').addEventListener('change',()=>{
     mesSelecionadoPlantoes=document.getElementById('selMesEscala').value;
     renderPlantoes();
