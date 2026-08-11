@@ -291,6 +291,9 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .btn-extra-add:hover{border-color:var(--brand);color:var(--brand)}
 .feriado-desc{display:block;font-size:10px;color:var(--text-muted);white-space:normal;max-width:150px;margin-top:2px}
 .exportando-imagem .row-actions,.exportando-imagem .btn-extra-add{display:none}
+/* Texto que entra no lugar dos campos na hora de gerar a imagem. */
+.campo-congelado{display:inline-block;max-width:100%}
+.sel-congelado{display:inline-block;padding:2px 4px;font-size:.86em;font-weight:700;line-height:1.35}
 #view-plantoes .card-title{background:var(--brand-soft);color:var(--brand-dark);border:1px solid var(--brand-light);border-radius:8px;padding:10px 14px;margin-bottom:14px}
 /* As três planilhas — escala, técnicos e valores — usam a mesma cabeça e a mesma
    escala de fonte. O clamp faz a letra acompanhar a largura da tela sem estourar
@@ -791,7 +794,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.10.5';
+const APP_VERSAO='2026.08.11.1';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -2294,6 +2297,7 @@ async function gerarImagemValores(){
   tituloWrap.innerHTML=`<div style="font-size:20px;font-weight:800;letter-spacing:.04em;color:#011355">COMISSÃO DOS TÉCNICOS</div><div style="font-size:14px;font-weight:600;color:#0B5FD1;margin-top:2px">${escapeHtml(competenciaSelecionadaGlobal?formatarIntervaloCompetencia(competenciaSelecionadaGlobal):'')}</div>`;
   wrap.insertBefore(tituloWrap,wrap.firstChild);
   wrap.classList.add('exportando-imagem');
+  const restaurar=congelarCamposParaImagem(wrap);
   try{
     const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#ffffff'});
     const a=document.createElement('a');
@@ -2301,6 +2305,7 @@ async function gerarImagemValores(){
     a.download=`valores-comissao-${competenciaSelecionadaGlobal||'geral'}.png`;
     a.click();
   } finally {
+    restaurar();
     tituloWrap.remove();
     wrap.classList.remove('exportando-imagem');
   }
@@ -2330,20 +2335,35 @@ async function gerarImagemTecnicos(){
     wrap.classList.remove('exportando-imagem');
   }
 }
-/* Troca inputs e selects por texto simples e devolve a função que desfaz. */
+/* Troca campos de digitação e seletores por texto e devolve a função que desfaz.
+   O html2canvas desenha a moldura do campo mas não o que está escrito dentro:
+   percentual sai em branco e o seletor sai com o texto cortado no meio. Vale
+   para as três exportações — Técnicos, Valores e Escala. */
 function congelarCamposParaImagem(wrap){
   const trocados=[];
-  wrap.querySelectorAll('.certidao-campo,.status-compliance-sel').forEach(el=>{
-    const input=el.classList.contains('certidao-campo')?el.querySelector('input'):el;
-    const bruto=el.classList.contains('certidao-campo')
-      ?(input.value?input.value+'%':'—')
-      :((STATUS_COMPLIANCE.find(s=>s.v===el.value)||{}).l||'—');
+  const substituir=(el,html)=>{
     const span=document.createElement('span');
-    span.className='badge '+(el.classList.contains('abaixo')?'badge-red':el.classList.contains('ok')?'badge-green':'badge-slate');
-    span.textContent=bruto;
+    span.className='campo-congelado';
+    span.innerHTML=html;
     el.parentNode.insertBefore(span,el);
     el.style.display='none';
     trocados.push([el,span]);
+  };
+  const corDoCampo=(el,vazio)=>el.classList.contains('abaixo')?'badge-red'
+    :el.classList.contains('ok')?'badge-green':(vazio?'badge-slate':'badge-green');
+  wrap.querySelectorAll('.certidao-campo').forEach(el=>{
+    const valor=(el.querySelector('input')||{}).value||'';
+    substituir(el,`<span class="badge ${corDoCampo(el,!valor)}">${valor?escapeHtml(valor)+'%':'—'}</span>`);
+  });
+  wrap.querySelectorAll('select').forEach(el=>{
+    if(!el.offsetParent&&el.style.display==='none')return;
+    /* Vazio vira travessão: "Selecionar..." é convite de tela, não conteúdo de
+       escala impressa. */
+    const texto=el.value===''?'':(((el.options||[])[el.selectedIndex]||{}).text||'');
+    if(el.classList.contains('status-compliance-sel'))
+      substituir(el,`<span class="badge ${corDoCampo(el,!texto)}">${escapeHtml(texto)||'—'}</span>`);
+    else
+      substituir(el,`<span class="sel-congelado">${escapeHtml(texto)||'—'}</span>`);
   });
   return ()=>trocados.forEach(([el,span])=>{el.style.display='';span.remove();});
 }
@@ -3882,6 +3902,7 @@ async function gerarImagemPlantoes(){
   tituloWrap.innerHTML=`<div style="font-size:20px;font-weight:800;letter-spacing:.04em;color:#011355">ESCALA DE PLANTÕES</div><div style="font-size:14px;font-weight:600;color:#0B5FD1;margin-top:2px">MÊS DE ${MESES_COMPETENCIA[mesNum-1].toUpperCase()}/${ano}</div>`;
   wrap.insertBefore(tituloWrap,wrap.firstChild);
   wrap.classList.add('exportando-imagem');
+  const restaurar=congelarCamposParaImagem(wrap);
   try{
     const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#ffffff'});
     const a=document.createElement('a');
@@ -3889,6 +3910,7 @@ async function gerarImagemPlantoes(){
     a.download=`escala-plantoes-${mesSelecionadoPlantoes}.png`;
     a.click();
   } finally {
+    restaurar();
     tituloWrap.remove();
     wrap.classList.remove('exportando-imagem');
   }
