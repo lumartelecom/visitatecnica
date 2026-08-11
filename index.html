@@ -791,7 +791,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.10.4';
+const APP_VERSAO='2026.08.10.5';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1707,13 +1707,32 @@ function nivelIndicador(valor,tipo){
 function badgeClasseNivel(nivel){
   return nivel==='vermelho'?'badge-red':nivel==='amarelo'?'badge-amber':nivel==='verde'?'badge-green':'badge-slate';
 }
+/* Certificado é quem está dentro da meta em TUDO. Vale para os seis critérios,
+   os que saem da base e os que são lançados à mão — é a mesma lista que decide
+   a comissão, então as duas telas não podem discordar.
+   Indicador sem lançamento também segura a certificação: é a regra que o T1 já
+   seguia ("Pendente" nunca certificou), e certificar sem o número na mão seria
+   dizer que passou em algo que ninguém conferiu. O motivo de cada pendência
+   fica no title do badge, para ninguém precisar adivinhar o que falta. */
+const CRITERIOS_SITUACAO=[
+  {tipo:'producao',rotulo:'Produção',valor:i=>i.mediaProducao},
+  {tipo:'revisita',rotulo:'Revisita',valor:i=>i.revPct},
+  {tipo:'tec1',rotulo:'TEC1',valor:i=>i.tec1Pct},
+  {tipo:'nr35',rotulo:'NR35',valor:i=>i.nr35Pct},
+  {tipo:'certidao',rotulo:'Certidão de atendimento',valor:i=>i.certidaoPct}
+];
 function situacaoTecnico(ind){
-  if(!ind)return{label:'—',cls:'badge-slate'};
-  const naoCertificado=['revisita','tec1','producao','nr35'].some(tipo=>{
-    const valor=tipo==='revisita'?ind.revPct:tipo==='tec1'?ind.tec1Pct:tipo==='producao'?ind.mediaProducao:ind.nr35Pct;
-    return nivelIndicador(valor,tipo)==='vermelho';
-  }) || ind.statusT1!=='em_dia';
-  return naoCertificado?{label:'Não certificado',cls:'badge-red'}:{label:'Certificado',cls:'badge-green'};
+  if(!ind)return{label:'—',cls:'badge-slate',motivo:'Sem indicadores para esta competência'};
+  const pendencias=[];
+  for(const c of CRITERIOS_SITUACAO){
+    const valor=c.valor(ind);
+    if(valor==null)pendencias.push(`${c.rotulo}: sem lançamento`);
+    else if(nivelIndicador(valor,c.tipo)==='vermelho')pendencias.push(`${c.rotulo}: fora da meta`);
+  }
+  if(ind.statusT1!=='em_dia')pendencias.push(`T1: ${ind.statusT1==='vencido'?'vencido':'pendente'}`);
+  return pendencias.length
+    ?{label:'Não certificado',cls:'badge-red',motivo:'Falta: '+pendencias.join(' · ')}
+    :{label:'Certificado',cls:'badge-green',motivo:'Todos os indicadores dentro da meta'};
 }
 
 /* ===== Volume diário de OS agendadas (gráfico de linha) ===== */
@@ -1883,7 +1902,7 @@ async function renderTecnicos(){
     return`<tr>
       <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)||'sem login'}</div></div></div></td>
       ${CRITERIOS_VALORES.map(c=>`<td>${celulaCriterioIndicador(c,ind,t,competenciaSelecionadaGlobal)}</td>`).join('')}
-      <td><span class="badge ${situacaoTecnico(ind).cls}">${situacaoTecnico(ind).label}</span></td>
+      <td>${(s=>`<span class="badge ${s.cls}" title="${escapeHtml(s.motivo)}">${s.label}</span>`)(situacaoTecnico(ind))}</td>
     </tr>`;
   }).join('');
 
@@ -4574,6 +4593,7 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
       mediaProducao:diasAtendimento?d.total/diasAtendimento:0,
       nr35Pct:nr35Digitada!=null?nr35Digitada:(nr35Info?nr35Info.pct:null),
       nr35Digitada:nr35Digitada!=null,
+      certidaoPct:pctManual(t,'certidao',competenciaEscolhida),
       statusT1:t.statusT1||'pendente'
     };
   });
