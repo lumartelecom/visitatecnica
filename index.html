@@ -523,6 +523,8 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
       <section class="view" id="view-tecnicos">
         <div class="toolbar">
           <div class="form-hint" id="competenciaTecnicosLabel" style="font-size:13px"></div>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm no-print" id="btnBaixarTecnicosImagem"></button>
         </div>
         <p class="form-hint" id="avisoIndicadoresTecnicos" style="margin-bottom:10px;display:none"></p>
         <div class="card" id="cardTabelaTecnicos">
@@ -789,7 +791,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.10.3';
+const APP_VERSAO='2026.08.10.4';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -2283,6 +2285,48 @@ async function gerarImagemValores(){
     tituloWrap.remove();
     wrap.classList.remove('exportando-imagem');
   }
+}
+
+/* Mesma exportação da aba Valores, sobre a planilha de indicadores. Os campos
+   digitados (certidão, NR35, T1) viram texto na hora da foto: caixa de digitação
+   sai borrada e cortada no canvas. */
+async function gerarImagemTecnicos(){
+  if(!window.html2canvas){toast('Biblioteca de imagem não carregada. Verifique sua conexão.','erro');return;}
+  const wrap=document.getElementById('cardTabelaTecnicos');
+  const tituloWrap=document.createElement('div');
+  tituloWrap.style.cssText='text-align:center;padding:18px 10px 10px;font-family:Inter,sans-serif';
+  tituloWrap.innerHTML=`<div style="font-size:20px;font-weight:800;letter-spacing:.04em;color:#011355">INDICADORES DOS TÉCNICOS</div><div style="font-size:14px;font-weight:600;color:#0B5FD1;margin-top:2px">${escapeHtml(competenciaSelecionadaGlobal||'')}${competenciaSelecionadaGlobal?' &middot; '+formatarIntervaloCompetencia(competenciaSelecionadaGlobal):''}</div>`;
+  wrap.insertBefore(tituloWrap,wrap.firstChild);
+  wrap.classList.add('exportando-imagem');
+  const restaurar=congelarCamposParaImagem(wrap);
+  try{
+    const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#ffffff'});
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download=`indicadores-tecnicos-${competenciaSelecionadaGlobal||'geral'}.png`;
+    a.click();
+  } finally {
+    restaurar();
+    tituloWrap.remove();
+    wrap.classList.remove('exportando-imagem');
+  }
+}
+/* Troca inputs e selects por texto simples e devolve a função que desfaz. */
+function congelarCamposParaImagem(wrap){
+  const trocados=[];
+  wrap.querySelectorAll('.certidao-campo,.status-compliance-sel').forEach(el=>{
+    const input=el.classList.contains('certidao-campo')?el.querySelector('input'):el;
+    const bruto=el.classList.contains('certidao-campo')
+      ?(input.value?input.value+'%':'—')
+      :((STATUS_COMPLIANCE.find(s=>s.v===el.value)||{}).l||'—');
+    const span=document.createElement('span');
+    span.className='badge '+(el.classList.contains('abaixo')?'badge-red':el.classList.contains('ok')?'badge-green':'badge-slate');
+    span.textContent=bruto;
+    el.parentNode.insertBefore(span,el);
+    el.style.display='none';
+    trocados.push([el,span]);
+  });
+  return ()=>trocados.forEach(([el,span])=>{el.style.display='';span.remove();});
 }
 
 /* ===================== VIEW: DIAS TRABALHADOS ===================== */
@@ -5437,6 +5481,9 @@ async function initApp(){
 
   document.getElementById('btnNovaFerias').innerHTML=icon('plus',15)+' Novo período';
   document.getElementById('btnNovaFerias').addEventListener('click',()=>abrirModalFerias());
+
+  document.getElementById('btnBaixarTecnicosImagem').innerHTML=icon('download',15)+' Baixar planilha';
+  document.getElementById('btnBaixarTecnicosImagem').addEventListener('click',gerarImagemTecnicos);
 
   document.getElementById('btnBaixarValoresImagem').innerHTML=icon('download',15)+' Baixar imagem';
   document.getElementById('btnBaixarValoresImagem').addEventListener('click',gerarImagemValores);
