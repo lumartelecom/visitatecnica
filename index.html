@@ -794,7 +794,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.11.1';
+const APP_VERSAO='2026.08.11.2';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1631,7 +1631,7 @@ async function renderInicio(){
       <div class="ind-grid">
         ${tileIndicador('revisita','repeat','Revisita',fmtPct1(indicadores.revPctGeral),indicadores.revPctGeral)}
         ${tileIndicador('tec1','alvo','TEC1',fmtPct1(indicadores.tec1PctGeral),indicadores.tec1PctGeral)}
-        ${tileIndicador('producao','barras','Produção',fmtNum2(indicadores.mediaProducaoGeral),indicadores.mediaProducaoGeral)}
+        ${tileIndicador('producao','barras','Produção',indicadores.mediaProducaoGeral==null?'—':fmtNum2(indicadores.mediaProducaoGeral),indicadores.mediaProducaoGeral)}
         ${tileIndicador('nr35','capacete','NR35',indicadores.nr35Disponivel?fmtPct1(indicadores.nr35PctGeral):'—',indicadores.nr35Disponivel?indicadores.nr35PctGeral:null)}
         ${tileIndicadorT1(indicadores)}
       </div>
@@ -1652,11 +1652,11 @@ async function renderInicio(){
 function abrirModalIndicador(tipo,indicadores){
   const cfgs={
     revisita:{titulo:'Revisita por técnico',cols:['Técnico','% Rev.','Rev. 10d'],ordenar:ordemTecnicos,
-      linha:t=>[escapeHtml(t.nome),fmtPct1(t.revPct),t.revisitas]},
+      linha:t=>[escapeHtml(t.nome),t.revPct==null?'—':fmtPct1(t.revPct),t.revisitas]},
     tec1:{titulo:'TEC1 por técnico',cols:['Técnico','TEC1','Fora Jan.'],ordenar:ordemTecnicos,
-      linha:t=>[escapeHtml(t.nome),fmtPct1(t.tec1Pct),t.tecFora]},
+      linha:t=>[escapeHtml(t.nome),t.tec1Pct==null?'—':fmtPct1(t.tec1Pct),t.tecFora]},
     producao:{titulo:'Produção por técnico',cols:['Técnico','Contratos','Produção'],ordenar:ordemTecnicos,
-      linha:t=>[escapeHtml(t.nome),t.total,fmtNum2(t.mediaProducao)]},
+      linha:t=>[escapeHtml(t.nome),t.total,t.mediaProducao==null?'—':fmtNum2(t.mediaProducao)]},
     nr35:{titulo:'NR35 por técnico',cols:['Técnico','NR35'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),t.nr35Pct==null?'—':fmtPct1(t.nr35Pct)]},
     t1:{titulo:'T1 por técnico',cols:['Técnico','T1'],ordenar:ordemTecnicos,
@@ -1697,6 +1697,11 @@ const LIMITES_INDICADOR={
 };
 function nivelIndicador(valor,tipo){
   if(valor==null||Number.isNaN(valor))return null;
+  /* Decide pelo número que a tela mostra, com duas casas. Sem isso, uma produção
+     de 4,999 aparecia como "5,00" — a meta em cheio — e mesmo assim não pagava:
+     ninguém conseguiria explicar ao técnico por que o relatório diz 5,00 e a
+     comissão diz zero. O que está escrito é o que vale. */
+  valor=Math.round(valor*100)/100;
   const c=LIMITES_INDICADOR[tipo];
   if(c.sentido==='menor_melhor'){
     if(valor>c.limite)return 'vermelho';
@@ -1718,18 +1723,18 @@ function badgeClasseNivel(nivel){
    dizer que passou em algo que ninguém conferiu. O motivo de cada pendência
    fica no title do badge, para ninguém precisar adivinhar o que falta. */
 const CRITERIOS_SITUACAO=[
-  {tipo:'producao',rotulo:'Produção',valor:i=>i.mediaProducao},
-  {tipo:'revisita',rotulo:'Revisita',valor:i=>i.revPct},
-  {tipo:'tec1',rotulo:'TEC1',valor:i=>i.tec1Pct},
-  {tipo:'nr35',rotulo:'NR35',valor:i=>i.nr35Pct},
-  {tipo:'certidao',rotulo:'Certidão de atendimento',valor:i=>i.certidaoPct}
+  {tipo:'producao',rotulo:'Produção',valor:i=>i.mediaProducao,semValor:'sem atendimento no mês'},
+  {tipo:'revisita',rotulo:'Revisita',valor:i=>i.revPct,semValor:'sem atendimento no mês'},
+  {tipo:'tec1',rotulo:'TEC1',valor:i=>i.tec1Pct,semValor:'sem atendimento no mês'},
+  {tipo:'nr35',rotulo:'NR35',valor:i=>i.nr35Pct,semValor:'sem lançamento'},
+  {tipo:'certidao',rotulo:'Certidão de atendimento',valor:i=>i.certidaoPct,semValor:'sem lançamento'}
 ];
 function situacaoTecnico(ind){
   if(!ind)return{label:'—',cls:'badge-slate',motivo:'Sem indicadores para esta competência'};
   const pendencias=[];
   for(const c of CRITERIOS_SITUACAO){
     const valor=c.valor(ind);
-    if(valor==null)pendencias.push(`${c.rotulo}: sem lançamento`);
+    if(valor==null)pendencias.push(`${c.rotulo}: ${c.semValor}`);
     else if(nivelIndicador(valor,c.tipo)==='vermelho')pendencias.push(`${c.rotulo}: fora da meta`);
   }
   if(ind.statusT1!=='em_dia')pendencias.push(`T1: ${ind.statusT1==='vencido'?'vencido':'pendente'}`);
@@ -4609,10 +4614,15 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
     return {
       tecnicoId:t.id,nome:t.nome,login:t.login,
       total:d.total,revisitas:d.revisitas,tecFora:d.tecFora,
-      revPct:d.total?d.revisitas/d.total*100:0,
-      tec1Pct:d.tecBase?d.tecOk/d.tecBase*100:0,
+      /* Sem atendimento no mês não existe indicador — e zero não é nota boa, é
+         ausência de nota. Quando isso virava 0%, a Revisita (onde menos é
+         melhor) passava a ler "0% de revisita" como desempenho perfeito, e quem
+         não trabalhou um único dia levava os 30% da comissão. Nada de base, nada
+         de indicador: fica vazio e não pontua. */
+      revPct:d.total?d.revisitas/d.total*100:null,
+      tec1Pct:d.tecBase?d.tecOk/d.tecBase*100:null,
       diasAtendimento,
-      mediaProducao:diasAtendimento?d.total/diasAtendimento:0,
+      mediaProducao:diasAtendimento?d.total/diasAtendimento:null,
       nr35Pct:nr35Digitada!=null?nr35Digitada:(nr35Info?nr35Info.pct:null),
       nr35Digitada:nr35Digitada!=null,
       certidaoPct:pctManual(t,'certidao',competenciaEscolhida),
@@ -4623,7 +4633,10 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
   const totalRev=porTecnico.reduce((a,t)=>a+t.revisitas,0);
   const totalOk=porTecnico.reduce((a,t)=>a+(porLogin[t.login.trim().toUpperCase()]?.tecOk||0),0);
   const totalBase=porTecnico.reduce((a,t)=>a+(porLogin[t.login.trim().toUpperCase()]?.tecBase||0),0);
-  const mediaProducaoGeral=porTecnico.length?porTecnico.reduce((a,t)=>a+t.mediaProducao,0)/porTecnico.length:0;
+  /* A média da equipe é entre quem tem indicador; quem não atendeu no mês não
+     entra como zero e puxa o número da equipe para baixo. */
+  const comProducao=porTecnico.filter(t=>t.mediaProducao!=null);
+  const mediaProducaoGeral=comProducao.length?comProducao.reduce((a,t)=>a+t.mediaProducao,0)/comProducao.length:null;
   /* O geral da NR35 é a média de quem tem número — lançado ou vindo da base.
      Quem ainda não foi lançado fica de fora em vez de entrar como zero. */
   const comNr35=porTecnico.filter(t=>t.nr35Pct!=null);
