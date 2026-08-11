@@ -336,6 +336,9 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .valor-sub.fail{color:var(--red-dark)}
 .valor-total-box{display:inline-block;padding:5px 9px;border-radius:6px;border:1.5px solid var(--green);color:var(--green);font-weight:800;font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--green-light);white-space:nowrap}
 .valor-total-box.baixo{border-color:var(--red-dark);color:var(--red-dark);background:var(--red-light)}
+.status-compliance-sel{padding:2px 4px;font-size:11px;border-radius:6px;border:1.5px solid var(--border-strong);background:var(--surface);font-weight:700}
+.status-compliance-sel.ok{border-color:var(--green);color:var(--green);background:var(--green-light)}
+.status-compliance-sel.abaixo{border-color:var(--red-dark);color:var(--red-dark);background:var(--red-light)}
 #tabelaValores .status-compliance-sel,#tabelaTecnicos .status-compliance-sel{font-size:.86em;padding:2px 3px;width:100%;max-width:88px}
 /* Certidão de atendimento: o percentual é digitado, então a célula é um campo —
    com a mesma moldura verde/vermelha que os indicadores usam para dizer, de
@@ -786,7 +789,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.10.2';
+const APP_VERSAO='2026.08.10.3';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1550,7 +1553,7 @@ const ALVO_INDICADOR={
   revisita:{curto:'≤ 7%',longo:'Meta: revisita de no máximo 7%',pct:v=>Math.max(0,Math.min(100,(7-v)/7*100))},
   tec1:{curto:'≥ 95%',longo:'Meta: TEC1 de no mínimo 95%',pct:v=>Math.max(0,Math.min(100,v/95*100))},
   producao:{curto:'≥ 5,00',longo:'Meta: produção média de no mínimo 5,00 OS/dia',pct:v=>Math.max(0,Math.min(100,v/5*100))},
-  nr35:{curto:'≥ 90%',longo:'Meta: NR35 de no mínimo 90%',pct:v=>Math.max(0,Math.min(100,v/90*100))}
+  nr35:{curto:'≥ 95%',longo:'Meta: NR35 de no mínimo 95%',pct:v=>Math.max(0,Math.min(100,v/95*100))}
 };
 function statusIndicador(nivel){
   if(nivel==='verde')return{cls:'is-verde',ico:'check',txt:'Dentro da meta'};
@@ -1666,6 +1669,9 @@ function abrirModalIndicador(tipo,indicadores){
   if(tipo==='t1'){
     document.querySelectorAll('.modal-body .status-compliance-sel').forEach(sel=>sel.addEventListener('change',async()=>{
       await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value);
+      /* O modal não se redesenha, então a cor acompanha aqui mesmo. */
+      sel.classList.remove('ok','abaixo');
+      sel.classList.add(classeStatusCompliance(sel.value));
       toast('Status atualizado','sucesso');
     }));
   }
@@ -1679,8 +1685,10 @@ const LIMITES_INDICADOR={
   revisita:{limite:7,sentido:'menor_melhor',margem:1},
   tec1:{limite:95,sentido:'maior_melhor',margem:2},
   producao:{limite:5,sentido:'maior_melhor',margem:0},
-  nr35:{limite:90,sentido:'maior_melhor',margem:2},
-  certidao:{limite:85,sentido:'maior_melhor',margem:2}
+  /* Os dois digitados não têm faixa de atenção: ou bate a meta e pontua, ou não
+     bate e não pontua. Amarelo só confundiria quem lança o número. */
+  nr35:{limite:95,sentido:'maior_melhor',margem:0},
+  certidao:{limite:85,sentido:'maior_melhor',margem:0}
 };
 function nivelIndicador(valor,tipo){
   if(valor==null||Number.isNaN(valor))return null;
@@ -1882,15 +1890,16 @@ async function renderTecnicos(){
     toast('Status atualizado','sucesso');
     renderTecnicos();
   }));
-  ligarCamposCertidao('#tabelaTecnicos',renderTecnicos);
+  ligarCamposDigitados('#tabelaTecnicos',renderTecnicos);
 }
 /* O redesenho só acontece ao sair do campo (change), não a cada tecla: quem
    está digitando 92 não pode ver a tabela se refazer no "9". */
-function ligarCamposCertidao(seletorTabela,redesenhar){
+function ligarCamposDigitados(seletorTabela,redesenhar){
   document.querySelectorAll(`${seletorTabela} .certidao-input`).forEach(input=>{
     input.addEventListener('change',async()=>{
-      const ok=await salvarPctCertidao(Number(input.dataset.tid),competenciaSelecionadaGlobal,input.value);
-      toast(ok?'Certidão de atendimento atualizada':'Percentual inválido — digite um número, como 92,5',ok?'sucesso':'erro');
+      const campo=input.dataset.campo;
+      const ok=await salvarPctManual(Number(input.dataset.tid),campo,competenciaSelecionadaGlobal,input.value);
+      toast(ok?`${CAMPOS_DIGITADOS[campo].rotulo} atualizada`:'Percentual inválido — digite um número, como 92,5',ok?'sucesso':'erro');
       redesenhar();
     });
     input.addEventListener('keydown',(e)=>{if(e.key==='Enter')input.blur();});
@@ -2125,10 +2134,20 @@ const CRITERIOS_VALORES=[
   {key:'producao',label:'Produção',pct:20,campo:'mediaProducao',tipoNivel:'producao',fmt:fmtNum2},
   {key:'revisita',label:'Revisita',pct:30,campo:'revPct',tipoNivel:'revisita',fmt:fmtPct1},
   {key:'tec1',label:'TEC1',pct:25,campo:'tec1Pct',tipoNivel:'tec1',fmt:fmtPct1},
-  {key:'nr35',label:'NR35',pct:10,campo:'nr35Pct',tipoNivel:'nr35',fmt:fmtPct1},
-  {key:'certidao',label:'Certidão de atendimento',pct:10,digitado:true,tipoNivel:'certidao',fmt:fmtPct1},
+  {key:'nr35',label:'NR35',pct:10,campo:'nr35Pct',digitado:'nr35',tipoNivel:'nr35',fmt:fmtPct1},
+  {key:'certidao',label:'Certidão de atendimento',pct:10,digitado:'certidao',tipoNivel:'certidao',fmt:fmtPct1},
   {key:'t1',label:'T1',pct:5,statusCampo:'statusT1'}
 ];
+/* O valor que vale para o critério. Nos digitados, o lançamento manda; quando
+   não há lançamento e o critério também tem origem na base (caso da NR35), vale
+   o que a base calculou. */
+function valorCriterio(crit,ind,tecnico,competencia){
+  if(crit.digitado){
+    const manual=pctManual(tecnico,crit.digitado,competencia);
+    if(manual!=null)return manual;
+  }
+  return (crit.campo&&ind)?ind[crit.campo]:null;
+}
 function calcularValorTecnico(tecnico,ind,valorTotal,competencia){
   let total=0;
   const detalhes=CRITERIOS_VALORES.map(crit=>{
@@ -2137,9 +2156,9 @@ function calcularValorTecnico(tecnico,ind,valorTotal,competencia){
     if(crit.statusCampo){
       atingido=(tecnico[crit.statusCampo]||'pendente')==='em_dia';
     } else {
-      /* A certidão é digitada; os demais saem da base. Daí em diante o critério
-         é o mesmo: abaixo da meta, não pontua. */
-      const valor=crit.digitado?pctCertidao(tecnico,competencia):(ind?ind[crit.campo]:null);
+      /* Certidão e NR35 são digitadas; as demais saem da base. Daí em diante o
+         critério é o mesmo: abaixo da meta, não pontua. */
+      const valor=valorCriterio(crit,ind,tecnico,competencia);
       if(valor==null)indisponivel=true;
       else atingido=nivelIndicador(valor,crit.tipoNivel)!=='vermelho';
     }
@@ -2156,7 +2175,7 @@ function celulaCriterioIndicador(crit,ind,tecnico,competencia){
     const valorAtual=tecnico[crit.statusCampo]||'pendente';
     return selectStatusCompliance(tecnico.id,crit.statusCampo,valorAtual);
   }
-  if(crit.digitado)return campoCertidao(tecnico,competencia);
+  if(crit.digitado)return campoManual(tecnico,crit.digitado,competencia,valorCriterio(crit,ind,tecnico,competencia));
   const valor=ind?ind[crit.campo]:null;
   if(valor==null)return`<span class="badge badge-slate">—</span>`;
   const nivel=nivelIndicador(valor,crit.tipoNivel);
@@ -2171,9 +2190,9 @@ function celulaCriterioValor(crit,ind,tecnico,valorTotal,competencia){
       <div class="valor-sub ${atingido?'ok':'fail'}">${fmtMoeda(atingido?valorMax:0)}</div>`;
   }
   if(crit.digitado){
-    const valor=pctCertidao(tecnico,competencia);
+    const valor=valorCriterio(crit,ind,tecnico,competencia);
     const atingido=valor!=null&&nivelIndicador(valor,crit.tipoNivel)!=='vermelho';
-    return`${campoCertidao(tecnico,competencia)}
+    return`${campoManual(tecnico,crit.digitado,competencia,valor)}
       <div class="valor-sub ${atingido?'ok':'fail'}">${fmtMoeda(atingido?valorMax:0)}</div>`;
   }
   const valor=ind?ind[crit.campo]:null;
@@ -2237,7 +2256,7 @@ async function renderValores(){
     toast('Status atualizado','sucesso');
     renderValores();
   }));
-  ligarCamposCertidao('#tabelaValores',renderValores);
+  ligarCamposDigitados('#tabelaValores',renderValores);
 }
 async function salvarValorComissaoTotal(){
   const valor=Math.max(0,Number(document.getElementById('cfgValorComissaoTotal').value)||0);
@@ -4498,6 +4517,10 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
     const d=porLogin[key]||{total:0,revisitas:0,tecOk:0,tecBase:0,tecFora:0,diasSet:new Set()};
     const diasAtendimento=d.diasSet.size;
     const nr35Info=nr35Resultado.ok?nr35Resultado.porTecnico[t.id]:null;
+    /* A NR35 lançada à mão manda; sem lançamento, vale a base de NR35, quando
+       ela existe. Assim o cartão do Início, a coluna e a situação do técnico
+       contam todos a mesma história. */
+    const nr35Digitada=pctManual(t,'nr35',competenciaEscolhida);
     return {
       tecnicoId:t.id,nome:t.nome,login:t.login,
       total:d.total,revisitas:d.revisitas,tecFora:d.tecFora,
@@ -4505,7 +4528,8 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
       tec1Pct:d.tecBase?d.tecOk/d.tecBase*100:0,
       diasAtendimento,
       mediaProducao:diasAtendimento?d.total/diasAtendimento:0,
-      nr35Pct:nr35Info?nr35Info.pct:null,
+      nr35Pct:nr35Digitada!=null?nr35Digitada:(nr35Info?nr35Info.pct:null),
+      nr35Digitada:nr35Digitada!=null,
       statusT1:t.statusT1||'pendente'
     };
   });
@@ -4514,13 +4538,16 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
   const totalOk=porTecnico.reduce((a,t)=>a+(porLogin[t.login.trim().toUpperCase()]?.tecOk||0),0);
   const totalBase=porTecnico.reduce((a,t)=>a+(porLogin[t.login.trim().toUpperCase()]?.tecBase||0),0);
   const mediaProducaoGeral=porTecnico.length?porTecnico.reduce((a,t)=>a+t.mediaProducao,0)/porTecnico.length:0;
+  /* O geral da NR35 é a média de quem tem número — lançado ou vindo da base.
+     Quem ainda não foi lançado fica de fora em vez de entrar como zero. */
+  const comNr35=porTecnico.filter(t=>t.nr35Pct!=null);
   return {
     ok:true,porTecnico,baseLen,linhas,
     revPctGeral:baseLen?totalRev/baseLen*100:0,
     tec1PctGeral:totalBase?totalOk/totalBase*100:0,
     mediaProducaoGeral,
-    nr35Disponivel:nr35Resultado.ok,
-    nr35PctGeral:nr35Resultado.ok?nr35Resultado.pctGeral:0,
+    nr35Disponivel:comNr35.length>0,
+    nr35PctGeral:comNr35.length?comNr35.reduce((a,t)=>a+t.nr35Pct,0)/comNr35.length:0,
     nr35ImportacaoNome:nr35Resultado.ok?nr35Resultado.importacaoNome:null,
     t1EmDia:porTecnico.filter(t=>t.statusT1==='em_dia').length,
     totalTecnicos:porTecnico.length,
@@ -4539,9 +4566,13 @@ function fmtPct1(v){return (Number(v)||0).toFixed(2).replace('.',',')+'%';}
 function fmtNum2(v){return (Number(v)||0).toFixed(2).replace('.',',');}
 function fmtMoeda(v){return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const STATUS_COMPLIANCE=[{v:'em_dia',l:'Em dia',cls:'badge-green'},{v:'pendente',l:'Pendente',cls:'badge-amber'},{v:'vencido',l:'Vencido',cls:'badge-red'}];
+/* Só "Em dia" pontua, então o seletor é verde nesse caso e vermelho nos outros
+   dois — a mesma leitura de relance dos demais critérios. */
+function classeStatusCompliance(valor){return valor==='em_dia'?'ok':'abaixo';}
 function selectStatusCompliance(tecnicoId,campo,valorAtual){
-  const opts=STATUS_COMPLIANCE.map(s=>`<option value="${s.v}" ${valorAtual===s.v?'selected':''}>${s.l}</option>`).join('');
-  return `<select class="status-compliance-sel" data-tid="${tecnicoId}" data-campo="${campo}" style="padding:2px 4px;font-size:11px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface)">${opts}</select>`;
+  const atual=valorAtual||'pendente';
+  const opts=STATUS_COMPLIANCE.map(s=>`<option value="${s.v}" ${atual===s.v?'selected':''}>${s.l}</option>`).join('');
+  return `<select class="status-compliance-sel ${classeStatusCompliance(atual)}" data-tid="${tecnicoId}" data-campo="${campo}">${opts}</select>`;
 }
 async function salvarStatusCompliance(tecnicoId,campo,valor){
   const t=await dbGet('tecnicos',tecnicoId);
@@ -4550,25 +4581,34 @@ async function salvarStatusCompliance(tecnicoId,campo,valor){
   await dbPut('tecnicos',t);
 }
 
-/* ---- Certidão de atendimento ----
-   Esse percentual não vem da base do TOA: quem digita é a coordenação, olhando
-   o relatório de certidão do mês. Fica guardado por competência, e não solto no
-   cadastro do técnico, porque é um número de mês — se valesse para sempre, o
+/* ---- Percentuais digitados: Certidão de atendimento e NR35 ----
+   Esses percentuais não vêm da base do TOA: quem digita é a coordenação,
+   olhando o relatório do mês. Ficam guardados por competência, e não soltos no
+   cadastro do técnico, porque são números de mês — se valessem para sempre, o
    percentual de agosto continuaria pagando (ou deixando de pagar) a comissão de
-   setembro sem ninguém perceber. */
-const META_CERTIDAO=LIMITES_INDICADOR.certidao.limite;
-function pctCertidao(tecnico,competencia){
-  if(!tecnico||!competencia)return null;
-  const v=(tecnico.certidaoPorCompetencia||{})[competencia];
+   setembro sem ninguém perceber.
+
+   A NR35 é lançada do mesmo jeito. Ela até sabe ser calculada, quando existe
+   uma base de NR35 importada, mas essa base quase nunca chega — então o número
+   digitado manda, e o calculado só aparece quando não há lançamento. */
+const CAMPOS_DIGITADOS={
+  certidao:{rotulo:'Certidão de atendimento',mapa:'certidaoPorCompetencia'},
+  nr35:{rotulo:'NR35',mapa:'nr35PorCompetencia'}
+};
+function pctManual(tecnico,campo,competencia){
+  const cfg=CAMPOS_DIGITADOS[campo];
+  if(!tecnico||!competencia||!cfg)return null;
+  const v=(tecnico[cfg.mapa]||{})[competencia];
   if(v==null||v==='')return null;
   const n=Number(v);
   return Number.isFinite(n)?n:null;
 }
-async function salvarPctCertidao(tecnicoId,competencia,texto){
-  if(!competencia)return false;
+async function salvarPctManual(tecnicoId,campo,competencia,texto){
+  const cfg=CAMPOS_DIGITADOS[campo];
+  if(!competencia||!cfg)return false;
   const t=await dbGet('tecnicos',tecnicoId);
   if(!t)return false;
-  const mapa={...(t.certidaoPorCompetencia||{})};
+  const mapa={...(t[cfg.mapa]||{})};
   const bruto=String(texto??'').trim().replace('%','').replace(',','.');
   if(!bruto)delete mapa[competencia];
   else{
@@ -4576,22 +4616,25 @@ async function salvarPctCertidao(tecnicoId,competencia,texto){
     if(!Number.isFinite(n))return false;
     mapa[competencia]=Math.min(100,Math.max(0,n));
   }
-  t.certidaoPorCompetencia=mapa;
+  t[cfg.mapa]=mapa;
   await dbPut('tecnicos',t);
   return true;
 }
-function campoCertidao(tecnico,competencia){
-  if(!competencia)return `<span class="badge badge-slate" title="Escolha a competência para lançar a certidão">—</span>`;
-  const valor=pctCertidao(tecnico,competencia);
-  const nivel=nivelIndicador(valor,'certidao');
-  const classe=valor==null?'':(nivel==='vermelho'?'abaixo':'ok');
+/* valorEfetivo é o que a célula mostra: o digitado quando existe, senão o que
+   veio da base (só a NR35 tem essa segunda origem). */
+function campoManual(tecnico,campo,competencia,valorEfetivo){
+  const cfg=CAMPOS_DIGITADOS[campo];
+  const meta=LIMITES_INDICADOR[campo].limite;
+  if(!competencia)return `<span class="badge badge-slate" title="Escolha a competência para lançar ${escapeHtml(cfg.rotulo)}">—</span>`;
+  const valor=valorEfetivo===undefined?pctManual(tecnico,campo,competencia):valorEfetivo;
+  const classe=valor==null?'':(nivelIndicador(valor,campo)==='vermelho'?'abaixo':'ok');
   /* Campo de texto, não type="number": aqui se digita "92,5" com vírgula, como
      em todo o resto do sistema. O inputmode continua abrindo o teclado numérico
      no celular. */
   return `<div class="certidao-campo ${classe}">
-    <input type="text" class="certidao-input" data-tid="${tecnico.id}" maxlength="6" inputmode="decimal"
-      value="${valor==null?'':String(valor).replace('.',',')}" placeholder=""
-      title="Certidão de atendimento em ${escapeHtml(competencia)} &mdash; meta ${META_CERTIDAO}%"><span>%</span></div>`;
+    <input type="text" class="certidao-input" data-tid="${tecnico.id}" data-campo="${campo}" maxlength="6" inputmode="decimal"
+      value="${valor==null?'':String(Math.round(valor*100)/100).replace('.',',')}" placeholder=""
+      title="${escapeHtml(cfg.rotulo)} em ${escapeHtml(competencia)} &mdash; meta ${meta}%"><span>%</span></div>`;
 }
 const OPCOES_STATUS_TECNICO=[{v:'ativo',l:'Ativo'},{v:'ferias',l:'Férias'},{v:'treinamento',l:'Treinamento'},{v:'noturno',l:'Técnico noturno'},{v:'afastado',l:'Afastado'},{v:'desligado',l:'Desligado'}];
 /* Situação cadastral do técnico — diferente da coluna "Situação" da aba
