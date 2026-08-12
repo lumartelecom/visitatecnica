@@ -816,7 +816,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.11.3';
+const APP_VERSAO='2026.08.11.4';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -2186,7 +2186,7 @@ async function renderSla(){
    se aplica" que a base usa em coluna vazia, e ficam de fora da conta. */
 const CODIGOS_COLUNA='LISTA_CD_BAIXA';
 const CODIGOS_VAZIOS=new Set(['-3','-1','0']);
-const CODIGOS_NO_RANKING=40;
+const CODIGOS_NO_RANKING=10;
 function codigosDaLinha(row){
   return String(row[CODIGOS_COLUNA]??'').split('+')
     .map(c=>c.trim()).filter(c=>c&&!CODIGOS_VAZIOS.has(c));
@@ -2202,15 +2202,11 @@ function calcularCodigos(linhas){
     const codigos=codigosDaLinha(row);
     if(!codigos.length)continue;
     const login=String(row.LOGIN_TECNICO||'').trim().toUpperCase();
-    const gerouRevisita=qtdRevisitaLinha(row)>0;
-    const naoConcluida=String(row.STATUS_JOB||'').trim().toLowerCase()==='notdone';
     const t=porTecnico.get(login)||{login,total:0,codigos:new Map()};
     for(const codigo of codigos){
       ocorrencias++;
-      const c=porCodigo.get(codigo)||{codigo,qtd:0,revisitas:0,naoConcluidas:0,porTecnico:new Map()};
+      const c=porCodigo.get(codigo)||{codigo,qtd:0,porTecnico:new Map()};
       c.qtd++;
-      if(gerouRevisita)c.revisitas++;
-      if(naoConcluida)c.naoConcluidas++;
       c.porTecnico.set(login,(c.porTecnico.get(login)||0)+1);
       porCodigo.set(codigo,c);
       t.total++;
@@ -2264,23 +2260,21 @@ async function renderCodigos(){
     .join(' &middot; ');
 
   document.querySelector('#tabelaCodigos thead').innerHTML=`<tr>
-    <th>Código</th><th>Baixas</th><th>% do total</th><th>Gerou revisita</th><th>Não concluídas</th><th>Técnicos</th></tr>`;
+    <th>Código</th><th>Baixas</th><th>% do total</th><th>Técnicos</th></tr>`;
   const mostrados=r.ranking.slice(0,CODIGOS_NO_RANKING);
   document.querySelector('#tabelaCodigos tbody').innerHTML=mostrados.map((c,i)=>`<tr>
     <td><span class="badge ${i<5?'badge-red':'badge-slate'}" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c.codigo)}</span></td>
     <td><strong>${c.qtd}</strong></td>
     <td>${fmtPct1(c.qtd/r.ocorrencias*100)}</td>
-    <td>${c.revisitas?`<span class="badge badge-amber">${c.revisitas}</span>`:'—'}</td>
-    <td>${c.naoConcluidas?`<span class="badge badge-amber">${c.naoConcluidas}</span>`:'—'}</td>
     <td style="font-size:.92em">${listaTecnicos(c.porTecnico)}</td></tr>`).join('');
+  const somaMostrada=mostrados.reduce((a,c)=>a+c.qtd,0);
   document.querySelector('#tabelaCodigos tfoot').innerHTML=`<tr>
-    <td><strong>Total</strong></td><td><strong>${r.ocorrencias}</strong></td><td>100,00%</td>
-    <td>${r.ranking.reduce((a,c)=>a+c.revisitas,0)}</td>
-    <td>${r.ranking.reduce((a,c)=>a+c.naoConcluidas,0)}</td><td></td></tr>`;
+    <td><strong>Os ${mostrados.length} juntos</strong></td><td><strong>${somaMostrada}</strong></td>
+    <td>${fmtPct1(somaMostrada/r.ocorrencias*100)}</td><td></td></tr>`;
   document.getElementById('codigosRankingDesc').innerHTML=
-    `Cada baixa do campo <strong>${CODIGOS_COLUNA}</strong> na competência, do mais usado para o menos. `+
-    `"Gerou revisita" conta as OS desse código que voltaram, e "Não concluídas" as que o TOA fechou como <em>notdone</em> — é por aí que se enxerga qual código está incomodando de verdade.`+
-    (r.ranking.length>CODIGOS_NO_RANKING?` Mostrando os ${CODIGOS_NO_RANKING} primeiros de ${r.ranking.length}.`:'');
+    `Os <strong>${mostrados.length} códigos mais usados</strong> da competência, do campo ${CODIGOS_COLUNA}`+
+    (r.ranking.length>CODIGOS_NO_RANKING?`, entre os ${r.ranking.length} que a equipe usou`:'')+
+    `, com quantas vezes cada técnico fechou uma OS neles.`;
 
   const tecnicos=[...r.porTecnico.values()]
     .map(t=>({...t,nome:nomePorLogin.get(t.login)||t.login||'sem login'}))
