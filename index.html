@@ -816,7 +816,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.11.4';
+const APP_VERSAO='2026.08.11.5';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -2217,11 +2217,23 @@ function calcularCodigos(linhas){
   const ranking=[...porCodigo.values()].sort((a,b)=>b.qtd-a.qtd||a.codigo.localeCompare(b.codigo,'pt-BR'));
   return {ranking,porTecnico,ocorrencias,distintos:porCodigo.size};
 }
+/* Menor e maior DATA_AGENDA das linhas — o período que as bases realmente
+   cobrem, que é o que esta aba usa. */
+function periodoDasLinhas(linhas){
+  let inicio=null,fim=null;
+  for(const r of linhas){
+    const d=parseDataAgendaBR(r.DATA_AGENDA);
+    if(!d)continue;
+    if(!inicio||d<inicio)inicio=d;
+    if(!fim||d>fim)fim=d;
+  }
+  return inicio?{inicio,fim}:null;
+}
+/* Esta aba não segue o seletor de competência: os códigos de baixa são hábito de
+   equipe, e recortar por mês esconderia justamente a repetição que interessa.
+   Vale todo o período das bases importadas, e refaz a conta a cada nova base —
+   a leitura é sempre do que está no banco na hora. */
 async function renderCodigos(){
-  const competencias=await garantirCompetenciaSelecionada();
-  document.getElementById('competenciaCodigosLabel').innerHTML=competencias.length===0?'Sem base importada'
-    :`Competência: <strong>${escapeHtml(competenciaSelecionadaGlobal)} (${formatarIntervaloCompetencia(competenciaSelecionadaGlobal)})</strong> &middot; altere em Início`;
-
   const aviso=document.getElementById('avisoCodigos');
   const limpar=(msg)=>{
     aviso.style.display='block';aviso.innerHTML=msg;
@@ -2233,10 +2245,15 @@ async function renderCodigos(){
     });
   };
 
+  const rotulo=document.getElementById('competenciaCodigosLabel');
   const base=await reunirLinhasEquipe();
-  if(!base.ok){limpar(mensagemIndicadoresIndisponiveis(base.motivo));return;}
-  const linhas=linhasDaCompetencia(base.linhas,competenciaSelecionadaGlobal);
-  if(!linhas.length){limpar('Esta base não tem atendimentos na competência selecionada.');return;}
+  if(!base.ok){rotulo.textContent='Sem base importada';limpar(mensagemIndicadoresIndisponiveis(base.motivo));return;}
+  const linhas=base.linhas;
+  const periodo=periodoDasLinhas(linhas);
+  const qtdBases=(await dbGetAll('importacoes')).filter(i=>i.status!=='Erro'&&i.tipoBase==='toa').length;
+  rotulo.innerHTML=periodo
+    ? `Período completo das bases: <strong>${fmtBR(toISO(periodo.inicio))} a ${fmtBR(toISO(periodo.fim))}</strong> &middot; ${qtdBases} base(s) importada(s) &middot; não segue o seletor de competência`
+    : 'Sem base importada';
   if(!baseTemCodigos(linhas)){
     limpar(`A base importada não traz a coluna <strong>${CODIGOS_COLUNA}</strong> preenchida. É dela que saem os códigos de baixa — sem ela não há o que ranquear.`);
     return;
@@ -2249,7 +2266,7 @@ async function renderCodigos(){
   const lider=r.ranking[0];
 
   document.getElementById('codigosKpis').innerHTML=`
-    <div class="dias-kpi"><span>Baixas na competência</span><strong>${r.ocorrencias}</strong><small>${linhas.length} OS</small></div>
+    <div class="dias-kpi"><span>Baixas no período</span><strong>${r.ocorrencias}</strong><small>${linhas.length} OS</small></div>
     <div class="dias-kpi"><span>Códigos diferentes</span><strong>${r.distintos}</strong><small>usados pela equipe</small></div>
     <div class="dias-kpi"><span>Mais frequente</span><strong>${escapeHtml(lider.codigo)}</strong><small>${lider.qtd} baixas &middot; ${fmtPct1(lider.qtd/r.ocorrencias*100)}</small></div>
     <div class="dias-kpi"><span>Os 5 primeiros</span><strong>${fmtPct1(top5/r.ocorrencias*100)}</strong><small>de todas as baixas</small></div>`;
@@ -2272,7 +2289,7 @@ async function renderCodigos(){
     <td><strong>Os ${mostrados.length} juntos</strong></td><td><strong>${somaMostrada}</strong></td>
     <td>${fmtPct1(somaMostrada/r.ocorrencias*100)}</td><td></td></tr>`;
   document.getElementById('codigosRankingDesc').innerHTML=
-    `Os <strong>${mostrados.length} códigos mais usados</strong> da competência, do campo ${CODIGOS_COLUNA}`+
+    `Os <strong>${mostrados.length} códigos mais usados</strong> em todo o período das bases, do campo ${CODIGOS_COLUNA}`+
     (r.ranking.length>CODIGOS_NO_RANKING?`, entre os ${r.ranking.length} que a equipe usou`:'')+
     `, com quantas vezes cada técnico fechou uma OS neles.`;
 
@@ -2288,16 +2305,21 @@ async function renderCodigos(){
       <td><strong>${t.total}</strong></td>
       <td>${t.codigos.size}</td>
       <td style="font-size:.92em">${top.map(([c,n])=>`<span class="badge badge-slate" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c)}</span> <strong>${n}</strong>`).join(' &middot; ')}</td></tr>`;
-  }).join('')||`<tr class="empty-row"><td colspan="4">Nenhum técnico com baixa na competência</td></tr>`;
+  }).join('')||`<tr class="empty-row"><td colspan="4">Nenhum técnico com baixa no período</td></tr>`;
   document.getElementById('codigosTecnicosDesc').textContent=
-    'Quanto cada técnico fechou na competência e quais códigos ele mais usa. Concentração fora do padrão da equipe costuma ser o primeiro sinal de que algo está sendo baixado errado.';
+    'Quanto cada técnico fechou em todo o período das bases e quais códigos ele mais usa. Concentração fora do padrão da equipe costuma ser o primeiro sinal de que algo está sendo baixado errado.';
 }
 async function gerarImagemCodigos(){
   if(!window.html2canvas){toast('Biblioteca de imagem não carregada. Verifique sua conexão.','erro');return;}
   const wrap=document.getElementById('codigosExport');
+  /* O subtítulo repete o período das bases, não a competência: quem receber a
+     imagem precisa saber de quando são esses números. */
+  const base=await reunirLinhasEquipe();
+  const periodo=base.ok?periodoDasLinhas(base.linhas):null;
+  const faixa=periodo?`${fmtBR(toISO(periodo.inicio))} a ${fmtBR(toISO(periodo.fim))}`:'';
   const tituloWrap=document.createElement('div');
   tituloWrap.style.cssText='text-align:center;padding:18px 10px 10px;font-family:Inter,sans-serif';
-  tituloWrap.innerHTML=`<div style="font-size:20px;font-weight:800;letter-spacing:.04em;color:#011355">CÓDIGOS OFENSORES</div><div style="font-size:14px;font-weight:600;color:#0B5FD1;margin-top:2px">${escapeHtml(competenciaSelecionadaGlobal||'')}${competenciaSelecionadaGlobal?' &middot; '+formatarIntervaloCompetencia(competenciaSelecionadaGlobal):''}</div>`;
+  tituloWrap.innerHTML=`<div style="font-size:20px;font-weight:800;letter-spacing:.04em;color:#011355">CÓDIGOS OFENSORES</div><div style="font-size:14px;font-weight:600;color:#0B5FD1;margin-top:2px">${escapeHtml(faixa)}</div>`;
   wrap.insertBefore(tituloWrap,wrap.firstChild);
   wrap.classList.add('exportando-imagem');
   const restaurar=congelarCamposParaImagem(wrap);
@@ -2305,7 +2327,7 @@ async function gerarImagemCodigos(){
     const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#ffffff'});
     const a=document.createElement('a');
     a.href=canvas.toDataURL('image/png');
-    a.download=`codigos-ofensores-${competenciaSelecionadaGlobal||'geral'}.png`;
+    a.download=`codigos-ofensores-${periodo?toISO(periodo.inicio)+'_a_'+toISO(periodo.fim):'geral'}.png`;
     a.click();
   } finally {
     restaurar();
