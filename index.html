@@ -557,6 +557,28 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         </div>
       </section>
 
+      <section class="view" id="view-codigos">
+        <div class="toolbar">
+          <div class="form-hint" id="competenciaCodigosLabel" style="font-size:13px"></div>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm no-print" id="btnBaixarCodigosImagem"></button>
+        </div>
+        <p class="form-hint" id="avisoCodigos" style="margin-bottom:10px;display:none"></p>
+        <div id="codigosExport">
+        <div id="codigosKpis" class="dias-kpis"></div>
+        <div class="card" id="cardCodigosRanking" style="margin-top:16px">
+          <div class="card-title">Códigos que mais aparecem</div>
+          <p class="form-hint" id="codigosRankingDesc" style="margin-bottom:14px"></p>
+          <div class="table-wrap"><table id="tabelaCodigos"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
+        </div>
+        <div class="card" id="cardCodigosTecnicos" style="margin-top:16px">
+          <div class="card-title">Códigos por técnico</div>
+          <p class="form-hint" id="codigosTecnicosDesc" style="margin-bottom:14px"></p>
+          <div class="table-wrap"><table id="tabelaCodigosTecnicos"><thead></thead><tbody></tbody></table></div>
+        </div>
+        </div>
+      </section>
+
       <section class="view" id="view-plantoes">
 
         <!-- 1. Configuração da Escala -->
@@ -794,7 +816,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.11.2';
+const APP_VERSAO='2026.08.11.3';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1473,6 +1495,7 @@ const MENU=[
   {id:'inicio',label:'Início',icon:'home'},
   {id:'tecnicos',label:'Técnicos',icon:'users'},
   {id:'sla',label:'SLA 30 dias',icon:'repeat'},
+  {id:'codigos',label:'Códigos Ofensores',icon:'alerta'},
   {id:'plantoes',label:'Controle Operacional',icon:'calendar'},
   {id:'valores',label:'Valores',icon:'cash'},
   {id:'diastrabalhados',label:'Dias Trabalhados',icon:'clock'},
@@ -1497,6 +1520,7 @@ async function irParaView(viewId){
   if(viewId==='inicio')await renderInicio();
   else if(viewId==='tecnicos')await renderTecnicos();
   else if(viewId==='sla')await renderSla();
+  else if(viewId==='codigos')await renderCodigos();
   else if(viewId==='plantoes')await renderPlantoes();
   else if(viewId==='valores')await renderValores();
   else if(viewId==='diastrabalhados')await renderDiasTrabalhados();
@@ -2153,6 +2177,147 @@ async function renderSla(){
     `Log é a quantidade de atendimentos no mesmo ${chave} dentro da competência. Aqui, quem tem <strong>log ${limite} ou mais</strong>, do maior para o menor. `+
     `Intervalo curto entre visitas costuma apontar problema de rede ou de instalação, não de execução.`+
     (r.logAlto.length>500?' Mostrando os 500 primeiros.':'');
+}
+
+/* ===================== VIEW: CÓDIGOS OFENSORES =====================
+   O TOA fecha cada OS com um código de baixa. Quando a mesma WO carrega mais de
+   uma OS, os códigos vêm juntos no campo, separados por "+" ("409 +409"), então
+   cada baixa é contada por si. "-3" e "-1" não são código: é o marcador de "não
+   se aplica" que a base usa em coluna vazia, e ficam de fora da conta. */
+const CODIGOS_COLUNA='LISTA_CD_BAIXA';
+const CODIGOS_VAZIOS=new Set(['-3','-1','0']);
+const CODIGOS_NO_RANKING=40;
+function codigosDaLinha(row){
+  return String(row[CODIGOS_COLUNA]??'').split('+')
+    .map(c=>c.trim()).filter(c=>c&&!CODIGOS_VAZIOS.has(c));
+}
+function baseTemCodigos(linhas){
+  return linhas.some(r=>codigosDaLinha(r).length>0);
+}
+function calcularCodigos(linhas){
+  const porCodigo=new Map();
+  const porTecnico=new Map();
+  let ocorrencias=0;
+  for(const row of linhas){
+    const codigos=codigosDaLinha(row);
+    if(!codigos.length)continue;
+    const login=String(row.LOGIN_TECNICO||'').trim().toUpperCase();
+    const gerouRevisita=qtdRevisitaLinha(row)>0;
+    const naoConcluida=String(row.STATUS_JOB||'').trim().toLowerCase()==='notdone';
+    const t=porTecnico.get(login)||{login,total:0,codigos:new Map()};
+    for(const codigo of codigos){
+      ocorrencias++;
+      const c=porCodigo.get(codigo)||{codigo,qtd:0,revisitas:0,naoConcluidas:0,porTecnico:new Map()};
+      c.qtd++;
+      if(gerouRevisita)c.revisitas++;
+      if(naoConcluida)c.naoConcluidas++;
+      c.porTecnico.set(login,(c.porTecnico.get(login)||0)+1);
+      porCodigo.set(codigo,c);
+      t.total++;
+      t.codigos.set(codigo,(t.codigos.get(codigo)||0)+1);
+    }
+    porTecnico.set(login,t);
+  }
+  const ranking=[...porCodigo.values()].sort((a,b)=>b.qtd-a.qtd||a.codigo.localeCompare(b.codigo,'pt-BR'));
+  return {ranking,porTecnico,ocorrencias,distintos:porCodigo.size};
+}
+async function renderCodigos(){
+  const competencias=await garantirCompetenciaSelecionada();
+  document.getElementById('competenciaCodigosLabel').innerHTML=competencias.length===0?'Sem base importada'
+    :`Competência: <strong>${escapeHtml(competenciaSelecionadaGlobal)} (${formatarIntervaloCompetencia(competenciaSelecionadaGlobal)})</strong> &middot; altere em Início`;
+
+  const aviso=document.getElementById('avisoCodigos');
+  const limpar=(msg)=>{
+    aviso.style.display='block';aviso.innerHTML=msg;
+    document.getElementById('codigosKpis').innerHTML='';
+    ['tabelaCodigos','tabelaCodigosTecnicos'].forEach(id=>{
+      document.querySelector(`#${id} thead`).innerHTML='';
+      document.querySelector(`#${id} tbody`).innerHTML='';
+      const tf=document.querySelector(`#${id} tfoot`);if(tf)tf.innerHTML='';
+    });
+  };
+
+  const base=await reunirLinhasEquipe();
+  if(!base.ok){limpar(mensagemIndicadoresIndisponiveis(base.motivo));return;}
+  const linhas=linhasDaCompetencia(base.linhas,competenciaSelecionadaGlobal);
+  if(!linhas.length){limpar('Esta base não tem atendimentos na competência selecionada.');return;}
+  if(!baseTemCodigos(linhas)){
+    limpar(`A base importada não traz a coluna <strong>${CODIGOS_COLUNA}</strong> preenchida. É dela que saem os códigos de baixa — sem ela não há o que ranquear.`);
+    return;
+  }
+  aviso.style.display='none';
+
+  const nomePorLogin=new Map((base.tecnicos||[]).filter(t=>t.login).map(t=>[t.login.trim().toUpperCase(),t.nome]));
+  const r=calcularCodigos(linhas);
+  const top5=r.ranking.slice(0,5).reduce((a,c)=>a+c.qtd,0);
+  const lider=r.ranking[0];
+
+  document.getElementById('codigosKpis').innerHTML=`
+    <div class="dias-kpi"><span>Baixas na competência</span><strong>${r.ocorrencias}</strong><small>${linhas.length} OS</small></div>
+    <div class="dias-kpi"><span>Códigos diferentes</span><strong>${r.distintos}</strong><small>usados pela equipe</small></div>
+    <div class="dias-kpi"><span>Mais frequente</span><strong>${escapeHtml(lider.codigo)}</strong><small>${lider.qtd} baixas &middot; ${fmtPct1(lider.qtd/r.ocorrencias*100)}</small></div>
+    <div class="dias-kpi"><span>Os 5 primeiros</span><strong>${fmtPct1(top5/r.ocorrencias*100)}</strong><small>de todas as baixas</small></div>`;
+
+  const listaTecnicos=(mapa)=>[...mapa.entries()]
+    .sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])))
+    .map(([login,n])=>`${escapeHtml(nomePorLogin.get(login)||login||'sem login')} <strong>${n}</strong>`)
+    .join(' &middot; ');
+
+  document.querySelector('#tabelaCodigos thead').innerHTML=`<tr>
+    <th>Código</th><th>Baixas</th><th>% do total</th><th>Gerou revisita</th><th>Não concluídas</th><th>Técnicos</th></tr>`;
+  const mostrados=r.ranking.slice(0,CODIGOS_NO_RANKING);
+  document.querySelector('#tabelaCodigos tbody').innerHTML=mostrados.map((c,i)=>`<tr>
+    <td><span class="badge ${i<5?'badge-red':'badge-slate'}" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c.codigo)}</span></td>
+    <td><strong>${c.qtd}</strong></td>
+    <td>${fmtPct1(c.qtd/r.ocorrencias*100)}</td>
+    <td>${c.revisitas?`<span class="badge badge-amber">${c.revisitas}</span>`:'—'}</td>
+    <td>${c.naoConcluidas?`<span class="badge badge-amber">${c.naoConcluidas}</span>`:'—'}</td>
+    <td style="font-size:.92em">${listaTecnicos(c.porTecnico)}</td></tr>`).join('');
+  document.querySelector('#tabelaCodigos tfoot').innerHTML=`<tr>
+    <td><strong>Total</strong></td><td><strong>${r.ocorrencias}</strong></td><td>100,00%</td>
+    <td>${r.ranking.reduce((a,c)=>a+c.revisitas,0)}</td>
+    <td>${r.ranking.reduce((a,c)=>a+c.naoConcluidas,0)}</td><td></td></tr>`;
+  document.getElementById('codigosRankingDesc').innerHTML=
+    `Cada baixa do campo <strong>${CODIGOS_COLUNA}</strong> na competência, do mais usado para o menos. `+
+    `"Gerou revisita" conta as OS desse código que voltaram, e "Não concluídas" as que o TOA fechou como <em>notdone</em> — é por aí que se enxerga qual código está incomodando de verdade.`+
+    (r.ranking.length>CODIGOS_NO_RANKING?` Mostrando os ${CODIGOS_NO_RANKING} primeiros de ${r.ranking.length}.`:'');
+
+  const tecnicos=[...r.porTecnico.values()]
+    .map(t=>({...t,nome:nomePorLogin.get(t.login)||t.login||'sem login'}))
+    .sort((a,b)=>ordemTecnicos({login:a.login,nome:a.nome},{login:b.login,nome:b.nome}));
+  document.querySelector('#tabelaCodigosTecnicos thead').innerHTML=`<tr>
+    <th>Técnico</th><th>Baixas</th><th>Códigos diferentes</th><th>Códigos que mais usa</th></tr>`;
+  document.querySelector('#tabelaCodigosTecnicos tbody').innerHTML=tecnicos.map(t=>{
+    const top=[...t.codigos.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')).slice(0,5);
+    return `<tr>
+      <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)||'sem login'}</div></div></div></td>
+      <td><strong>${t.total}</strong></td>
+      <td>${t.codigos.size}</td>
+      <td style="font-size:.92em">${top.map(([c,n])=>`<span class="badge badge-slate" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c)}</span> <strong>${n}</strong>`).join(' &middot; ')}</td></tr>`;
+  }).join('')||`<tr class="empty-row"><td colspan="4">Nenhum técnico com baixa na competência</td></tr>`;
+  document.getElementById('codigosTecnicosDesc').textContent=
+    'Quanto cada técnico fechou na competência e quais códigos ele mais usa. Concentração fora do padrão da equipe costuma ser o primeiro sinal de que algo está sendo baixado errado.';
+}
+async function gerarImagemCodigos(){
+  if(!window.html2canvas){toast('Biblioteca de imagem não carregada. Verifique sua conexão.','erro');return;}
+  const wrap=document.getElementById('codigosExport');
+  const tituloWrap=document.createElement('div');
+  tituloWrap.style.cssText='text-align:center;padding:18px 10px 10px;font-family:Inter,sans-serif';
+  tituloWrap.innerHTML=`<div style="font-size:20px;font-weight:800;letter-spacing:.04em;color:#011355">CÓDIGOS OFENSORES</div><div style="font-size:14px;font-weight:600;color:#0B5FD1;margin-top:2px">${escapeHtml(competenciaSelecionadaGlobal||'')}${competenciaSelecionadaGlobal?' &middot; '+formatarIntervaloCompetencia(competenciaSelecionadaGlobal):''}</div>`;
+  wrap.insertBefore(tituloWrap,wrap.firstChild);
+  wrap.classList.add('exportando-imagem');
+  const restaurar=congelarCamposParaImagem(wrap);
+  try{
+    const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#ffffff'});
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download=`codigos-ofensores-${competenciaSelecionadaGlobal||'geral'}.png`;
+    a.click();
+  } finally {
+    restaurar();
+    tituloWrap.remove();
+    wrap.classList.remove('exportando-imagem');
+  }
 }
 
 /* ===================== VIEW: VALORES (comissão dos técnicos) ===================== */
@@ -5539,6 +5704,9 @@ async function initApp(){
 
   document.getElementById('btnBaixarTecnicosImagem').innerHTML=icon('download',15)+' Baixar planilha';
   document.getElementById('btnBaixarTecnicosImagem').addEventListener('click',gerarImagemTecnicos);
+
+  document.getElementById('btnBaixarCodigosImagem').innerHTML=icon('download',15)+' Baixar planilha';
+  document.getElementById('btnBaixarCodigosImagem').addEventListener('click',gerarImagemCodigos);
 
   document.getElementById('btnBaixarValoresImagem').innerHTML=icon('download',15)+' Baixar imagem';
   document.getElementById('btnBaixarValoresImagem').addEventListener('click',gerarImagemValores);
