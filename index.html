@@ -1118,8 +1118,16 @@ function mesEscalaBloqueado(config,mesChave){
 function filtrarPlantoesNaoBloqueados(plantoes,config){
   return plantoes.filter(p=>!mesEscalaBloqueado(config,String(p.data||'').slice(0,7)));
 }
+function ausenciaCobreData(f,dataISO){
+  /* Treinamento pode ser lançado em dias avulsos do mês. Quando diasEspecificos
+     existe, ele tem prioridade sobre o intervalo visual dataInicio/dataFim. */
+  if(f.tipo==='treinamento'&&Array.isArray(f.diasEspecificos)&&f.diasEspecificos.length){
+    return f.diasEspecificos.includes(dataISO);
+  }
+  return dataISO>=f.dataInicio && dataISO<=f.dataFim;
+}
 function tecnicoEmFerias(tecnicoId,dataISO,feriasList){
-  return feriasList.some(f=>f.tecnicoId===tecnicoId && dataISO>=f.dataInicio && dataISO<=f.dataFim);
+  return feriasList.some(f=>f.tecnicoId===tecnicoId && ausenciaCobreData(f,dataISO));
 }
 /* ===================== MOTOR DA ESCALA =====================
    Regras, em ordem de força:
@@ -1421,10 +1429,12 @@ async function excluirPlantao(plantaoId){
 }
 
 /* ===================== FÉRIAS ===================== */
-async function substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim){
+async function substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim,diasEspecificos=[]){
   const plantoes=await dbGetAll('plantoes');
   const cfgBloq=await getConfig();
-  const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&p.data>=dataInicio&&p.data<=dataFim),cfgBloq);
+  const datas=new Set(Array.isArray(diasEspecificos)&&diasEspecificos.length?diasEspecificos:[]);
+  const afetados=filtrarPlantoesNaoBloqueados(plantoes.filter(p=>p.tecnicoIds.includes(tecnicoId)&&
+    (datas.size?datas.has(p.data):(p.data>=dataInicio&&p.data<=dataFim))),cfgBloq);
   for(const p of afetados){
     const idx=p.tecnicoIds.indexOf(tecnicoId);
     const excluir=p.tecnicoIds.filter((x,i)=>i!==idx&&x);
@@ -1446,7 +1456,7 @@ async function atualizarStatusFerias(){
   const tecnicos=await dbGetAll('tecnicos');
   for(const t of tecnicos){
     if(t.status==='desligado')continue;
-    const ausencia=feriasList.find(f=>f.tecnicoId===t.id&&hoje>=f.dataInicio&&hoje<=f.dataFim);
+    const ausencia=feriasList.find(f=>f.tecnicoId===t.id&&ausenciaCobreData(f,hoje));
     const statusAusencia=ausencia?tipoAusencia(ausencia.tipo).status:null;
     if(statusAusencia){
       if(t.status!==statusAusencia){t.status=statusAusencia;await dbPut('tecnicos',t);}
@@ -1466,7 +1476,7 @@ async function salvarFerias(tecnicoId,dataInicio,dataFim,feriasId=null,tipo='fer
     criadoEm:new Date().toISOString()},extras);
   if(feriasId){registro.id=feriasId;await dbPut('ferias',registro);}
   else{await dbAdd('ferias',registro);}
-  await substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim);
+  await substituirPlantoesPorFerias(tecnicoId,dataInicio,dataFim,registro.diasEspecificos||[]);
   await atualizarStatusFerias();
   const tecnico=await dbGet('tecnicos',tecnicoId);
   await registrarHistoricoGeral('ferias','cadastro',`${tipoAusencia(tipo).l} de ${tecnico?tecnico.nome:tecnicoId}: ${fmtBR(dataInicio)} a ${fmtBR(dataFim)}`);
@@ -2855,7 +2865,7 @@ function tecnicosFolgaDia(ctx,iso){return ctx.folgasPorData.get(iso)||new Set();
    muda é só o rótulo. Retorna o registro para o detalhamento individual saber
    qual foi o motivo naquele dia. */
 function ausenciaNoDia(ctx,tecnicoId,iso){
-  return ctx.ferias.find(f=>f.tecnicoId===tecnicoId&&iso>=f.dataInicio&&iso<=f.dataFim)||null;
+  return ctx.ferias.find(f=>f.tecnicoId===tecnicoId&&ausenciaCobreData(f,iso))||null;
 }
 function equipeAtivaDia(ctx,iso){
   return ctx.tecnicos.filter(t=>{
@@ -3579,7 +3589,7 @@ async function tecnicosAtivosOptions(selecionadoId,excluirIds,dataISO=null){
   const feriasList=await dbGetAll('ferias');
   const iso=dataISO||toISO(new Date());
   const motivo=(t)=>{
-    const aus=feriasList.find(f=>f.tecnicoId===t.id&&iso>=f.dataInicio&&iso<=f.dataFim);
+    const aus=feriasList.find(f=>f.tecnicoId===t.id&&ausenciaCobreData(f,iso));
     if(aus)return tipoAusencia(aus.tipo).l.toLowerCase();
     if(STATUS_POR_AUSENCIA.includes(t.status)&&!feriasList.some(f=>f.tecnicoId===t.id))
       return (OPCOES_STATUS_TECNICO.find(o=>o.v===t.status)||{l:''}).l.toLowerCase();
@@ -4132,7 +4142,7 @@ async function salvarDiaFolgaSelecionado(plantaoId,tecnicoId,folgaId,diaSemana){
 async function renderTabelaFeriasSecao(){
   const thead=document.querySelector('#tabelaFerias thead');
   const tbody=document.querySelector('#tabelaFerias tbody');
-  thead.innerHTML=`<tr><th>Técnico</th><th>Tipo</th><th>Status</th><th>Data Inicial</th><th>Data Final</th><th></th></tr>`;
+  thead.innerHTML=`<tr><th>Técnico</th><th>Tipo</th><th>Status</th><th>Período</th><th>Dias específicos</th><th></th></tr>`;
   await atualizarStatusFerias();
   let lista=ordenarLista(await dbGetAll('ferias'),'dataInicio',-1);
   const tecnicos=await dbGetAll('tecnicos');
@@ -4145,20 +4155,25 @@ async function renderTabelaFeriasSecao(){
   }
   const hoje=toISO(new Date());
   const situacao=(f)=>{
-    const emCurso=hoje>=f.dataInicio&&hoje<=f.dataFim;
-    const futuro=hoje<f.dataInicio;
+    const emCurso=f.tipo==='treinamento'&&Array.isArray(f.diasEspecificos)&&f.diasEspecificos.length
+      ?f.diasEspecificos.includes(hoje)
+      :hoje>=f.dataInicio&&hoje<=f.dataFim;
+    const futuro=f.tipo==='treinamento'&&Array.isArray(f.diasEspecificos)&&f.diasEspecificos.length
+      ?hoje<f.dataInicio
+      :hoje<f.dataInicio;
     return emCurso?{cls:'badge-amber',lbl:'Em curso'}
       :(futuro?{cls:'badge-slate',lbl:'Agendado'}:{cls:'badge-green',lbl:'Concluído'});
   };
   tbody.innerHTML=lista.map(f=>{
     const {cls,lbl}=situacao(f);
     const ref=(f.aquisitivoInicio&&f.aquisitivoFim)?`<div class="tec-login-sub">Ref. ${fmtBR(f.aquisitivoInicio)} a ${fmtBR(f.aquisitivoFim)}</div>`:'';
+    const diasEsp=(f.tipo==='treinamento'&&Array.isArray(f.diasEspecificos)&&f.diasEspecificos.length)?f.diasEspecificos.map(fmtBR).join(', '):'—';
     const vend=f.diasVendidos>0?` <span class="badge badge-slate">+${f.diasVendidos} vendido${f.diasVendidos===1?'':'s'}</span>`:'';
     return `<tr>
       <td><strong>${escapeHtml(tecnicoNome(f.tecnicoId))}</strong>${ref}</td>
       <td>${badgeTipoAusencia(f.tipo)}${vend}</td>
       <td><span class="badge ${cls}">${lbl}</span></td>
-      <td>${fmtBR(f.dataInicio)}</td><td>${fmtBR(f.dataFim)}</td>
+      <td>${fmtBR(f.dataInicio)} a ${fmtBR(f.dataFim)}</td><td>${diasEsp}</td>
       <td><div class="row-actions">
         <button class="btn btn-ghost btn-icon" data-card="${f.id}" title="Gerar card do período">${icon('eye',15)}</button>
         <button class="btn btn-ghost btn-icon" data-edit="${f.id}" title="Editar">${icon('edit',15)}</button>
@@ -4337,9 +4352,20 @@ async function abrirModalFerias(feriasId=null){
         <div class="form-group"><label>Técnico</label><select id="frTecnico">${opts}</select></div>
         <div class="form-group"><label>Tipo</label><select id="frTipo">${optsTipo}</select></div>
       </div>
-      <div class="form-row">
+      <div class="form-row" id="frPeriodoRow">
         <div class="form-group"><label>Data início</label><input type="date" id="frInicio" value="${ferias?.dataInicio||''}"></div>
         <div class="form-group"><label>Data fim</label><input type="date" id="frFim" value="${ferias?.dataFim||''}"></div>
+      </div>
+      <div id="frTreinamentoDias" style="display:none">
+        <div class="form-group">
+          <label>Mês do treinamento</label>
+          <input type="month" id="frMesTreinamento" value="${(ferias?.diasEspecificos?.[0]||ferias?.dataInicio||'').slice(0,7)}">
+        </div>
+        <div class="form-group">
+          <label>Dias específicos no mês</label>
+          <div id="frDiasEspecificosRow" class="dias-permitidos-row"></div>
+          <p class="form-hint">Marque somente os dias em que o técnico estará em treinamento. Esses dias serão descontados da capacidade e dos dias previstos/trabalhados.</p>
+        </div>
       </div>
       <div id="frAvisoInicio" class="form-hint" style="display:none;background:#fdf3e3;border-left:3px solid var(--amber);padding:9px 11px;border-radius:6px;margin-bottom:12px"></div>
       <div id="frBlocoFerias" style="display:none">
@@ -4354,25 +4380,39 @@ async function abrirModalFerias(feriasId=null){
         <p class="form-hint" style="margin-top:-4px;margin-bottom:12px">Os 12 meses trabalhados que deram direito a estas férias. Aparece no card como referência.</p>
         <div id="frResumo" class="form-hint" style="background:var(--brand-soft);padding:10px 12px;border-radius:8px;margin-bottom:12px"></div>
       </div>
-      <p class="form-hint" id="frTextoPadrao">O técnico sai da capacidade da equipe em todos os dias do período e é substituído nos plantões que caírem dentro dele.</p>
+      <p class="form-hint" id="frTextoPadrao">O técnico sai da capacidade da equipe nos dias cadastrados e é substituído nos plantões que caírem nesses dias.</p>
       <div id="frErro" class="form-error" style="display:none"></div>`,
     footButtons:[
       {label:'Cancelar',classe:'btn-secondary',onClick:fecharModal},
       {label:'Salvar',classe:'btn-primary',onClick:async()=>{
         const tecnicoId=Number(document.getElementById('frTecnico').value);
         const tipo=document.getElementById('frTipo').value;
-        const dataInicio=document.getElementById('frInicio').value;
-        const dataFim=document.getElementById('frFim').value;
+        let dataInicio=document.getElementById('frInicio').value;
+        let dataFim=document.getElementById('frFim').value;
         const erroEl=document.getElementById('frErro');
+        let diasEspecificos=[];
+        if(tipo==='treinamento'&&document.getElementById('frTreinamentoDias').style.display!=='none'){
+          diasEspecificos=Array.from(document.querySelectorAll('#frDiasEspecificosRow input:checked')).map(i=>i.value).sort();
+          if(!diasEspecificos.length){erroEl.style.display='block';erroEl.textContent='Selecione pelo menos um dia de treinamento no mês';return;}
+          dataInicio=diasEspecificos[0];dataFim=diasEspecificos[diasEspecificos.length-1];
+        }
         if(!dataInicio||!dataFim||dataFim<dataInicio){erroEl.style.display='block';erroEl.textContent='Informe um período válido';return;}
         const existentes=(await dbGetAll('ferias')).filter(f=>f.tecnicoId===tecnicoId&&f.id!==feriasId);
-        const sobrepoe=existentes.some(f=>dataInicio<=f.dataFim&&dataFim>=f.dataInicio);
-        if(sobrepoe){erroEl.style.display='block';erroEl.textContent='Este técnico já tem um período cadastrado que se sobrepõe a essas datas';return;}
+        const cobreExistente=(f,iso)=>ausenciaCobreData(f,iso);
+        const datasTeste=diasEspecificos.length?diasEspecificos:[dataInicio,dataFim];
+        const sobrepoe=diasEspecificos.length
+          ?diasEspecificos.some(iso=>existentes.some(f=>cobreExistente(f,iso)))
+          :existentes.some(f=>{
+             if(f.tipo==='treinamento'&&Array.isArray(f.diasEspecificos)&&f.diasEspecificos.length)
+               return f.diasEspecificos.some(iso=>iso>=dataInicio&&iso<=dataFim);
+             return dataInicio<=f.dataFim&&dataFim>=f.dataInicio;
+           });
+        if(sobrepoe){erroEl.style.display='block';erroEl.textContent='Este técnico já tem um período cadastrado que se sobrepõe a uma ou mais dessas datas';return;}
         const extras=tipo==='ferias'?{
           diasVendidos:Math.max(0,Math.min(10,Number(document.getElementById('frDiasVendidos').value)||0)),
           aquisitivoInicio:document.getElementById('frAqInicio').value||'',
           aquisitivoFim:document.getElementById('frAqFim').value||''
-        }:{};
+        }:tipo==='treinamento'?{diasEspecificos}:{};
         await salvarFerias(tecnicoId,dataInicio,dataFim,feriasId,tipo,extras);
         fecharModal();toast(`${tipoAusencia(tipo).l} salva(o) com sucesso`,'sucesso');renderPlantoes();
       }}
@@ -4384,6 +4424,30 @@ async function abrirModalFerias(feriasId=null){
   const ehFerias=()=>$('frTipo').value==='ferias';
   const diasEntre=(a,b)=>Math.round((parseISO(b)-parseISO(a))/86400000)+1;
 
+  function renderDiasEspecificos(){
+    const bloco=$('frTreinamentoDias'),row=$('frDiasEspecificosRow'),mes=$('frMesTreinamento');
+    if(!bloco||!row||!mes)return;
+    const mostrar=$('frTipo').value==='treinamento';
+    bloco.style.display=mostrar?'':'none';
+    const periodo=$('frPeriodoRow');
+    if(periodo)periodo.style.display=mostrar?'none':'';
+    if(!mostrar)return;
+    const valor=mes.value;
+    if(!valor){row.innerHTML='';return;}
+    const [ano,mesNum]=valor.split('-').map(Number);
+    const ultimo=new Date(ano,mesNum,0).getDate();
+    /* O conjunto inicial é injetado abaixo no primeiro render via atributo DOM. */
+    const atuais=new Set((row.dataset.valores||'').split(',').filter(Boolean));
+    row.innerHTML=Array.from({length:ultimo},(_,i)=>{
+      const dia=i+1,iso=`${ano}-${String(mesNum).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      const checked=atuais.has(iso)?'checked':'';
+      return `<label class="dia-check-pill ${checked?'checked':''}"><input type="checkbox" value="${iso}" ${checked}>${String(dia).padStart(2,'0')}</label>`;
+    }).join('');
+    row.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
+      inp.parentElement.classList.toggle('checked',inp.checked);
+      row.dataset.valores=Array.from(row.querySelectorAll('input:checked')).map(i=>i.value).join(',');
+    }));
+  }
   function pintarAvisoInicio(){
     const el=$('frAvisoInicio'),ini=$('frInicio').value;
     if(!ini||!ehFerias()){el.style.display='none';return;}
@@ -4424,7 +4488,10 @@ async function abrirModalFerias(feriasId=null){
   }
   function atualizar(){alternarBloco();pintarAvisoInicio();if(ehFerias())atualizarResumo();}
 
-  $('frTipo').addEventListener('change',atualizar);
+  const diasTreinoIniciais=(ferias?.diasEspecificos||[]).join(',');
+  $('frDiasEspecificosRow').dataset.valores=diasTreinoIniciais;
+  $('frTipo').addEventListener('change',()=>{renderDiasEspecificos();atualizar();});
+  $('frMesTreinamento').addEventListener('change',()=>{ $('frDiasEspecificosRow').dataset.valores=''; renderDiasEspecificos(); });
   /* Digitar o número de dias fecha a data final, e mexer na data final reescreve
      o número — os dois lados contam a mesma coisa. */
   $('frDiasGozo').addEventListener('input',()=>{
@@ -4445,6 +4512,7 @@ async function abrirModalFerias(feriasId=null){
   ['frDiasVendidos','frAqInicio','frAqFim'].forEach(id=>$(id).addEventListener('input',atualizarResumo));
   if(ferias?.dataInicio&&ferias?.dataFim)$('frDiasGozo').value=diasEntre(ferias.dataInicio,ferias.dataFim);
   atualizar();
+  renderDiasEspecificos();
 }
 async function excluirFeriasConfirm(id){
   const ok=await confirmarAcao('Excluir este período? Substituições já realizadas nos plantões não serão desfeitas automaticamente.');
