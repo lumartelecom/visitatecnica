@@ -450,6 +450,15 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
   .form-row{grid-template-columns:1fr}
   .content{padding:14px}
 }
+
+/* Técnicos separados em células de planilha */
+#view-codigos #tabelaCodigosTecnicos{min-width:1180px;}
+#view-codigos #tabelaCodigosTecnicos th:nth-child(1){min-width:180px;}
+#view-codigos #tabelaCodigosTecnicos th:nth-child(2){min-width:115px;}
+#view-codigos #tabelaCodigosTecnicos th:nth-child(n+5){text-align:center;}
+#view-codigos #tabelaCodigosTecnicos td:nth-child(n+5){white-space:nowrap;}
+#view-codigos #tabelaCodigosTecnicos td:nth-child(even){text-align:right;}
+
 @media(max-width:720px){
   .table-wrap{display:none}
   .mobile-cards{display:flex}
@@ -466,6 +475,204 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
   body{background:#fff}
   .card{box-shadow:none;border:1px solid #ccc}
 }
+
+/* ===== CÓDIGOS — ESTILO DE PLANILHA ===== */
+#view-codigos #codigosExport{
+  --sheet-grid:#cfd5dd;
+  --sheet-head:#dfe8f4;
+  --sheet-head-dark:#cbd9ea;
+  --sheet-total:#edf2f7;
+  --sheet-hover:#f7fbff;
+}
+
+#view-codigos #cardCodigosRanking,
+#view-codigos #cardCodigosTecnicos{
+  padding:0;
+  border:1px solid var(--sheet-grid);
+  border-radius:4px;
+  box-shadow:0 1px 3px rgba(20,30,45,.10);
+  overflow:hidden;
+  background:#fff;
+}
+
+#view-codigos #cardCodigosRanking .card-title,
+#view-codigos #cardCodigosTecnicos .card-title{
+  margin:0;
+  padding:9px 12px;
+  border:0;
+  border-bottom:1px solid #b8c3d0;
+  border-radius:0;
+  background:var(--sheet-head);
+  color:#23364d;
+  font-size:12px;
+  font-weight:800;
+  text-transform:none;
+  letter-spacing:0;
+}
+
+#view-codigos #cardCodigosRanking .form-hint,
+#view-codigos #cardCodigosTecnicos .form-hint{
+  margin:0!important;
+  padding:7px 12px;
+  border-bottom:1px solid var(--sheet-grid);
+  background:#fafbfd;
+  color:#5c6877;
+  font-size:10.5px;
+}
+
+#view-codigos #cardCodigosRanking .table-wrap,
+#view-codigos #cardCodigosTecnicos .table-wrap{
+  border:0;
+  border-radius:0;
+  overflow-x:auto;
+}
+
+#view-codigos #tabelaCodigos,
+#view-codigos #tabelaCodigosTecnicos{
+  width:100%;
+  min-width:760px;
+  border-collapse:collapse;
+  border-spacing:0;
+  font-size:11.5px;
+  table-layout:auto;
+}
+
+#view-codigos #tabelaCodigos thead th,
+#view-codigos #tabelaCodigosTecnicos thead th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  padding:7px 9px;
+  border:1px solid #b8c3d0;
+  border-top:0;
+  background:var(--sheet-head-dark);
+  color:#26384d;
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.035em;
+  text-align:left;
+  cursor:default;
+  white-space:nowrap;
+}
+
+#view-codigos #tabelaCodigos tbody tr,
+#view-codigos #tabelaCodigosTecnicos tbody tr{
+  border:0;
+}
+
+#view-codigos #tabelaCodigos tbody tr:nth-child(even),
+#view-codigos #tabelaCodigosTecnicos tbody tr:nth-child(even){
+  background:#fbfcfe;
+}
+
+#view-codigos #tabelaCodigos tbody tr:hover,
+#view-codigos #tabelaCodigosTecnicos tbody tr:hover{
+  background:var(--sheet-hover);
+}
+
+#view-codigos #tabelaCodigos td,
+#view-codigos #tabelaCodigosTecnicos td{
+  padding:6px 9px;
+  border:1px solid var(--sheet-grid);
+  border-top:0;
+  vertical-align:middle;
+  color:#202833;
+}
+
+#view-codigos #tabelaCodigos td:nth-child(2),
+#view-codigos #tabelaCodigos td:nth-child(3),
+#view-codigos #tabelaCodigosTecnicos td:nth-child(2),
+#view-codigos #tabelaCodigosTecnicos td:nth-child(3){
+  text-align:right;
+  font-family:'IBM Plex Mono',monospace;
+  font-variant-numeric:tabular-nums;
+}
+
+#view-codigos #tabelaCodigos td:first-child{
+  width:120px;
+}
+
+#view-codigos #tabelaCodigos td:last-child{
+  line-height:1.7;
+}
+
+#view-codigos #tabelaCodigosTecnicos td:first-child{
+  min-width:210px;
+}
+
+#view-codigos #tabelaCodigosTecnicos td:last-child{
+  line-height:1.8;
+}
+
+#view-codigos #tabelaCodigos .badge,
+#view-codigos #tabelaCodigosTecnicos .badge{
+  border:1px solid #bcc7d4;
+  border-radius:3px;
+  padding:2px 6px;
+  background:#f1f4f8;
+  color:#24384e;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  font-weight:700;
+}
+
+#view-codigos #tabelaCodigos .badge.badge-red{
+  background:#fbe8e8;
+  border-color:#e7b6b6;
+  color:#a52b2b;
+}
+
+#view-codigos #tabelaCodigos tfoot td{
+  padding:7px 9px;
+  border:1px solid #b8c3d0;
+  border-top:2px solid #9eacbb;
+  background:var(--sheet-total);
+  color:#26384d;
+  font-weight:800;
+}
+
+#view-codigos #tabelaCodigosTecnicos .tec-cell{
+  gap:7px;
+}
+
+#view-codigos #tabelaCodigosTecnicos .tec-avatar{
+  width:24px;
+  height:24px;
+  border:1px solid #b9c7d7;
+  background:#e8eef6;
+  color:#315b86;
+}
+
+@media(max-width:720px){
+  #view-codigos #tabelaCodigos,
+  #view-codigos #tabelaCodigosTecnicos{
+    min-width:720px;
+  }
+  #view-codigos #cardCodigosRanking,
+  #view-codigos #cardCodigosTecnicos{
+    overflow:hidden;
+  }
+}
+
+
+/* Códigos por técnico em colunas individuais */
+#view-codigos #tabelaCodigos{
+  min-width: 1100px;
+}
+#view-codigos #tabelaCodigos thead th:nth-child(n+4){
+  text-align:center;
+  min-width:105px;
+  max-width:150px;
+  white-space:normal;
+}
+#view-codigos #tabelaCodigos tbody td:nth-child(n+4),
+#view-codigos #tabelaCodigos tfoot td:nth-child(n+4){
+  text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-variant-numeric:tabular-nums;
+}
+
 </style>
 </head>
 <body>
@@ -567,12 +774,12 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         <div id="codigosExport">
         <div id="codigosKpis" class="dias-kpis"></div>
         <div class="card" id="cardCodigosRanking" style="margin-top:16px">
-          <div class="card-title">Códigos que mais aparecem</div>
+          <div class="card-title">Códigos que mais aparecem <span style="font-size:10px;font-weight:600;color:#687789">PLANILHA</span></div>
           <p class="form-hint" id="codigosRankingDesc" style="margin-bottom:14px"></p>
           <div class="table-wrap"><table id="tabelaCodigos"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
         </div>
         <div class="card" id="cardCodigosTecnicos" style="margin-top:16px">
-          <div class="card-title">Códigos por técnico</div>
+          <div class="card-title">Códigos por técnico <span style="font-size:10px;font-weight:600;color:#687789">PLANILHA</span></div>
           <p class="form-hint" id="codigosTecnicosDesc" style="margin-bottom:14px"></p>
           <div class="table-wrap"><table id="tabelaCodigosTecnicos"><thead></thead><tbody></tbody></table></div>
         </div>
@@ -2286,36 +2493,63 @@ async function renderCodigos(){
     .map(([login,n])=>`${escapeHtml(nomePorLogin.get(login)||login||'sem login')} <strong>${n}</strong>`)
     .join(' &middot; ');
 
+  /* Códigos que mais aparecem — cada técnico vira uma coluna */
+  const tecnicosColunas=[...r.porTecnico.values()]
+    .map(t=>({...t,nome:nomePorLogin.get(t.login)||t.login||'sem login'}))
+    .sort((a,b)=>ordemTecnicos(
+      {login:a.login,nome:a.nome},
+      {login:b.login,nome:b.nome}
+    ));
+
   document.querySelector('#tabelaCodigos thead').innerHTML=`<tr>
-    <th>Código</th><th>Baixas</th><th>% do total</th><th>Técnicos</th></tr>`;
+    <th>Código</th>
+    <th>Baixas</th>
+    <th>% do total</th>
+    ${tecnicosColunas.map(t=>`<th>${escapeHtml(t.nome)}</th>`).join('')}
+  </tr>`;
+
   const mostrados=r.ranking.slice(0,CODIGOS_NO_RANKING);
   document.querySelector('#tabelaCodigos tbody').innerHTML=mostrados.map((c,i)=>`<tr>
     <td><span class="badge ${i<5?'badge-red':'badge-slate'}" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c.codigo)}</span></td>
     <td><strong>${c.qtd}</strong></td>
     <td>${fmtPct1(c.qtd/r.ocorrencias*100)}</td>
-    <td style="font-size:.92em">${listaTecnicos(c.porTecnico)}</td></tr>`).join('');
+    ${tecnicosColunas.map(t=>{
+      const n=c.porTecnico.get(t.login)||0;
+      return `<td style="text-align:center;font-family:'IBM Plex Mono',monospace">${n||'—'}</td>`;
+    }).join('')}
+  </tr>`).join('');
+
   const somaMostrada=mostrados.reduce((a,c)=>a+c.qtd,0);
   document.querySelector('#tabelaCodigos tfoot').innerHTML=`<tr>
-    <td><strong>Os ${mostrados.length} juntos</strong></td><td><strong>${somaMostrada}</strong></td>
-    <td>${fmtPct1(somaMostrada/r.ocorrencias*100)}</td><td></td></tr>`;
+    <td><strong>Os ${mostrados.length} juntos</strong></td>
+    <td><strong>${somaMostrada}</strong></td>
+    <td>${fmtPct1(somaMostrada/r.ocorrencias*100)}</td>
+    ${tecnicosColunas.map(t=>{
+      const n=mostrados.reduce((s,c)=>s+(c.porTecnico.get(t.login)||0),0);
+      return `<td style="text-align:center"><strong>${n||'—'}</strong></td>`;
+    }).join('')}
+  </tr>`;
   document.getElementById('codigosRankingDesc').innerHTML=
     `Os <strong>${mostrados.length} códigos mais usados</strong> em todo o período das bases, do campo ${CODIGOS_COLUNA}`+
     (r.ranking.length>CODIGOS_NO_RANKING?`, entre os ${r.ranking.length} que a equipe usou`:'')+
-    `, com quantas vezes cada técnico fechou uma OS neles.`;
+    `, com uma coluna individual para cada técnico, mostrando quantas vezes ele fechou uma OS em cada código.`;
 
   const tecnicos=[...r.porTecnico.values()]
     .map(t=>({...t,nome:nomePorLogin.get(t.login)||t.login||'sem login'}))
     .sort((a,b)=>ordemTecnicos({login:a.login,nome:a.nome},{login:b.login,nome:b.nome}));
   document.querySelector('#tabelaCodigosTecnicos thead').innerHTML=`<tr>
-    <th>Técnico</th><th>Baixas</th><th>Códigos diferentes</th><th>Códigos que mais usa</th></tr>`;
+    <th>Técnico</th><th>Login</th><th>Baixas</th><th>Códigos diferentes</th><th>Código 1</th><th>Qtd. 1</th><th>Código 2</th><th>Qtd. 2</th><th>Código 3</th><th>Qtd. 3</th><th>Código 4</th><th>Qtd. 4</th><th>Código 5</th><th>Qtd. 5</th></tr>`;
   document.querySelector('#tabelaCodigosTecnicos tbody').innerHTML=tecnicos.map(t=>{
     const top=[...t.codigos.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')).slice(0,5);
+    while(top.length<5) top.push(['—','—']);
     return `<tr>
-      <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)||'sem login'}</div></div></div></td>
+      <td><strong>${escapeHtml(t.nome)}</strong></td>
+      <td class="tec-login-sub" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(t.login)||'sem login'}</td>
       <td><strong>${t.total}</strong></td>
       <td>${t.codigos.size}</td>
-      <td style="font-size:.92em">${top.map(([c,n])=>`<span class="badge badge-slate" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c)}</span> <strong>${n}</strong>`).join(' &middot; ')}</td></tr>`;
-  }).join('')||`<tr class="empty-row"><td colspan="4">Nenhum técnico com baixa no período</td></tr>`;
+      ${top.map(([c,n])=>`<td><span class="badge badge-slate" style="font-family:'IBM Plex Mono',monospace">${escapeHtml(c)}</span></td><td style="text-align:right"><strong>${n}</strong></td>`).join('')}
+    </tr>`;
+  }).join('')||`<tr class="empty-row"><td colspan="14">Nenhum técnico com baixa no período</td></tr>`;
   document.getElementById('codigosTecnicosDesc').textContent=
     'Quanto cada técnico fechou em todo o período das bases e quais códigos ele mais usa. Concentração fora do padrão da equipe costuma ser o primeiro sinal de que algo está sendo baixado errado.';
 }
