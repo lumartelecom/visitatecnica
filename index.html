@@ -1386,6 +1386,15 @@ async function sincronizarContadoresPlantao(ano){
    trás recuperar nos meses seguintes; depois quantas vezes o candidato já fez
    dupla recentemente com quem já está nesta data, senão a escala congela em
    pares fixos o ano todo. */
+/* Hash estável simples, usado só para resortear empates reais entre técnicos
+   igualmente qualificados a cada clique em "Gerar escala" (seedGeracaoEscala).
+   Não interfere em nenhum critério de equilíbrio: só decide quando tudo mais
+   já deu empate. */
+function hashEstavel(str){
+  let h=2166136261;
+  for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),16777619)>>>0;
+  return h;
+}
 function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,tetoMes,ultimaData,recentes1,recentes2,penalidadeDupla}){
   if(!candidatos.length)return null;
   /* Teto do mês, sem exceção: ninguém passa da parte que lhe cabe enquanto
@@ -1410,6 +1419,10 @@ function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,tetoMes
   const retrasado=(t)=>recentes2.has(t.id)?1:0;
   /* Dentro do mês: quem tem menos plantões no mês, depois quem está há mais
      tempo sem pegar um, evitando repetir a mesma dupla. */
+  /* Só resorteia empate em datas que ainda vão acontecer. Data passada fica
+     travada no resultado determinístico de sempre — regenerar a escala não
+     pode reescrever quem já trabalhou num plantão que já ocorreu. */
+  const sorteio=(t)=>iso>=toISO(new Date())?hashEstavel(t.id+'|g'+seedGeracaoEscala):0;
   const ordem=(lista)=>lista.slice().sort((a,b)=>
     (mes(a)-mes(b))
     ||(dupla(a)-dupla(b))
@@ -1419,6 +1432,11 @@ function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,tetoMes
        mês caia sempre nas mesmas pessoas ao longo do ano. */
     ||((contagem.get(a.id)||0)-(contagem.get(b.id)||0))
     ||((ultimaData.get(a.id)||'').localeCompare(ultimaData.get(b.id)||''))
+    /* Só chega aqui quando os dois estão empatados em TODOS os critérios de
+       equilíbrio acima. Aí sim o clique em "Gerar escala" pode variar quem
+       fica com a vaga — sem isso, o desempate por nome sempre escolheria a
+       mesma pessoa e o botão pareceria não fazer nada de novo. */
+    ||(sorteio(a)-sorteio(b))
     ||a.nome.localeCompare(b.nome,'pt-BR'));
   for(const c of camadas)if(c.length)return ordem(c)[0];
   return null;
@@ -3842,6 +3860,11 @@ async function tecnicosAtivosOptions(selecionadoId,excluirIds,dataISO=null){
     }).join('');
 }
 let mesSelecionadoPlantoes=null;
+/* Sobe a cada clique em "Gerar escala"/"Gerar folgas" para variar o sorteio
+   de empate entre opções igualmente válidas. Não persiste (é só da sessão):
+   reabrir a página volta ao sorteio padrão, o que é intencional. */
+let seedGeracaoEscala=0;
+let seedGeracaoFolgas=0;
 function chaveMesPlantao(dataISO){return dataISO.slice(0,7);}
 function labelMesPlantao(chave){
   const [ano,mes]=chave.split('-').map(Number);
@@ -4019,8 +4042,16 @@ async function proximoDiaFolgaLivre(dataPlantaoISO){
   const mes=dataPlantaoISO.slice(0,7);
   const uso=new Map(diasPermitidos.map(d=>[d,0]));
   todas.forEach(f=>{if(f.diaFolga.slice(0,7)===mes&&uso.has(f.diaSemana))uso.set(f.diaSemana,uso.get(f.diaSemana)+1);});
-  /* O sort é estável, então o sorteio da semana sobrevive aos empates de uso. */
-  return embaralharComSemente(livres,monday).sort((a,b)=>(uso.get(a)||0)-(uso.get(b)||0))[0];
+  /* O sort é estável, então o sorteio da semana sobrevive aos empates de uso.
+     seedGeracaoFolgas entra na semente para que cada clique em "Gerar folgas"
+     resorteie os empates: quem tem MENOS uso continua sempre na frente (a
+     distribuição não perde o equilíbrio), só a ordem entre dias empatados
+     em uso muda de clique para clique. Semana que já passou por inteiro fica
+     de fora do sorteio — senão regerar reescreveria uma folga que já aconteceu
+     na vida real. */
+  const semanaJaPassou=saturday<toISO(new Date());
+  const semente=semanaJaPassou?monday:(monday+'|g'+seedGeracaoFolgas);
+  return embaralharComSemente(livres,semente).sort((a,b)=>(uso.get(a)||0)-(uso.get(b)||0))[0];
 }
 /* O botão é o único caminho que recalcula a escala, e ele recalcula do mês
    escolhido até 31 de dezembro — é assim que o equilíbrio anual se sustenta. */
@@ -4029,6 +4060,7 @@ async function gerarEscalaSelecionada(){
   const [anoStr,mesStr]=document.getElementById('selMesEscala').value.split('-');
   const ano=Number(anoStr),mes=Number(mesStr);
   if(!ano||!mes)return;
+  seedGeracaoEscala++;
   await garantirFeriadosAno(ano);
   const inicio=`${ano}-${pad(mes)}-01`;
   const fim=`${ano}-12-31`;
@@ -4073,6 +4105,7 @@ async function gerarFolgasAutomaticasMes(mesChave){
 async function gerarFolgasAutomaticasMesSelecionado(){
   if(!mesSelecionadoPlantoes){toast('Gere a escala do mês primeiro','erro');return;}
   if(await bloquearSeNecessario())return;
+  seedGeracaoFolgas++;
   const resultado=await gerarFolgasAutomaticasMes(mesSelecionadoPlantoes);
   toast(resultado.falhas?`${resultado.geradas} folga(s) gerada(s), ${resultado.falhas} sem dia disponível na semana`:(resultado.geradas?`${resultado.geradas} folga(s) gerada(s)`:'Todas as folgas deste mês já estavam geradas'),resultado.falhas?'erro':'sucesso');
   renderPlantoes();
