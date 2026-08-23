@@ -1038,7 +1038,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.23.2';
+const APP_VERSAO='2026.08.23.3';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -4668,7 +4668,7 @@ async function abrirModalFerias(feriasId=null){
         <div class="form-group">
           <label>Dias específicos no mês</label>
           <div id="frDiasEspecificosRow" class="dias-permitidos-row"></div>
-          <p class="form-hint">Marque somente os dias em que o técnico estará em treinamento. Esses dias serão descontados da capacidade e dos dias previstos/trabalhados.</p>
+          <p class="form-hint">Marque somente os dias em que o técnico estará em treinamento. Você pode mudar o mês acima para selecionar dias em meses diferentes sem perder as marcações. Esses dias serão descontados da capacidade.</p>
         </div>
       </div>
       <div id="frAvisoInicio" class="form-hint" style="display:none;background:#fdf3e3;border-left:3px solid var(--amber);padding:9px 11px;border-radius:6px;margin-bottom:12px"></div>
@@ -4696,7 +4696,7 @@ async function abrirModalFerias(feriasId=null){
         const erroEl=document.getElementById('frErro');
         let diasEspecificos=[];
         if(tipo==='treinamento'&&document.getElementById('frTreinamentoDias').style.display!=='none'){
-          diasEspecificos=Array.from(document.querySelectorAll('#frDiasEspecificosRow input:checked')).map(i=>i.value).sort();
+          diasEspecificos=(document.getElementById('frDiasEspecificosRow').dataset.valores||'').split(',').filter(Boolean).sort();
           if(!diasEspecificos.length){erroEl.style.display='block';erroEl.textContent='Selecione pelo menos um dia de treinamento no mês';return;}
           dataInicio=diasEspecificos[0];dataFim=diasEspecificos[diasEspecificos.length-1];
         }
@@ -4762,7 +4762,9 @@ async function abrirModalFerias(feriasId=null){
       </div>`;
     row.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
       inp.closest('.calendario-dia').classList.toggle('checked',inp.checked);
-      row.dataset.valores=Array.from(row.querySelectorAll('input:checked')).map(i=>i.value).join(',');
+      let atuais = new Set((row.dataset.valores||'').split(',').filter(Boolean));
+      if(inp.checked) atuais.add(inp.value); else atuais.delete(inp.value);
+      row.dataset.valores=Array.from(atuais).join(',');
     }));
   }
   function pintarAvisoInicio(){
@@ -4808,7 +4810,7 @@ async function abrirModalFerias(feriasId=null){
   const diasTreinoIniciais=(ferias?.diasEspecificos||[]).join(',');
   $('frDiasEspecificosRow').dataset.valores=diasTreinoIniciais;
   $('frTipo').addEventListener('change',()=>{renderDiasEspecificos();atualizar();});
-  $('frMesTreinamento').addEventListener('change',()=>{ $('frDiasEspecificosRow').dataset.valores=''; renderDiasEspecificos(); });
+  $('frMesTreinamento').addEventListener('change',()=>{ renderDiasEspecificos(); });
   /* Digitar o número de dias fecha a data final, e mexer na data final reescreve
      o número — os dois lados contam a mesma coisa. */
   $('frDiasGozo').addEventListener('input',()=>{
