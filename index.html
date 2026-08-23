@@ -276,15 +276,16 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .dia-check-pill.checked{background:var(--brand-soft);border-color:var(--brand);color:var(--brand-dark)}
 /* Calendário de dias específicos (treinamento) — grade real de 7 colunas
    alinhada ao dia da semana, em vez de uma lista solta de números. */
-.calendario-mes{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-.calendario-cabecalho{font-size:10px;font-weight:700;color:var(--text-muted);text-align:center;padding:2px 0 6px;text-transform:uppercase;letter-spacing:.04em}
-.calendario-dia{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);background:var(--surface);user-select:none;position:relative;transition:background .12s,border-color .12s,color .12s}
+/* Calendário de dias específicos — Formato Planilha (Suave) */
+.calendario-mes{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-top:1px solid var(--border);border-left:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.calendario-cabecalho{font-size:10.5px;font-weight:700;color:var(--text-muted);text-align:center;padding:10px 0;text-transform:uppercase;letter-spacing:.05em;background:var(--surface-alt);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.calendario-dia{aspect-ratio:auto;height:42px;display:flex;align-items:center;justify-content:center;border:none;border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--text);background:var(--surface);user-select:none;position:relative;transition:all .15s ease}
 .calendario-dia input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
-.calendario-dia:hover{border-color:var(--brand-light)}
-.calendario-dia.checked{background:var(--brand);border-color:var(--brand);color:#fff}
-.calendario-dia.vazio{border-color:transparent;cursor:default;background:transparent}
-.calendario-dia.domingo:not(.checked){background:var(--brand-soft);border-color:var(--brand-light);color:var(--brand-dark)}
-.calendario-dia.feriado:not(.checked){box-shadow:inset 0 0 0 1.5px var(--amber)}
+.calendario-dia:hover{background:var(--brand-soft);color:var(--brand-dark)}
+.calendario-dia.checked{background:var(--brand);color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.15)}
+.calendario-dia.vazio{background:var(--surface-alt);cursor:default}
+.calendario-dia.domingo:not(.checked){background:var(--red-soft);color:var(--red-dark)}
+.calendario-dia.feriado:not(.checked){background:var(--amber-light);color:var(--amber)}
 .calendario-legenda{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--text-muted)}
 .calendario-legenda span{display:inline-flex;align-items:center;gap:5px}
 .calendario-legenda i{width:11px;height:11px;border-radius:3px;display:inline-block}
@@ -307,7 +308,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .exportando-imagem .row-actions,.exportando-imagem .btn-extra-add{display:none}
 /* Texto que entra no lugar dos campos na hora de gerar a imagem. */
 .campo-congelado{display:inline-block;max-width:100%}
-.sel-congelado{display:inline-block;padding:2px 4px;font-size:.86em;font-weight:700;line-height:1.35}
+.sel-congelado{display:block;padding:2px 4px;font-size:.86em;font-weight:700;line-height:1.35;white-space:normal;word-break:break-word}
 #view-plantoes .card-title{background:var(--brand-soft);color:var(--brand-dark);border:1px solid var(--brand-light);border-radius:8px;padding:10px 14px;margin-bottom:14px}
 /* As três planilhas — escala, técnicos e valores — usam a mesma cabeça e a mesma
    escala de fonte. O clamp faz a letra acompanhar a largura da tela sem estourar
@@ -320,7 +321,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 #tabelaPlantoes tbody tr{border-bottom:1px solid var(--border)}
 #tabelaPlantoes tbody tr:nth-child(even){background:var(--surface-alt)}
 #tabelaPlantoes tbody tr:hover{background:var(--brand-soft)}
-#tabelaPlantoes th,#tabelaPlantoes td{padding:8px 5px;white-space:nowrap;border:none;border-right:1px solid var(--border)}
+#tabelaPlantoes th,#tabelaPlantoes td{padding:8px 5px;white-space:normal;word-break:break-word;border:none;border-right:1px solid var(--border)}
 #tabelaPlantoes th:last-child,#tabelaPlantoes td:last-child{border-right:none}
 #tabelaPlantoes .badge{padding:2px 5px;font-size:9px}
 #tabelaPlantoes .data-chip{display:inline-block;color:var(--brand-dark);background:var(--brand-soft);font-weight:700;padding:4px 9px;border-radius:7px}
@@ -1037,7 +1038,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.11.5';
+const APP_VERSAO='2026.08.23.2';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -4756,8 +4757,8 @@ async function abrirModalFerias(feriasId=null){
     row.innerHTML=`<div class="calendario-mes">${cabecalho}${vazios}${dias}</div>
       <div class="calendario-legenda">
         <span><i style="background:var(--brand)"></i> Selecionado</span>
-        <span><i style="background:var(--brand-soft);border:1px solid var(--brand-light)"></i> Domingo</span>
-        <span><i style="background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--amber)"></i> Feriado</span>
+        <span><i style="background:var(--red-soft)"></i> Domingo</span>
+        <span><i style="background:var(--amber-light)"></i> Feriado</span>
       </div>`;
     row.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
       inp.closest('.calendario-dia').classList.toggle('checked',inp.checked);
