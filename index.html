@@ -1708,16 +1708,31 @@ async function salvarFerias(tecnicoId,dataInicio,dataFim,feriasId=null,tipo='fer
 }
 
 /* ===================== FOLGAS ===================== */
+/* Domingo trabalhado: a folga cai na semana seguinte inteira (não sobra dia
+   útil depois de domingo na mesma semana).
+   Feriado em dia de semana (segunda a sábado): a folga pode cair no resto
+   DAQUELA MESMA semana — não faz sentido empurrar pra semana seguinte quando
+   ainda sobram dias após o plantão. Por isso a referência aqui é a segunda-
+   feira da própria semana do plantão, e diaFolgaValidoParaPlantao() barra as
+   opções que caem antes ou no próprio dia trabalhado. */
 function segundaDaSemanaFolga(dataISOPlantao){
   const d=parseISO(dataISOPlantao);
   const dow=d.getDay();
-  const diasAteFimDaSemana=dow===0?0:(7-dow);
-  const domingoFimSemana=addDays(d,diasAteFimDaSemana);
-  return addDays(domingoFimSemana,1);
+  if(dow===0)return addDays(d,1);
+  return addDays(d,-(dow-1));
 }
 function dataDoDiaFolga(dataISOPlantao,diaFolgaValue){
   const monday=segundaDaSemanaFolga(dataISOPlantao);
   return toISO(addDays(monday,DIA_FOLGA_MAP[diaFolgaValue]));
+}
+/* Só relevante quando o plantão caiu num dia de semana (feriado seg-sáb):
+   a folga não pode cair no próprio dia trabalhado nem em dia anterior a ele
+   dentro da mesma semana — só depois. Domingo não tem essa restrição, porque
+   a semana de referência já é inteiramente posterior ao plantão. */
+function diaFolgaValidoParaPlantao(dataISOPlantao,diaFolgaValue){
+  const dow=parseISO(dataISOPlantao).getDay();
+  if(dow===0)return true;
+  return DIA_FOLGA_MAP[diaFolgaValue]>(dow-1);
 }
 async function removerFolgaSeExistir(plantaoId,tecnicoId){
   const all=await dbGetAll('folgas');
@@ -4034,7 +4049,7 @@ async function proximoDiaFolgaLivre(dataPlantaoISO){
   const saturday=toISO(addDays(segundaDaSemanaFolga(dataPlantaoISO),5));
   const todas=await dbGetAll('folgas');
   const ocupados=new Set(todas.filter(f=>f.diaFolga>=monday&&f.diaFolga<=saturday).map(f=>f.diaSemana));
-  const livres=diasPermitidos.filter(d=>!ocupados.has(d));
+  const livres=diasPermitidos.filter(d=>!ocupados.has(d)&&diaFolgaValidoParaPlantao(dataPlantaoISO,d));
   if(!livres.length)return null;
   /* O uso é contado dentro do próprio mês. Contar o ano inteiro fazia o
      resultado depender do que já existia nos outros meses, e regerar o mesmo mês
@@ -4225,10 +4240,13 @@ async function removerTecnicoExtra(plantaoId){
 }
 
 /* ===== 2. Escala de plantões ===== */
-function celulaFolga(folgaRec,plantaoId,tecnicoId,diasOcupadosPelosOutros){
+function celulaFolga(folgaRec,plantaoId,tecnicoId,diasOcupadosPelosOutros,dataPlantaoISO){
   if(!tecnicoId)return `<td class="folga-cell"><span class="form-hint">—</span></td>`;
   const diaAtual=folgaRec?folgaRec.diaSemana:'';
-  const opts=DIAS_FOLGA.map(d=>`<option value="${d.v}" ${d.v===diaAtual?'selected':''} ${diasOcupadosPelosOutros.has(d.v)&&d.v!==diaAtual?'disabled':''}>${d.l}</option>`).join('');
+  /* Feriado em dia de semana: esconde do dropdown os dias que caem no próprio
+     dia trabalhado ou antes dele na mesma semana — só sobra o que vem depois. */
+  const opts=DIAS_FOLGA.filter(d=>diaFolgaValidoParaPlantao(dataPlantaoISO,d.v)||d.v===diaAtual)
+    .map(d=>`<option value="${d.v}" ${d.v===diaAtual?'selected':''} ${diasOcupadosPelosOutros.has(d.v)&&d.v!==diaAtual?'disabled':''}>${d.l}</option>`).join('');
   return `<td class="folga-cell">
     <select class="folga-select" data-folga-id="${folgaRec?folgaRec.id:''}" data-plantao="${plantaoId}" data-tecnico="${tecnicoId}">
       <option value="">Selecionar...</option>
@@ -4279,7 +4297,7 @@ async function renderTabelaEscala(){
         const tid=p.tecnicoIds[i]||null;
         const folgaRec=tid?folgasP.find(f=>f.tecnicoId===tid):null;
         const diasOcupadosPelosOutros=new Set(folgasP.filter(f=>f.tecnicoId!==tid).map(f=>f.diaSemana));
-        return celulaFolga(folgaRec,p.id,tid,diasOcupadosPelosOutros);
+        return celulaFolga(folgaRec,p.id,tid,diasOcupadosPelosOutros,p.data);
       });
       let extraTecCell='',extraFolgaCell='';
       if(temExtra){
@@ -4291,7 +4309,7 @@ async function renderTabelaEscala(){
           extraTecCell=`<td><select class="tec-select" data-plantao="${p.id}" data-idx="${i}" data-old="${tid||''}"><option value="">(vaga em aberto)</option>${opts}</select></td>`;
           const folgaRecExtra=tid?folgasP.find(f=>f.tecnicoId===tid):null;
           const diasOcupadosExtra=new Set(folgasP.filter(f=>f.tecnicoId!==tid).map(f=>f.diaSemana));
-          extraFolgaCell=celulaFolga(folgaRecExtra,p.id,tid,diasOcupadosExtra);
+          extraFolgaCell=celulaFolga(folgaRecExtra,p.id,tid,diasOcupadosExtra,p.data);
         } else {
           extraTecCell=`<td><button type="button" class="btn-extra-add" data-extra-plantao="${p.id}">${icon('plus',12)} Extra</button></td>`;
           extraFolgaCell=`<td class="folga-cell"><span class="form-hint">—</span></td>`;
@@ -4382,6 +4400,10 @@ async function gerarImagemPlantoes(){
 /* ===== 3. Edição de folgas (integrada à tabela de escala) ===== */
 async function salvarDiaFolgaSelecionado(plantaoId,tecnicoId,folgaId,diaSemana){
   const plantao=await dbGet('plantoes',plantaoId);
+  if(!diaFolgaValidoParaPlantao(plantao.data,diaSemana)){
+    toast('Esse dia é antes (ou é o mesmo) do plantão trabalhado — escolha um dia depois dele','erro');
+    return false;
+  }
   const novaData=dataDoDiaFolga(plantao.data,diaSemana);
   const monday=toISO(segundaDaSemanaFolga(plantao.data));
   const saturday=toISO(addDays(segundaDaSemanaFolga(plantao.data),5));
