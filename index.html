@@ -804,6 +804,12 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
       <section class="view" id="view-sla">
         <div class="toolbar">
           <div class="form-hint" id="competenciaSlaLabel" style="font-size:13px"></div>
+          <div class="form-group" style="margin-bottom:0;min-width:200px;max-width:260px">
+            <label style="margin-bottom:4px;font-size:10px">Técnico</label>
+            <select class="filter-sel" id="selTecnicoSla" style="width:100%">
+              <option value="">Todos os técnicos</option>
+            </select>
+          </div>
           <span class="spacer"></span>
           <div class="form-hint" id="slaChaveLabel" style="font-size:12px;text-align:right"></div>
         </div>
@@ -813,6 +819,11 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           <div class="card-title">Reincidências dentro de 30 dias</div>
           <p class="form-hint" id="slaReincidenciaDesc" style="margin-bottom:14px"></p>
           <div class="table-wrap"><table id="tabelaSlaTecnicos"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
+        </div>
+        <div class="card" id="cardSlaRevisitasDetalhe" style="margin-top:16px">
+          <div class="card-title" id="tituloSlaRevisitasDetalhe">Revisitas dentro de 30 dias</div>
+          <p class="form-hint" id="slaRevisitasDetalheDesc" style="margin-bottom:14px"></p>
+          <div class="table-wrap"><table id="tabelaSlaRevisitas"><thead></thead><tbody></tbody></table></div>
         </div>
         <div class="card" id="cardSlaLog" style="margin-top:16px">
           <div class="card-title">Clientes com log alto</div>
@@ -2286,6 +2297,7 @@ function ligarCamposDigitados(seletorTabela,redesenhar){
    deixa a escolha à vista, gravada na configuração. */
 const SLA_DIAS=30;
 const SLA_LOG_PADRAO=2;
+let tecnicoSelecionadoSla='';
 /* Nomes que costumam identificar o cliente ou o ponto de atendimento. */
 const SLA_PISTAS=/CONTRATO|CLIENTE|ASSINANTE|CPF|CNPJ|TERMINAL|CODIGO|COD_|_COD|INSTALACAO|ENDERECO|CHAMADO|PROTOCOLO|OS\b|ORDEM/;
 
@@ -2410,6 +2422,8 @@ async function renderSla(){
     document.querySelector('#tabelaSlaTecnicos tbody').innerHTML='';
     document.querySelector('#tabelaSlaTecnicos thead').innerHTML='';
     document.querySelector('#tabelaSlaTecnicos tfoot').innerHTML='';
+    document.querySelector('#tabelaSlaRevisitas tbody').innerHTML='';
+    document.querySelector('#tabelaSlaRevisitas thead').innerHTML='';
     document.querySelector('#tabelaSlaClientes tbody').innerHTML='';
     document.querySelector('#tabelaSlaClientes thead').innerHTML='';
   };
@@ -2471,6 +2485,42 @@ async function renderSla(){
     `<tr><td>Total</td><td>${r.totalOS}</td><td>${r.comRetorno}</td><td>${r.totalOS?fmtPct1(r.comRetorno/r.totalOS*100):'—'}</td></tr>`;
   document.getElementById('slaReincidenciaDesc').textContent=
     `Conta a OS que teve novo atendimento para o mesmo ${chave} em até ${SLA_DIAS} dias. A OS marcada é a primeira — a que deveria ter resolvido.`;
+
+  /* Seletor de técnico: as opções são só quem teve OS no período — filtrar por
+     alguém sem nenhuma OS aqui não mostraria nada. Se o técnico que estava
+     selecionado sumiu da lista (trocou de competência, por exemplo), volta
+     para "Todos" em vez de manter um filtro que não bate com ninguém. */
+  const selTec=document.getElementById('selTecnicoSla');
+  if(tecnicoSelecionadoSla&&!linhasTec.some(t=>t.login===tecnicoSelecionadoSla))tecnicoSelecionadoSla='';
+  selTec.innerHTML='<option value="">Todos os técnicos</option>'+
+    linhasTec.map(t=>`<option value="${escapeHtml(t.login)}">${escapeHtml(t.nome)}</option>`).join('');
+  selTec.value=tecnicoSelecionadoSla;
+  selTec.onchange=()=>{tecnicoSelecionadoSla=selTec.value;renderSla();};
+
+  /* Cada linha aqui já é, por definição, uma revisita que voltou em até 30 dias
+     — é a mesma regra que soma em r.comRetorno, só que aberta atendimento a
+     atendimento em vez de só o total. Com técnico selecionado, mostra apenas
+     as dele; a OS de origem é sempre a dele, mesmo que o retorno tenha sido
+     atendido por outra pessoa. */
+  const retornosFiltrados=(tecnicoSelecionadoSla?r.retornos.filter(x=>(x.origem.login||'')===tecnicoSelecionadoSla):r.retornos)
+    .slice().sort((a,b)=>a.dias-b.dias||b.retorno.data-a.retorno.data);
+  const nomeTecSelecionado=tecnicoSelecionadoSla?(porLogin.get(tecnicoSelecionadoSla)||tecnicoSelecionadoSla):'';
+  document.getElementById('tituloSlaRevisitasDetalhe').textContent=nomeTecSelecionado
+    ?`Revisitas dentro de 30 dias — ${nomeTecSelecionado}`
+    :'Revisitas dentro de 30 dias';
+  document.getElementById('slaRevisitasDetalheDesc').innerHTML=
+    `Cada linha é um atendimento que voltou para o mesmo ${escapeHtml(chave)} em até ${SLA_DIAS} dias. `+
+    `O técnico listado é sempre o do atendimento original — quem deveria ter resolvido.`+
+    (retornosFiltrados.length>500?' Mostrando as 500 primeiras.':'');
+  document.querySelector('#tabelaSlaRevisitas thead').innerHTML=
+    `<tr><th>Técnico</th><th>${escapeHtml(chave)}</th><th>Atendimento original</th><th>Retorno</th><th>Dias até voltar</th></tr>`;
+  document.querySelector('#tabelaSlaRevisitas tbody').innerHTML=retornosFiltrados.length?retornosFiltrados.slice(0,500).map(x=>{
+    const n=x.dias<=10?'vermelho':(x.dias<=20?'amarelo':'verde');
+    const nomeTec=porLogin.get(x.origem.login)||x.origem.login||'—';
+    return `<tr><td>${escapeHtml(nomeTec)}</td><td><strong>${escapeHtml(x.cliente)}</strong></td>
+      <td>${fmtBR(toISO(x.origem.data))}</td><td>${fmtBR(toISO(x.retorno.data))}</td>
+      <td><span class="badge ${badgeClasseNivel(n)}">${x.dias} dia(s)</span></td></tr>`;
+  }).join(''):`<tr class="empty-row"><td colspan="5">${tecnicoSelecionadoSla?'Nenhuma revisita deste técnico em até 30 dias neste período':'Nenhuma revisita em até 30 dias neste período'}</td></tr>`;
 
   document.querySelector('#tabelaSlaClientes thead').innerHTML=
     `<tr><th>${escapeHtml(chave)}</th><th>Log</th><th>Primeiro</th><th>Último</th><th>Menor intervalo</th><th>Técnicos</th></tr>`;
