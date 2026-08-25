@@ -240,6 +240,18 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .badge-blue{background:var(--blue-light);color:var(--blue)}
 .badge-slate{background:var(--slate-light);color:var(--slate)}
 
+/* ===== RANKING ===== */
+.podium-container{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin:24px 0 32px;min-height:180px}
+.podium-box{display:flex;flex-direction:column;align-items:center;width:110px}
+.podium-avatar{width:46px;height:46px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px;border:2px solid var(--brand-light)}
+.podium-name{font-size:13px;font-weight:700;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.podium-val{font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:10px;background:var(--surface);padding:2px 8px;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.podium-step{width:100%;border-radius:10px 10px 0 0;display:flex;justify-content:center;padding-top:10px;font-size:24px;font-weight:800;color:rgba(255,255,255,.95);box-shadow:var(--shadow)}
+.podium-1 .podium-step{height:110px;background:linear-gradient(to top,#fbbf24,#f59e0b)}
+.podium-2 .podium-step{height:80px;background:linear-gradient(to top,#94a3b8,#cbd5e1);color:#334155}
+.podium-3 .podium-step{height:60px;background:linear-gradient(to top,#b45309,#d97706)}
+.podium-1 .podium-avatar{border-color:#fbbf24;background:#fef3c7;color:#d97706;width:58px;height:58px;font-size:26px}
+
 /* ===== MODAL ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,16,20,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;animation:fadeIn .12s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -759,6 +771,36 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         </div>
       </section>
 
+      <section class="view" id="view-ranking">
+        <div class="toolbar">
+          <div class="form-group" style="margin-bottom:0;min-width:220px;max-width:300px">
+            <label style="margin-bottom:4px;font-size:10px">Semana de referência</label>
+            <select class="filter-sel" id="selSemanaRanking" style="width:100%"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;min-width:160px;max-width:220px">
+            <label style="margin-bottom:4px;font-size:10px">Critério de desempate</label>
+            <select class="filter-sel" id="selCriterioRanking" style="width:100%">
+              <option value="producao">Maior Produção (OS/dia)</option>
+              <option value="revisita">Menor Revisita (%)</option>
+              <option value="tec1">Maior TEC1 (%)</option>
+            </select>
+          </div>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm no-print" id="btnBaixarRankingImagem"></button>
+        </div>
+        <p class="form-hint" id="avisoRanking" style="margin-bottom:10px;display:none"></p>
+
+        <div id="rankingExport" style="background:var(--bg);padding:8px 16px 16px;border-radius:var(--radius-lg)">
+          <div class="podium-container" id="podiumRanking"></div>
+          <div class="card" id="cardTabelaRanking" style="margin-top:0">
+            <div class="card-title" id="tituloTabelaRanking">Desempenho da Equipe na Semana</div>
+            <div class="table-wrap">
+              <table id="tabelaRanking"><thead></thead><tbody></tbody></table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="view" id="view-sla">
         <div class="toolbar">
           <div class="form-hint" id="competenciaSlaLabel" style="font-size:13px"></div>
@@ -1038,7 +1080,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
    Publicado no GitHub Pages, o HTML fica em cache do navegador por alguns
    minutos. Em vez de depender do usuário dar refresh forçado, o app relê o
    próprio arquivo de tempos em tempos e avisa quando há versão nova. */
-const APP_VERSAO='2026.08.23.3';
+const APP_VERSAO='2026.08.24.1';
 let bannerAtualizacaoAberto=false;
 function mostrarBannerAtualizacao(nova){
   if(bannerAtualizacaoAberto)return;
@@ -1759,6 +1801,7 @@ async function removerFolgaSeExistir(plantaoId,tecnicoId){
 const MENU=[
   {id:'inicio',label:'Início',icon:'home'},
   {id:'tecnicos',label:'Técnicos',icon:'users'},
+  {id:'ranking',label:'Ranking Semanal',icon:'diploma'},
   {id:'sla',label:'SLA 30 dias',icon:'repeat'},
   {id:'codigos',label:'Códigos Ofensores',icon:'alerta'},
   {id:'plantoes',label:'Controle Operacional',icon:'calendar'},
@@ -1784,6 +1827,7 @@ async function irParaView(viewId){
   document.getElementById('sidebarBackdrop').classList.remove('show');
   if(viewId==='inicio')await renderInicio();
   else if(viewId==='tecnicos')await renderTecnicos();
+  else if(viewId==='ranking')await renderRanking();
   else if(viewId==='sla')await renderSla();
   else if(viewId==='codigos')await renderCodigos();
   else if(viewId==='plantoes')await renderPlantoes();
@@ -1949,7 +1993,7 @@ function abrirModalIndicador(tipo,indicadores){
     nr35:{titulo:'NR35 por técnico',cols:['Técnico','NR35'],ordenar:ordemTecnicos,
       linha:t=>[escapeHtml(t.nome),t.nr35Pct==null?'—':fmtPct1(t.nr35Pct)]},
     t1:{titulo:'T1 por técnico',cols:['Técnico','T1'],ordenar:ordemTecnicos,
-      linha:t=>[escapeHtml(t.nome),selectStatusCompliance(t.tecnicoId,'statusT1',t.statusT1)]}
+      linha:t=>[escapeHtml(t.nome),selectStatusCompliance(t.tecnicoId,'statusT1',t.statusT1,indicadores.competencia)]}
   };
   const cfg=cfgs[tipo];
   if(!cfg)return;
@@ -1962,7 +2006,7 @@ function abrirModalIndicador(tipo,indicadores){
   });
   if(tipo==='t1'){
     document.querySelectorAll('.modal-body .status-compliance-sel').forEach(sel=>sel.addEventListener('change',async()=>{
-      await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value);
+      await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value,sel.dataset.comp);
       /* O modal não se redesenha, então a cor acompanha aqui mesmo. */
       sel.classList.remove('ok','abaixo');
       sel.classList.add(classeStatusCompliance(sel.value));
@@ -2204,7 +2248,7 @@ async function renderTecnicos(){
   }).join('');
 
   document.querySelectorAll('#tabelaTecnicos .status-compliance-sel').forEach(sel=>sel.addEventListener('change',async()=>{
-    await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value);
+    await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value,sel.dataset.comp);
     toast('Status atualizado','sucesso');
     renderTecnicos();
   }));
@@ -2444,6 +2488,190 @@ async function renderSla(){
     (r.logAlto.length>500?' Mostrando os 500 primeiros.':'');
 }
 
+/* ===================== VIEW: RANKING SEMANAL ===================== */
+let semanaSelecionadaRanking = null;
+let criterioRanking = 'producao';
+
+function obterSemanasDisponiveis(linhas) {
+  const semanas = new Map();
+  linhas.forEach(r => {
+    const d = parseDataAgendaBR(r.DATA_AGENDA);
+    if(!d) return;
+    const monday = new Date(d);
+    const day = monday.getDay();
+    const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+    monday.setDate(diff);
+    monday.setHours(0,0,0,0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const key = `${toISO(monday)}|${toISO(sunday)}`;
+    if(!semanas.has(key)) semanas.set(key, { monday, sunday, key, qtd: 0 });
+    semanas.get(key).qtd++;
+  });
+  return [...semanas.values()].sort((a,b) => b.monday - a.monday); // descending
+}
+
+async function renderRanking() {
+  const base = await reunirLinhasEquipe();
+  const aviso = document.getElementById('avisoRanking');
+  const container = document.getElementById('rankingExport');
+  const selSemana = document.getElementById('selSemanaRanking');
+  const selCriterio = document.getElementById('selCriterioRanking');
+
+  criterioRanking = selCriterio.value;
+
+  if(!base.ok) {
+    aviso.style.display = 'block';
+    aviso.innerHTML = mensagemIndicadoresIndisponiveis(base.motivo);
+    container.style.display = 'none';
+    selSemana.disabled = true;
+    return;
+  }
+
+  const semanas = obterSemanasDisponiveis(base.linhas).filter(s => s.qtd > 2); // ignora semanas sem quase nada
+  if(!semanas.length) {
+    aviso.style.display = 'block';
+    aviso.innerHTML = 'Não há dados suficientes importados para agrupar por semana.';
+    container.style.display = 'none';
+    selSemana.disabled = true;
+    return;
+  }
+
+  selSemana.disabled = false;
+  if(!semanaSelecionadaRanking || !semanas.find(s => s.key === semanaSelecionadaRanking)) {
+    semanaSelecionadaRanking = semanas[0].key;
+  }
+
+  if (document.activeElement !== selSemana) {
+    selSemana.innerHTML = semanas.map(s => `<option value="${s.key}" ${s.key === semanaSelecionadaRanking ? 'selected' : ''}>${fmtBR(toISO(s.monday))} a ${fmtBR(toISO(s.sunday))}</option>`).join('');
+  }
+
+  selSemana.onchange = () => { semanaSelecionadaRanking = selSemana.value; renderRanking(); };
+  selCriterio.onchange = () => { renderRanking(); };
+
+  aviso.style.display = 'none';
+  container.style.display = 'block';
+
+  const [iniStr, fimStr] = semanaSelecionadaRanking.split('|');
+  const dtIni = parseISO(iniStr), dtFim = parseISO(fimStr);
+
+  const linhasSemana = base.linhas.filter(r => {
+    const d = parseDataAgendaBR(r.DATA_AGENDA);
+    return d && d >= dtIni && d <= dtFim;
+  });
+
+  const porLogin = {};
+  linhasSemana.forEach(row => {
+    const login = String(row.LOGIN_TECNICO || '').trim().toUpperCase();
+    if(!login) return;
+    if(!porLogin[login]) porLogin[login] = { total: 0, revisitas: 0, tecOk: 0, tecBase: 0, diasSet: new Set() };
+    const t = porLogin[login];
+    t.total++;
+    t.revisitas += qtdRevisitaLinha(row);
+    const tecNum = Number(row.TOTAL_OS_TEC1_PADRAO) || 0;
+    const tecDen = Number(row.QTD_TOTAL_OS_TEC1) || 0;
+    if(tecDen > 0) { t.tecOk += tecNum; t.tecBase += tecDen; }
+    const dia = parseDataAgendaBR(row.DATA_AGENDA);
+    if(dia) t.diasSet.add(dia.getTime());
+  });
+
+  const tecnicos = await dbGetAll('tecnicos');
+  const stats = tecnicos.filter(t => t.login && porLogin[t.login.trim().toUpperCase()]).map(t => {
+    const d = porLogin[t.login.trim().toUpperCase()];
+    const dias = d.diasSet.size;
+    return {
+      id: t.id,
+      nome: t.nome,
+      login: t.login,
+      total: d.total,
+      revisitas: d.revisitas,
+      producao: dias ? d.total / dias : 0,
+      revPct: d.total ? d.revisitas / d.total * 100 : 0,
+      tec1Pct: d.tecBase ? d.tecOk / d.tecBase * 100 : 0,
+      diasTrabalhados: dias
+    };
+  });
+
+  stats.sort((a,b) => {
+    if(criterioRanking === 'producao') return (b.producao - a.producao) || (a.revPct - b.revPct);
+    if(criterioRanking === 'revisita') return (a.revPct - b.revPct) || (b.producao - a.producao);
+    if(criterioRanking === 'tec1') return (b.tec1Pct - a.tec1Pct) || (b.producao - a.producao);
+    return 0;
+  });
+
+  const podiumEl = document.getElementById('podiumRanking');
+  if(stats.length < 3) {
+    podiumEl.innerHTML = '<p class="form-hint" style="margin-top:40px">Poucos técnicos com OS nesta semana para formar o pódio.</p>';
+  } else {
+    const fmtVal = (t) => {
+      if(criterioRanking === 'producao') return fmtNum2(t.producao) + ' OS/dia';
+      if(criterioRanking === 'revisita') return fmtPct1(t.revPct) + ' Rev';
+      return fmtPct1(t.tec1Pct) + ' TEC1';
+    };
+
+    const renderPodiumBox = (t, pos) => {
+      if(!t) return '';
+      return `<div class="podium-box podium-${pos}">
+        <div class="podium-avatar">${icon('user', pos===1?24:18)}</div>
+        <div class="podium-name" title="${escapeHtml(t.nome)}">${escapeHtml(t.nome.split(' ')[0])}</div>
+        <div class="podium-val">${fmtVal(t)}</div>
+        <div class="podium-step">${pos}º</div>
+      </div>`;
+    };
+    podiumEl.innerHTML = renderPodiumBox(stats[1], 2) + renderPodiumBox(stats[0], 1) + renderPodiumBox(stats[2], 3);
+  }
+
+  const thead = document.querySelector('#tabelaRanking thead');
+  const tbody = document.querySelector('#tabelaRanking tbody');
+  thead.innerHTML = `<tr>
+    <th style="width:50px;text-align:center">Pos</th>
+    <th>Técnico</th>
+    <th style="text-align:center">Produção</th>
+    <th style="text-align:center">Revisita</th>
+    <th style="text-align:center">TEC1</th>
+    <th style="text-align:center">Dias Atend.</th>
+  </tr>`;
+
+  tbody.innerHTML = stats.map((t, i) => `<tr>
+    <td style="text-align:center;font-weight:800;color:var(--brand)">${i+1}º</td>
+    <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)}</div></div></div></td>
+    <td style="text-align:center"><span class="badge ${criterioRanking==='producao'?'badge-blue':'badge-slate'}">${fmtNum2(t.producao)}</span></td>
+    <td style="text-align:center"><span class="badge ${criterioRanking==='revisita'?'badge-blue':'badge-slate'}">${fmtPct1(t.revPct)}</span></td>
+    <td style="text-align:center"><span class="badge ${criterioRanking==='tec1'?'badge-blue':'badge-slate'}">${fmtPct1(t.tec1Pct)}</span></td>
+    <td style="text-align:center">${t.diasTrabalhados}</td>
+  </tr>`).join('');
+}
+
+async function gerarImagemRanking(){
+  if(!window.html2canvas){toast('Biblioteca de imagem não carregada. Verifique sua conexão.','erro');return;}
+  const wrap=document.getElementById('rankingExport');
+  const tituloWrap=document.createElement('div');
+  tituloWrap.style.cssText='text-align:center;padding:12px 10px 10px;font-family:Inter,sans-serif;position:relative';
+  const [ini, fim] = semanaSelecionadaRanking.split('|');
+  const config=await getConfig();
+  
+  const marcaHtml=config.logoDataUrl
+    ? `<img src="${config.logoDataUrl}" style="width:42px;height:42px;border-radius:9px;object-fit:cover;position:absolute;top:10px;left:10px">`
+    : '';
+
+  tituloWrap.innerHTML=`${marcaHtml}<div style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#011355">RANKING DA SEMANA</div><div style="font-size:14.5px;font-weight:600;color:#0B5FD1;margin-top:2px">${fmtBR(ini)} a ${fmtBR(fim)}</div>`;
+  
+  wrap.insertBefore(tituloWrap,wrap.firstChild);
+  wrap.classList.add('exportando-imagem');
+  
+  try{
+    const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#f2f3f6'});
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download=`ranking-semanal-${ini}.png`;
+    a.click();
+  } finally {
+    tituloWrap.remove();
+    wrap.classList.remove('exportando-imagem');
+  }
+}
+
+
 /* ===================== VIEW: CÓDIGOS OFENSORES =====================
    O TOA fecha cada OS com um código de baixa. Quando a mesma WO carrega mais de
    uma OS, os códigos vêm juntos no campo, separados por "+" ("409 +409"), então
@@ -2656,7 +2884,7 @@ function calcularValorTecnico(tecnico,ind,valorTotal,competencia){
     const valorMax=valorTotal*crit.pct/100;
     let atingido=false,indisponivel=false;
     if(crit.statusCampo){
-      atingido=(tecnico[crit.statusCampo]||'pendente')==='em_dia';
+      atingido=(ind?ind[crit.statusCampo]:'pendente')==='em_dia';
     } else {
       /* Certidão e NR35 são digitadas; as demais saem da base. Daí em diante o
          critério é o mesmo: abaixo da meta, não pontua. */
@@ -2674,8 +2902,8 @@ function calcularValorTecnico(tecnico,ind,valorTotal,competencia){
    só o desempenho. */
 function celulaCriterioIndicador(crit,ind,tecnico,competencia){
   if(crit.statusCampo){
-    const valorAtual=tecnico[crit.statusCampo]||'pendente';
-    return selectStatusCompliance(tecnico.id,crit.statusCampo,valorAtual);
+    const valorAtual=ind?ind[crit.statusCampo]:'pendente';
+    return selectStatusCompliance(tecnico.id,crit.statusCampo,valorAtual,competencia);
   }
   if(crit.digitado)return campoManual(tecnico,crit.digitado,competencia,valorCriterio(crit,ind,tecnico,competencia));
   const valor=ind?ind[crit.campo]:null;
@@ -2686,9 +2914,9 @@ function celulaCriterioIndicador(crit,ind,tecnico,competencia){
 function celulaCriterioValor(crit,ind,tecnico,valorTotal,competencia){
   const valorMax=valorTotal*crit.pct/100;
   if(crit.statusCampo){
-    const valorAtual=tecnico[crit.statusCampo]||'pendente';
+    const valorAtual=ind?ind[crit.statusCampo]:'pendente';
     const atingido=valorAtual==='em_dia';
-    return`<div>${selectStatusCompliance(tecnico.id,crit.statusCampo,valorAtual)}</div>
+    return`<div>${selectStatusCompliance(tecnico.id,crit.statusCampo,valorAtual,competencia)}</div>
       <div class="valor-sub ${atingido?'ok':'fail'}">${fmtMoeda(atingido?valorMax:0)}</div>`;
   }
   if(crit.digitado){
@@ -2754,7 +2982,7 @@ async function renderValores(){
   }).join('');
 
   document.querySelectorAll('#tabelaValores .status-compliance-sel').forEach(sel=>sel.addEventListener('change',async()=>{
-    await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value);
+    await salvarStatusCompliance(Number(sel.dataset.tid),sel.dataset.campo,sel.value,sel.dataset.comp);
     toast('Status atualizado','sucesso');
     renderValores();
   }));
@@ -5194,7 +5422,7 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
       nr35Pct:nr35Digitada!=null?nr35Digitada:(nr35Info?nr35Info.pct:null),
       nr35Digitada:nr35Digitada!=null,
       certidaoPct:pctManual(t,'certidao',competenciaEscolhida),
-      statusT1:t.statusT1||'pendente'
+      statusT1:(t.t1PorCompetencia||{})[competenciaEscolhida]||'pendente'
     };
   });
   const baseLen=linhas.length;
@@ -5236,15 +5464,22 @@ const STATUS_COMPLIANCE=[{v:'em_dia',l:'Em dia',cls:'badge-green'},{v:'pendente'
 /* Só "Em dia" pontua, então o seletor é verde nesse caso e vermelho nos outros
    dois — a mesma leitura de relance dos demais critérios. */
 function classeStatusCompliance(valor){return valor==='em_dia'?'ok':'abaixo';}
-function selectStatusCompliance(tecnicoId,campo,valorAtual){
+function selectStatusCompliance(tecnicoId,campo,valorAtual,competencia){
+  if(!competencia)return `<span class="badge badge-slate" title="Escolha a competência para lançar status">—</span>`;
   const atual=valorAtual||'pendente';
   const opts=STATUS_COMPLIANCE.map(s=>`<option value="${s.v}" ${atual===s.v?'selected':''}>${s.l}</option>`).join('');
-  return `<select class="status-compliance-sel ${classeStatusCompliance(atual)}" data-tid="${tecnicoId}" data-campo="${campo}">${opts}</select>`;
+  return `<select class="status-compliance-sel ${classeStatusCompliance(atual)}" data-tid="${tecnicoId}" data-campo="${campo}" data-comp="${escapeHtml(competencia)}">${opts}</select>`;
 }
-async function salvarStatusCompliance(tecnicoId,campo,valor){
+async function salvarStatusCompliance(tecnicoId,campo,valor,competencia){
   const t=await dbGet('tecnicos',tecnicoId);
   if(!t)return;
-  t[campo]=valor;
+  if(competencia){
+    const mapa = campo === 'statusT1' ? 't1PorCompetencia' : campo + 'PorCompetencia';
+    if(!t[mapa]) t[mapa] = {};
+    t[mapa][competencia] = valor;
+  } else {
+    t[campo]=valor;
+  }
   await dbPut('tecnicos',t);
 }
 
@@ -6107,6 +6342,9 @@ async function initApp(){
 
   document.getElementById('btnBaixarTecnicosImagem').innerHTML=icon('download',15)+' Baixar planilha';
   document.getElementById('btnBaixarTecnicosImagem').addEventListener('click',gerarImagemTecnicos);
+
+  document.getElementById('btnBaixarRankingImagem').innerHTML=icon('download',15)+' Baixar imagem';
+  document.getElementById('btnBaixarRankingImagem').addEventListener('click',gerarImagemRanking);
 
   document.getElementById('btnBaixarCodigosImagem').innerHTML=icon('download',15)+' Baixar planilha';
   document.getElementById('btnBaixarCodigosImagem').addEventListener('click',gerarImagemCodigos);
