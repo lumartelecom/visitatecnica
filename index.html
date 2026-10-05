@@ -911,8 +911,8 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
         <div class="toolbar">
           <div class="form-hint" id="competenciaValoresLabel" style="font-size:13px"></div>
           <div class="form-group" style="margin-bottom:0;max-width:140px;margin-left:auto">
-            <label style="margin-bottom:4px;font-size:10px">Valor total da comissão</label>
-            <input type="number" step="0.01" min="0" id="cfgValorComissaoTotal" style="width:100%;padding:6px 9px;font-size:12.5px">
+            <label style="margin-bottom:4px;font-size:10px">Total máximo da comissão</label>
+            <input type="text" readonly tabindex="-1" id="cfgValorComissaoTotal" style="width:100%;padding:6px 9px;font-size:12.5px;font-weight:700;background:var(--surface-alt);cursor:default">
           </div>
           <button class="btn btn-primary btn-sm no-print" id="btnBaixarValoresImagem"></button>
         </div>
@@ -1332,12 +1332,11 @@ const LOGO_LUMAR_PADRAO='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4Rfh
 async function getConfig(){
   let c=await dbGet('configuracoes','geral');
   if(!c){
-    c={chave:'geral',qtdTecnicosPorPlantao:2,horarioPlantao:'08:00 às 18:00',nomeEmpresa:'Lumar Telecom',logoDataUrl:LOGO_LUMAR_PADRAO,sequenciaGlobal:0,analiseUnidadeNegocio:'TSA-LUMAR_VT',analiseMunicipio:'Teresina',valorComissaoTotal:700};
+    c={chave:'geral',qtdTecnicosPorPlantao:2,horarioPlantao:'08:00 às 18:00',nomeEmpresa:'Lumar Telecom',logoDataUrl:LOGO_LUMAR_PADRAO,sequenciaGlobal:0,analiseUnidadeNegocio:'TSA-LUMAR_VT',analiseMunicipio:'Teresina'};
     await dbPut('configuracoes',c);
   }
   if(c.analiseUnidadeNegocio===undefined){c.analiseUnidadeNegocio='TSA-LUMAR_VT';c.analiseMunicipio='Teresina';await dbPut('configuracoes',c);}
   if(!c.logoDataUrl){c.logoDataUrl=LOGO_LUMAR_PADRAO;await dbPut('configuracoes',c);}
-  if(c.valorComissaoTotal===undefined){c.valorComissaoTotal=700;await dbPut('configuracoes',c);}
   if(c.minimoDiarioProducao===undefined){c.minimoDiarioProducao=MINIMO_DIARIO_PADRAO;await dbPut('configuracoes',c);}
   if(c.mesesBloqueados===undefined){c.mesesBloqueados={};await dbPut('configuracoes',c);}
   return c;
@@ -2059,7 +2058,7 @@ function nivelIndicador(valor,tipo){
 function badgeClasseNivel(nivel){
   return nivel==='vermelho'?'badge-red':nivel==='amarelo'?'badge-amber':nivel==='verde'?'badge-green':'badge-slate';
 }
-/* Certificado é quem está dentro da meta em TUDO. Vale para os seis critérios,
+/* Certificado é quem está dentro da meta em TUDO. Vale para os nove critérios,
    os que saem da base e os que são lançados à mão — é a mesma lista que decide
    a comissão, então as duas telas não podem discordar.
    Indicador sem lançamento também segura a certificação: é a regra que o T1 já
@@ -2081,7 +2080,11 @@ function situacaoTecnico(ind){
     if(valor==null)pendencias.push(`${c.rotulo}: ${c.semValor}`);
     else if(nivelIndicador(valor,c.tipo)==='vermelho')pendencias.push(`${c.rotulo}: fora da meta`);
   }
-  if(ind.statusT1!=='em_dia')pendencias.push(`T1: ${ind.statusT1==='vencido'?'vencido':'pendente'}`);
+  for(const c of CRITERIOS_VALORES){
+    if(!c.statusCampo)continue;
+    const st=ind[c.statusCampo];
+    if(st!=='em_dia')pendencias.push(`${c.label}: ${st==='vencido'?'vencido':'pendente'}`);
+  }
   return pendencias.length
     ?{label:'Não certificado',cls:'badge-red',motivo:'Falta: '+pendencias.join(' · ')}
     :{label:'Certificado',cls:'badge-green',motivo:'Todos os indicadores dentro da meta'};
@@ -2926,13 +2929,20 @@ async function gerarImagemCodigos(){
    de cada critério continua valendo no cálculo, só não aparece mais no
    cabeçalho. */
 const CRITERIOS_VALORES=[
-  {key:'producao',label:'Produção',pct:20,campo:'mediaProducao',tipoNivel:'producao',fmt:fmtNum2},
-  {key:'revisita',label:'Revisita',pct:30,campo:'revPct',tipoNivel:'revisita',fmt:fmtPct1},
-  {key:'tec1',label:'TEC1',pct:25,campo:'tec1Pct',tipoNivel:'tec1',fmt:fmtPct1},
-  {key:'nr35',label:'NR35',pct:10,campo:'nr35Pct',digitado:'nr35',tipoNivel:'nr35',fmt:fmtPct1},
-  {key:'certidao',label:'Certidão de atendimento',pct:10,digitado:'certidao',tipoNivel:'certidao',fmt:fmtPct1},
-  {key:'t1',label:'T1',pct:5,statusCampo:'statusT1'}
+  {key:'producao',label:'Produção',valor:80,campo:'mediaProducao',tipoNivel:'producao',fmt:fmtNum2},
+  {key:'revisita',label:'Revisita',valor:230,campo:'revPct',tipoNivel:'revisita',fmt:fmtPct1},
+  {key:'tec1',label:'TEC1',valor:160,campo:'tec1Pct',tipoNivel:'tec1',fmt:fmtPct1},
+  {key:'nr35',label:'NR35',valor:50,campo:'nr35Pct',digitado:'nr35',tipoNivel:'nr35',fmt:fmtPct1},
+  {key:'certidao',label:'Certidão de atendimento',valor:70,digitado:'certidao',tipoNivel:'certidao',fmt:fmtPct1},
+  {key:'t1',label:'T1',valor:35,statusCampo:'statusT1'},
+  {key:'epi',label:'EPI/EPC',valor:25,statusCampo:'statusEpi'},
+  {key:'fardamento',label:'Fardamento',valor:25,statusCampo:'statusFardamento'},
+  {key:'pontualidade',label:'Pontualidade',valor:25,statusCampo:'statusPontualidade'}
 ];
+/* Cada critério paga o seu valor fixo em reais (pontuação máxima da tabela de
+   comissão). O total deixou de ser um número digitado: é a soma dos critérios,
+   para as duas telas e a tabela oficial nunca divergirem. */
+const COMISSAO_TOTAL=CRITERIOS_VALORES.reduce((a,c)=>a+c.valor,0);
 /* O valor que vale para o critério. Nos digitados, o lançamento manda; quando
    não há lançamento e o critério também tem origem na base (caso da NR35), vale
    o que a base calculou. */
@@ -2943,10 +2953,10 @@ function valorCriterio(crit,ind,tecnico,competencia){
   }
   return (crit.campo&&ind)?ind[crit.campo]:null;
 }
-function calcularValorTecnico(tecnico,ind,valorTotal,competencia){
+function calcularValorTecnico(tecnico,ind,competencia){
   let total=0;
   const detalhes=CRITERIOS_VALORES.map(crit=>{
-    const valorMax=valorTotal*crit.pct/100;
+    const valorMax=crit.valor;
     let atingido=false,indisponivel=false;
     if(crit.statusCampo){
       atingido=(ind?ind[crit.statusCampo]:'pendente')==='em_dia';
@@ -2976,8 +2986,8 @@ function celulaCriterioIndicador(crit,ind,tecnico,competencia){
   const nivel=nivelIndicador(valor,crit.tipoNivel);
   return`<span class="badge ${badgeClasseNivel(nivel)}">${crit.fmt(valor)} ${icon(nivel!=='vermelho'?'check':'x',11)}</span>`;
 }
-function celulaCriterioValor(crit,ind,tecnico,valorTotal,competencia){
-  const valorMax=valorTotal*crit.pct/100;
+function celulaCriterioValor(crit,ind,tecnico,competencia){
+  const valorMax=crit.valor;
   if(crit.statusCampo){
     const valorAtual=ind?ind[crit.statusCampo]:'pendente';
     const atingido=valorAtual==='em_dia';
@@ -3000,10 +3010,7 @@ function celulaCriterioValor(crit,ind,tecnico,valorTotal,competencia){
     <div class="valor-sub ${atingido?'ok':'fail'}">${fmtMoeda(atingido?valorMax:0)}</div>`;
 }
 async function renderValores(){
-  const config=await getConfig();
-  const inputValor=document.getElementById('cfgValorComissaoTotal');
-  if(document.activeElement!==inputValor)inputValor.value=config.valorComissaoTotal;
-  const valorTotal=Number(inputValor.value)||0;
+  document.getElementById('cfgValorComissaoTotal').value=fmtMoeda(COMISSAO_TOTAL);
 
   const competencias=await garantirCompetenciaSelecionada();
   const compLabelEl=document.getElementById('competenciaValoresLabel');
@@ -3023,7 +3030,7 @@ async function renderValores(){
   const thead=document.querySelector('#tabelaValores thead');
   thead.innerHTML=`<tr>
     <th>Técnico</th>
-    ${CRITERIOS_VALORES.map(c=>`<th><div class="val-th-title">${c.label}</div><div class="val-th-sub">${fmtMoeda(valorTotal*c.pct/100)}</div></th>`).join('')}
+    ${CRITERIOS_VALORES.map(c=>`<th><div class="val-th-title">${c.label}</div><div class="val-th-sub">${fmtMoeda(c.valor)}</div></th>`).join('')}
     <th><div class="val-th-title">Total a receber</div></th>
   </tr>`;
 
@@ -3037,11 +3044,11 @@ async function renderValores(){
   }
   tbody.innerHTML=lista.map(t=>{
     const ind=porId[t.id]||null;
-    const{total}=calcularValorTecnico(t,ind,valorTotal,competenciaSelecionadaGlobal);
-    const baixo=valorTotal>0&&total<=valorTotal*0.5;
+    const{total}=calcularValorTecnico(t,ind,competenciaSelecionadaGlobal);
+    const baixo=total<=COMISSAO_TOTAL*0.5;
     return`<tr>
       <td><div class="tec-cell">${avatarTecnico(t.nome)}<div><div><strong>${escapeHtml(t.nome)}</strong></div><div class="tec-login-sub">${escapeHtml(t.login)||'sem login'}</div></div></div></td>
-      ${CRITERIOS_VALORES.map(c=>`<td>${celulaCriterioValor(c,ind,t,valorTotal,competenciaSelecionadaGlobal)}</td>`).join('')}
+      ${CRITERIOS_VALORES.map(c=>`<td>${celulaCriterioValor(c,ind,t,competenciaSelecionadaGlobal)}</td>`).join('')}
       <td><span class="valor-total-box ${baixo?'baixo':''}">${fmtMoeda(total)}</span></td>
     </tr>`;
   }).join('');
@@ -3052,13 +3059,6 @@ async function renderValores(){
     renderValores();
   }));
   ligarCamposDigitados('#tabelaValores',renderValores);
-}
-async function salvarValorComissaoTotal(){
-  const valor=Math.max(0,Number(document.getElementById('cfgValorComissaoTotal').value)||0);
-  const config=await getConfig();
-  config.valorComissaoTotal=valor;
-  await dbPut('configuracoes',config);
-  renderValores();
 }
 async function gerarImagemValores(){
   if(!window.html2canvas){toast('Biblioteca de imagem não carregada. Verifique sua conexão.','erro');return;}
@@ -5478,7 +5478,7 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
       /* Sem atendimento no mês não existe indicador — e zero não é nota boa, é
          ausência de nota. Quando isso virava 0%, a Revisita (onde menos é
          melhor) passava a ler "0% de revisita" como desempenho perfeito, e quem
-         não trabalhou um único dia levava os 30% da comissão. Nada de base, nada
+         não trabalhou um único dia levava o valor cheio da Revisita. Nada de base, nada
          de indicador: fica vazio e não pontua. */
       revPct:d.total?d.revisitas/d.total*100:null,
       tec1Pct:d.tecBase?d.tecOk/d.tecBase*100:null,
@@ -5487,7 +5487,10 @@ async function calcularIndicadoresEquipe(competenciaEscolhida){
       nr35Pct:nr35Digitada!=null?nr35Digitada:(nr35Info?nr35Info.pct:null),
       nr35Digitada:nr35Digitada!=null,
       certidaoPct:pctManual(t,'certidao',competenciaEscolhida),
-      statusT1:(t.t1PorCompetencia||{})[competenciaEscolhida]||'pendente'
+      statusT1:(t.t1PorCompetencia||{})[competenciaEscolhida]||'pendente',
+      statusEpi:(t.statusEpiPorCompetencia||{})[competenciaEscolhida]||'pendente',
+      statusFardamento:(t.statusFardamentoPorCompetencia||{})[competenciaEscolhida]||'pendente',
+      statusPontualidade:(t.statusPontualidadePorCompetencia||{})[competenciaEscolhida]||'pendente'
     };
   });
   const baseLen=linhas.length;
@@ -6349,6 +6352,25 @@ async function corrigirNomesPlaceholder(){
   }
   await registrarHistoricoGeral('tecnicos','correcao','Nomes e logins dos técnicos corrigidos automaticamente para a equipe real');
 }
+/* Técnicos que entraram depois da semente. Ficam fora de EQUIPE_REAL de propósito:
+   essa lista também decide se o aparelho tem dados próprios (temDadosLocais) e
+   como nomes provisórios são corrigidos. A checagem é por nome, então abrir o
+   app de novo nunca duplica o cadastro. O login é a chave com a base importada
+   e ainda não foi informado: sem ele não há indicador nem comissão. */
+const TECNICOS_ADICIONAIS=[
+  {nome:'David Magdiel',login:'Z585518'},
+  {nome:'Abdielson Pacheco',login:'Z702745'}
+];
+let tecnicosAdicionaisCriados=false;
+async function garantirTecnicosAdicionais(){
+  const norm=n=>String(n||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const existentes=(await dbGetAll('tecnicos')).map(t=>norm(t.nome));
+  for(const t of TECNICOS_ADICIONAIS){
+    if(existentes.includes(norm(t.nome)))continue;
+    await dbAdd('tecnicos',{nome:t.nome,login:t.login,telefone:'',status:'ativo',contadorPlantoes:0,ultimaOrdem:0,criadoEm:new Date().toISOString()});
+    tecnicosAdicionaisCriados=true;
+  }
+}
 async function definirIzidoroComoNoturno(){
   const tecnicos=await dbGetAll('tecnicos');
   const izidoro=tecnicos.find(t=>t.login==='Z164141');
@@ -6364,6 +6386,7 @@ async function initApp(){
     throw err;
   });
   await seedInicial();
+  await garantirTecnicosAdicionais();
   await corrigirNomesPlaceholder();
   await definirIzidoroComoNoturno();
   await garantirFeriadosAno(new Date().getFullYear());
@@ -6416,7 +6439,6 @@ async function initApp(){
 
   document.getElementById('btnBaixarValoresImagem').innerHTML=icon('download',15)+' Baixar imagem';
   document.getElementById('btnBaixarValoresImagem').addEventListener('click',gerarImagemValores);
-  document.getElementById('cfgValorComissaoTotal').addEventListener('change',salvarValorComissaoTotal);
 
   document.getElementById('btnAtualizarDias').innerHTML=icon('clock',15)+' Atualizar';
   document.getElementById('btnAtualizarDias').addEventListener('click',()=>renderDiasTrabalhados({limparCache:true}));
@@ -6492,6 +6514,9 @@ async function initApp(){
 
   await sincronizarNaAbertura();
   appIniciando=false;
+  /* Cadastro criado na abertura não é edição do usuário, mas precisa subir para a
+     nuvem, senão outro aparelho nunca o recebe. */
+  if(tecnicosAdicionaisCriados){tecnicosAdicionaisCriados=false;marcarAlteracaoLocal();}
   await renderInicio();
   iniciarVerificacaoDeVersao();
   iniciarSync();
