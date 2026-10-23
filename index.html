@@ -258,7 +258,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 .form-error{font-size:11.5px;color:var(--red-dark);margin-top:5px;font-weight:600}
 
 /* ===== PLANTÕES (grade) ===== */
-.plantoes-linha-principal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;margin-bottom:14px}
+.plantoes-linha-principal{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;align-items:end;margin-bottom:14px}
 .plantoes-linha-principal .form-group{margin-bottom:0}
 .plantoes-linha-principal .filter-sel{width:100%}
 .plantoes-linha-principal .btn{width:100%;min-width:0;justify-content:center;white-space:nowrap;overflow:hidden;padding-left:5px;padding-right:5px;font-size:11.5px}
@@ -268,6 +268,10 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
 @media(max-width:640px){
   .plantoes-linha-principal{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+.manual-tec-slots{display:grid;gap:8px}
+.manual-tec-slots select{width:100%}
+.manual-lista td{vertical-align:middle}
+.manual-lista .btn-remover-manual{padding:4px 8px;font-size:11px}
 .plantoes-dias-permitidos{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 .plantoes-dias-permitidos>label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:8px}
 .dias-permitidos-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -565,6 +569,7 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
             <button class="btn btn-primary btn-sm" id="btnGerarFolgas"></button>
             <button class="btn btn-primary btn-sm no-print" id="btnBaixarEscalaImagem"></button>
             <button class="btn btn-success btn-sm" id="btnAdicionarExtra"></button>
+            <button class="btn btn-primary btn-sm no-print" id="btnLancamentoManual"></button>
             <button class="btn btn-danger btn-sm no-print" id="btnLimparEscala"></button>
             <button class="btn btn-secondary btn-sm no-print" id="btnBloquearEscala"></button>
           </div>
@@ -590,6 +595,15 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
           </div>
           <div class="table-wrap">
             <table id="tabelaPlantoes"><thead></thead><tbody></tbody></table>
+          </div>
+        </div>
+
+        <!-- 2b. Lançamentos manuais (plantão/folga em qualquer data) -->
+        <div class="card no-print" id="cardLancamentosManuais" style="margin-top:16px">
+          <div class="card-title"><span id="tituloLancamentosManuais">Lançamentos manuais</span></div>
+          <p class="form-hint" style="margin-bottom:12px">Plantões e folgas lançados à mão em datas fora da regra (qualquer dia do mês). Não são recalculados por &ldquo;Gerar escala&rdquo; nem por &ldquo;Gerar folgas&rdquo;.</p>
+          <div class="table-wrap">
+            <table id="tabelaLancamentosManuais" class="manual-lista"><thead></thead><tbody></tbody></table>
           </div>
         </div>
 
@@ -3290,7 +3304,7 @@ function aplicarBloqueioNaTela(bloqueado){
   btn.innerHTML=icon(bloqueado?'unlock':'lock',14)+(bloqueado?' Desbloquear':' Bloquear');
   btn.classList.toggle('btn-danger',bloqueado);
   btn.classList.toggle('btn-secondary',!bloqueado);
-  ['btnGerarEscala','btnGerarFolgas','btnLimparEscala','btnAdicionarExtra']
+  ['btnGerarEscala','btnGerarFolgas','btnLimparEscala','btnAdicionarExtra','btnLancamentoManual']
     .forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=bloqueado;});
   document.querySelectorAll('#tabelaPlantoes .tec-select,#tabelaPlantoes .folga-select,#diasPermitidosRow input')
     .forEach(el=>{el.disabled=bloqueado;});
@@ -3677,9 +3691,11 @@ async function renderTabelaEscala(){
         }
       }
       const feriado=feriadoPorData.get(p.data);
-      const tipoBadge=p.tipo==='feriado'
-        ?`${badgeTipoFeriado(feriado?feriado.tipo:null)}${feriado?`<span class="feriado-desc">${escapeHtml(feriado.descricao)}</span>`:''}`
-        :'<span class="badge badge-blue">Domingo</span>';
+      const tipoBadge=p.tipo==='manual'
+        ?'<span class="badge badge-amber">Manual</span>'
+        :(p.tipo==='feriado'
+          ?`${badgeTipoFeriado(feriado?feriado.tipo:null)}${feriado?`<span class="feriado-desc">${escapeHtml(feriado.descricao)}</span>`:''}`
+          :'<span class="badge badge-blue">Domingo</span>');
       return `<tr>
         <td><span class="data-chip">${fmtBR(p.data)}</span></td>
         <td>${p.diaSemana}</td>
@@ -3725,7 +3741,7 @@ async function renderTabelaEscala(){
 
   const plantaoIdsDoMes=new Set(listaMes.map(p=>p.id));
   const todasFolgas=await dbGetAll('folgas');
-  const folgasDoMes=todasFolgas.filter(f=>plantaoIdsDoMes.has(f.plantaoId));
+  const folgasDoMes=todasFolgas.filter(f=>plantaoIdsDoMes.has(f.plantaoId)||(f.avulsa&&f.diaFolga&&f.diaFolga.slice(0,7)===mesSelecionadoPlantoes));
   const anoEscala=Number(String(mesSelecionadoPlantoes||'').slice(0,4))||new Date().getFullYear();
   await sincronizarContadoresPlantao(anoEscala);   // mantém o total anual certo por trás
   renderResumoPlantoesTecnicos(tecnicos,listaMes,mesSelecionadoPlantoes);
@@ -3756,6 +3772,225 @@ async function gerarImagemPlantoes(){
     tituloWrap.remove();
     wrap.classList.remove('exportando-imagem');
   }
+}
+
+/* ===== 2b. Lançamento manual de plantão / folga em qualquer data ===== */
+/* A regra automática só conhece domingo e feriado para plantão, e a semana
+   seguinte ao plantão para folga. Aqui a data é livre (dentro dos meses que a
+   tela mostra, para o lançamento nunca ficar invisível). O registro é marcado
+   como manual: plantão com tipo:'manual' e folga com avulsa:true, sem plantaoId.
+   Gerar escala e Gerar folgas não mexem nesses registros. */
+const DIA_SEMANA_CHAVE=['domingo','segunda','terca','quarta','quinta','sexta','sabado'];
+function limitesDataManual(){
+  const meses=MESES_ESCALA_DISPONIVEIS;
+  const [a1,m1]=meses[0].split('-').map(Number);
+  const [a2,m2]=meses[meses.length-1].split('-').map(Number);
+  return{min:`${a1}-${pad(m1)}-01`,max:toISO(new Date(a2,m2,0))};
+}
+async function abrirModalLancamentoManual(){
+  if(await bloquearSeNecessario())return;
+  const config=await getConfig();
+  const qtdBase=Math.max(1,config.qtdTecnicosPorPlantao||2);
+  const {min,max}=limitesDataManual();
+  const [ano,mesN]=mesSelecionadoPlantoes.split('-').map(Number);
+  const hoje=toISO(new Date());
+  const dataInicial=hoje.slice(0,7)===mesSelecionadoPlantoes?hoje:`${ano}-${pad(mesN)}-01`;
+  const slots=Array.from({length:qtdBase},(_,i)=>
+    `<select class="manual-tec" data-slot="${i}"></select>`).join('');
+  abrirModal({
+    titulo:'Lançar plantão ou folga manual',
+    bodyHtml:`
+      <div class="form-row">
+        <div class="form-group"><label>Tipo</label>
+          <select id="manTipo"><option value="plantao">Plantão</option><option value="folga">Folga</option></select></div>
+        <div class="form-group"><label>Data</label>
+          <input type="date" id="manData" value="${dataInicial}" min="${min}" max="${max}"></div>
+      </div>
+      <div class="form-group"><label id="manRotuloTec">Técnico(s) de plantão</label>
+        <div class="manual-tec-slots" id="manSlots">${slots}</div></div>
+      <p class="form-hint" id="manDica" style="margin-top:6px"></p>
+      <div id="manErro" class="form-error" style="display:none"></div>`,
+    footButtons:[
+      {label:'Cancelar',classe:'btn-secondary',onClick:fecharModal},
+      {label:'Lançar',classe:'btn-primary',onClick:salvarLancamentoManual}
+    ]
+  });
+  const tipoSel=document.getElementById('manTipo');
+  const dataInp=document.getElementById('manData');
+  const atualizar=async()=>{
+    const folga=tipoSel.value==='folga';
+    const iso=dataInp.value||dataInicial;
+    const slotsEls=[...document.querySelectorAll('#manSlots .manual-tec')];
+    const guardados=slotsEls.map(e=>e.value);
+    const opts=await tecnicosAtivosOptions(null,[],iso);
+    slotsEls.forEach((el,i)=>{
+      el.style.display=(folga&&i>0)?'none':'';
+      el.innerHTML=`<option value="">${i===0?'Selecione...':'(vaga em aberto)'}</option>${opts}`;
+      if(guardados[i])el.value=guardados[i];
+    });
+    document.getElementById('manRotuloTec').textContent=folga?'Técnico de folga':'Técnico(s) de plantão';
+    document.getElementById('manDica').textContent=folga
+      ?'A folga vale só para a data escolhida e não depende de nenhum plantão.'
+      :`Primeira vaga obrigatória. Se já existir plantão nessa data, o técnico entra na vaga livre ou como extra.`;
+  };
+  tipoSel.addEventListener('change',atualizar);
+  dataInp.addEventListener('change',atualizar);
+  await atualizar();
+}
+function erroLancamentoManual(msg){
+  const e=document.getElementById('manErro');
+  if(e){e.style.display='block';e.textContent=msg;}
+}
+async function salvarLancamentoManual(){
+  const tipo=document.getElementById('manTipo').value;
+  const iso=document.getElementById('manData').value;
+  const ids=[...document.querySelectorAll('#manSlots .manual-tec')]
+    .map(e=>e.value?Number(e.value):null);
+  const {min,max}=limitesDataManual();
+  if(!iso){erroLancamentoManual('Escolha a data.');return;}
+  if(iso<min||iso>max){erroLancamentoManual('Data fora dos meses disponíveis na escala ('+fmtBR(min)+' a '+fmtBR(max)+').');return;}
+  const config=await getConfig();
+  if(mesEscalaBloqueado(config,iso.slice(0,7))){erroLancamentoManual('A escala de '+labelMesPlantao(iso.slice(0,7))+' está bloqueada. Desbloqueie para alterar.');return;}
+  if(!ids[0]){erroLancamentoManual('Selecione o técnico.');return;}
+  const escolhidos=tipo==='folga'?[ids[0]]:ids.filter(Boolean);
+  if(new Set(escolhidos).size!==escolhidos.length){erroLancamentoManual('O mesmo técnico foi escolhido duas vezes.');return;}
+  const tecnicos=await dbGetAll('tecnicos');
+  const nome=(id)=>{const t=tecnicos.find(x=>x.id===id);return t?t.nome:'(removido)';};
+  const plantoes=await dbGetAll('plantoes');
+  const folgas=await dbGetAll('folgas');
+  const plantaoDoDia=plantoes.find(p=>p.data===iso)||null;
+  const mesChave=iso.slice(0,7);
+
+  if(tipo==='plantao'){
+    /* Quem está de folga nesse dia não pode estar de plantão. */
+    for(const tid of escolhidos){
+      if(folgas.some(f=>f.tecnicoId===tid&&f.diaFolga===iso)){
+        erroLancamentoManual(nome(tid)+' está de folga em '+fmtBR(iso)+'. Remova a folga antes de escalar.');return;
+      }
+      if(plantaoDoDia&&plantaoDoDia.tecnicoIds.includes(tid)){
+        erroLancamentoManual(nome(tid)+' já está no plantão de '+fmtBR(iso)+'.');return;
+      }
+    }
+    if(plantaoDoDia){
+      const regra=Math.max(1,config.qtdTecnicosPorPlantao||2);
+      const p=plantaoDoDia;
+      if(!p.origem)p.origem=p.tecnicoIds.map(()=>'auto');
+      while(p.origem.length<p.tecnicoIds.length)p.origem.push('auto');
+      for(const tid of escolhidos){
+        const livre=p.tecnicoIds.findIndex(x=>!x);
+        if(livre>=0){p.tecnicoIds[livre]=tid;p.origem[livre]='manual';}
+        else if(p.tecnicoIds.length<=regra){p.tecnicoIds.push(tid);p.origem.push('manual');}
+        else{erroLancamentoManual('O plantão de '+fmtBR(iso)+' já está cheio (vagas + 1 extra). Troque o técnico direto na tabela.');return;}
+      }
+      p.status='editado';
+      await dbPut('plantoes',p);
+      for(const tid of escolhidos)await addHistoricoPlantao(p.id,tid,'editado_manual','Adicionado manualmente ao plantão de '+fmtBR(iso));
+    } else {
+      await garantirFeriadosAno(Number(iso.slice(0,4)));
+      const feriados=await listaFeriadosISO();
+      const dow=parseISO(iso).getDay();
+      const regra=Math.max(1,config.qtdTecnicosPorPlantao||2);
+      const tecnicoIds=[...escolhidos];
+      while(tecnicoIds.length<regra)tecnicoIds.push(null);
+      const reg={data:iso,diaSemana:DIAS_SEMANA[dow],
+        tipo:'manual',tecnicoIds,origem:tecnicoIds.map(x=>x?'manual':'auto'),
+        status:'editado',criadoEm:new Date().toISOString()};
+      /* Domingo ou feriado continua sendo domingo/feriado: só a escolha dos
+         técnicos é manual, e o motor de rodízio respeita isso. */
+      if(dow===0)reg.tipo='domingo';
+      else if(feriados.has(iso))reg.tipo='feriado';
+      const id=await dbAdd('plantoes',reg);
+      for(const tid of escolhidos)await addHistoricoPlantao(id,tid,'editado_manual','Plantão manual em '+fmtBR(iso));
+    }
+    await sincronizarContadoresPlantao(Number(iso.slice(0,4)));
+    await registrarHistoricoGeral('plantoes','manual','Plantão manual lançado em '+fmtBR(iso)+': '+escolhidos.map(nome).join(', '));
+    fecharModal();
+    mesSelecionadoPlantoes=mesChave;
+    toast('Plantão lançado em '+fmtBR(iso),'sucesso');
+    renderPlantoes();
+    return;
+  }
+
+  /* ---- Folga ---- */
+  const tid=escolhidos[0];
+  if(plantaoDoDia&&plantaoDoDia.tecnicoIds.includes(tid)){
+    erroLancamentoManual(nome(tid)+' está de plantão em '+fmtBR(iso)+'. Não dá para ter folga no mesmo dia.');return;
+  }
+  if(folgas.some(f=>f.tecnicoId===tid&&f.diaFolga===iso)){
+    erroLancamentoManual(nome(tid)+' já tem folga em '+fmtBR(iso)+'.');return;
+  }
+  /* Avisos que o gestor pode atropelar de propósito (a regra automática barra
+     os dois, o lançamento manual só pergunta). */
+  const avisos=[];
+  const outros=folgas.filter(f=>f.diaFolga===iso&&f.tecnicoId!==tid);
+  if(outros.length)avisos.push('já há folga de '+outros.map(f=>nome(f.tecnicoId)).join(', ')+' nesse dia');
+  const dow=parseISO(iso).getDay();
+  const segunda=toISO(addDays(parseISO(iso),-((dow+6)%7)));
+  const sabado=toISO(addDays(parseISO(segunda),5));
+  const semana=folgas.filter(f=>f.tecnicoId===tid&&f.diaFolga>=segunda&&f.diaFolga<=sabado);
+  if(semana.length)avisos.push(nome(tid)+' já tem folga em '+fmtBR(semana[0].diaFolga)+' na mesma semana');
+  if(avisos.length){
+    fecharModal();
+    const ok=await confirmarAcao('Atenção: '+avisos.join('; ')+'. Lançar mesmo assim?');
+    if(!ok)return;
+  }
+  await dbPut('folgas',{plantaoId:null,tecnicoId:tid,diaSemana:DIA_SEMANA_CHAVE[dow],diaFolga:iso,
+    status:'gerada',origem:'manual',avulsa:true,criadoEm:new Date().toISOString()});
+  await registrarHistoricoGeral('folgas','manual','Folga manual lançada para '+nome(tid)+' em '+fmtBR(iso));
+  fecharModal();
+  mesSelecionadoPlantoes=mesChave;
+  toast('Folga lançada em '+fmtBR(iso),'sucesso');
+  renderPlantoes();
+}
+async function renderLancamentosManuais(){
+  const thead=document.querySelector('#tabelaLancamentosManuais thead');
+  const tbody=document.querySelector('#tabelaLancamentosManuais tbody');
+  const titulo=document.getElementById('tituloLancamentosManuais');
+  if(!thead||!tbody||!mesSelecionadoPlantoes)return;
+  const config=await getConfig();
+  const bloqueado=mesEscalaBloqueado(config,mesSelecionadoPlantoes);
+  const tecnicos=await dbGetAll('tecnicos');
+  const nome=(id)=>{const t=tecnicos.find(x=>x.id===id);return t?t.nome:'(removido)';};
+  const itens=[];
+  (await dbGetAll('plantoes')).filter(p=>p.tipo==='manual'&&p.data.slice(0,7)===mesSelecionadoPlantoes)
+    .forEach(p=>itens.push({kind:'plantao',id:p.id,data:p.data,dia:p.diaSemana,
+      tecnicos:p.tecnicoIds.filter(Boolean).map(nome).join(', ')||'—'}));
+  (await dbGetAll('folgas')).filter(f=>f.avulsa&&f.diaFolga&&f.diaFolga.slice(0,7)===mesSelecionadoPlantoes)
+    .forEach(f=>itens.push({kind:'folga',id:f.id,data:f.diaFolga,dia:DIAS_SEMANA[parseISO(f.diaFolga).getDay()],
+      tecnicos:nome(f.tecnicoId)}));
+  itens.sort((a,b)=>a.data.localeCompare(b.data)||a.kind.localeCompare(b.kind));
+  titulo.textContent='Lançamentos manuais — '+labelMesPlantao(mesSelecionadoPlantoes);
+  thead.innerHTML='<tr><th>Tipo</th><th>Data</th><th>Dia da semana</th><th>Técnico(s)</th><th></th></tr>';
+  if(!itens.length){
+    tbody.innerHTML='<tr class="empty-row"><td colspan="5">Nenhum lançamento manual neste mês. Use &ldquo;Lançar manual&rdquo; para incluir um plantão ou uma folga em qualquer data.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=itens.map(i=>`<tr>
+    <td><span class="badge ${i.kind==='plantao'?'badge-blue':'badge-green'}">${i.kind==='plantao'?'Plantão':'Folga'}</span></td>
+    <td><span class="data-chip">${fmtBR(i.data)}</span></td>
+    <td>${i.dia}</td>
+    <td>${escapeHtml(i.tecnicos)}</td>
+    <td style="text-align:right"><button type="button" class="btn btn-danger btn-sm btn-remover-manual" data-kind="${i.kind}" data-id="${i.id}" ${bloqueado?'disabled':''}>${icon('trash',12)} Remover</button></td>
+  </tr>`).join('');
+  tbody.querySelectorAll('.btn-remover-manual').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      if(await bloquearSeNecessario())return;
+      const id=Number(btn.dataset.id);
+      const ok=await confirmarAcao(btn.dataset.kind==='plantao'
+        ?'Remover este plantão manual? As folgas ligadas a ele também serão removidas.'
+        :'Remover esta folga manual?');
+      if(!ok)return;
+      if(btn.dataset.kind==='plantao'){
+        await excluirPlantao(id);
+        await registrarHistoricoGeral('plantoes','manual','Plantão manual removido');
+      } else {
+        await dbDelete('folgas',id);
+        await registrarHistoricoGeral('folgas','manual','Folga manual removida');
+      }
+      toast('Lançamento removido','sucesso');
+      renderPlantoes();
+    });
+  });
 }
 
 /* ===== 3. Edição de folgas (integrada à tabela de escala) ===== */
@@ -4198,6 +4433,7 @@ async function renderPlantoes(){
   await sincronizarConfigEscala();
 
   await renderTabelaEscala();
+  await renderLancamentosManuais();
   await renderTabelaFeriasSecao();
 }
 
@@ -5467,6 +5703,8 @@ async function initApp(){
   document.getElementById('btnGerarEscala').addEventListener('click',gerarEscalaSelecionada);
   document.getElementById('btnGerarFolgas').innerHTML=icon('coffee',15)+' Gerar folgas';
   document.getElementById('btnGerarFolgas').addEventListener('click',gerarFolgasAutomaticasMesSelecionado);
+  document.getElementById('btnLancamentoManual').innerHTML=icon('plus',15)+' Lançar manual';
+  document.getElementById('btnLancamentoManual').addEventListener('click',abrirModalLancamentoManual);
   document.getElementById('btnBaixarEscalaImagem').innerHTML=icon('download',15)+' Baixar imagem';
   document.getElementById('btnBaixarEscalaImagem').addEventListener('click',gerarImagemPlantoes);
   document.getElementById('btnLimparEscala').innerHTML=icon('trash',15)+' Limpar escala';
