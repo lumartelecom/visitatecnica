@@ -569,7 +569,6 @@ svg.lc-svg{width:100%;height:auto;overflow:visible}
             <button class="btn btn-primary btn-sm" id="btnGerarFolgas"></button>
             <button class="btn btn-primary btn-sm no-print" id="btnBaixarEscalaImagem"></button>
             <button class="btn btn-success btn-sm" id="btnAdicionarExtra"></button>
-            <button class="btn btn-primary btn-sm no-print" id="btnLancamentoManual"></button>
             <button class="btn btn-danger btn-sm no-print" id="btnLimparEscala"></button>
             <button class="btn btn-secondary btn-sm no-print" id="btnBloquearEscala"></button>
           </div>
@@ -1205,19 +1204,16 @@ function escolherTecnico({candidatos,iso,feriasList,contagem,contagemMes,tetoMes
      pode reescrever quem já trabalhou num plantão que já ocorreu. */
   const sorteio=(t)=>iso>=toISO(new Date())?hashEstavel(t.id+'|g'+seedGeracaoEscala):0;
   const ordem=(lista)=>lista.slice().sort((a,b)=>
+    /* Primeiro preserva o equilíbrio dentro do mês e no total do ano. */
     (mes(a)-mes(b))
+    ||((contagem.get(a.id)||0)-(contagem.get(b.id)||0))
+    /* A cada clique, varia entre técnicos com a mesma carga mensal e anual.
+       O desempate por dupla/recência vem depois para não congelar a escala
+       sempre na mesma pessoa quando a distribuição já está equilibrada. */
+    ||(sorteio(a)-sorteio(b))
     ||(dupla(a)-dupla(b))
     ||(retrasado(a)-retrasado(b))
-    /* O total do ano entra só aqui, para desempatar quem está empatado em tudo.
-       Nessa posição ele nunca desequilibra um mês — apenas evita que a sobra do
-       mês caia sempre nas mesmas pessoas ao longo do ano. */
-    ||((contagem.get(a.id)||0)-(contagem.get(b.id)||0))
     ||((ultimaData.get(a.id)||'').localeCompare(ultimaData.get(b.id)||''))
-    /* Só chega aqui quando os dois estão empatados em TODOS os critérios de
-       equilíbrio acima. Aí sim o clique em "Gerar escala" pode variar quem
-       fica com a vaga — sem isso, o desempate por nome sempre escolheria a
-       mesma pessoa e o botão pareceria não fazer nada de novo. */
-    ||(sorteio(a)-sorteio(b))
     ||a.nome.localeCompare(b.nome,'pt-BR'));
   for(const c of camadas)if(c.length)return ordem(c)[0];
   return null;
@@ -1504,7 +1500,10 @@ function segundaDaSemanaFolga(dataISOPlantao){
 }
 function dataDoDiaFolga(dataISOPlantao,diaFolgaValue){
   const monday=segundaDaSemanaFolga(dataISOPlantao);
-  return toISO(addDays(monday,DIA_FOLGA_MAP[diaFolgaValue]));
+  let data=addDays(monday,DIA_FOLGA_MAP[diaFolgaValue]);
+  /* Se o dia escolhido já passou na semana do plantão, usa a semana seguinte. */
+  if(toISO(data)<=dataISOPlantao)data=addDays(data,7);
+  return toISO(data);
 }
 /* Só relevante quando o plantão caiu num dia de semana (feriado seg-sáb):
    a folga não pode cair no próprio dia trabalhado nem em dia anterior a ele
@@ -3615,13 +3614,18 @@ async function removerTecnicoExtra(plantaoId){
 }
 
 /* ===== 2. Escala de plantões ===== */
-function celulaFolga(folgaRec,plantaoId,tecnicoId,diasOcupadosPelosOutros,dataPlantaoISO){
+function celulaFolga(folgaRec,plantaoId,tecnicoId,folgasExistentes,dataPlantaoISO){
   if(!tecnicoId)return `<td class="folga-cell"><span class="form-hint">—</span></td>`;
   const diaAtual=folgaRec?folgaRec.diaSemana:'';
-  /* Feriado em dia de semana: esconde do dropdown os dias que caem no próprio
-     dia trabalhado ou antes dele na mesma semana — só sobra o que vem depois. */
-  const opts=DIAS_FOLGA.filter(d=>diaFolgaValidoParaPlantao(dataPlantaoISO,d.v)||d.v===diaAtual)
-    .map(d=>`<option value="${d.v}" ${d.v===diaAtual?'selected':''} ${diasOcupadosPelosOutros.has(d.v)&&d.v!==diaAtual?'disabled':''}>${d.l}</option>`).join('');
+  /* Cada opção é avaliada pela DATA REAL calculada para este plantão, não só
+     pelo nome do dia. Isso permite usar, por exemplo, segunda em outro plantão
+     quando a segunda correspondente cai em uma data diferente. */
+  const opts=DIAS_FOLGA.map(d=>{
+    const dataOpcao=dataDoDiaFolga(dataPlantaoISO,d.v);
+    const ocupada=folgasExistentes.some(f=>f.tecnicoId!==tecnicoId&&f.id!== (folgaRec?folgaRec.id:null)&&f.diaFolga===dataOpcao);
+    const disabled=ocupada&&d.v!==diaAtual?'disabled':'';
+    return `<option value="${d.v}" ${d.v===diaAtual?'selected':''} ${disabled}>${d.l}${ocupada&&d.v!==diaAtual?' — ocupado':''}</option>`;
+  }).join('');
   return `<td class="folga-cell">
     <select class="folga-select" data-folga-id="${folgaRec?folgaRec.id:''}" data-plantao="${plantaoId}" data-tecnico="${tecnicoId}">
       <option value="">Selecionar...</option>
@@ -3636,6 +3640,7 @@ async function renderTabelaEscala(){
   const thead=document.querySelector('#tabelaPlantoes thead');
   const tbody=document.querySelector('#tabelaPlantoes tbody');
   const {listaMes,tecnicos,feriadoPorData,folgasPorPlantao}=await prepararLinhasPlantoesMes(mesSelecionadoPlantoes);
+  const todasFolgasParaSeletor=await dbGetAll('folgas');
 
   const [ano,mesNum]=mesSelecionadoPlantoes.split('-').map(Number);
   document.getElementById('tituloMesPlantoes').textContent=`ESCALA DE PLANTÕES — ${MESES_COMPETENCIA[mesNum-1].toUpperCase()} DE ${ano} | ${(config.analiseMunicipio||'Teresina').toUpperCase()}/PI`;
@@ -3671,8 +3676,7 @@ async function renderTabelaEscala(){
       const baseFolgaCells=Array.from({length:qtdBase},(_,i)=>i).map(i=>{
         const tid=p.tecnicoIds[i]||null;
         const folgaRec=tid?folgasP.find(f=>f.tecnicoId===tid):null;
-        const diasOcupadosPelosOutros=new Set(folgasP.filter(f=>f.tecnicoId!==tid).map(f=>f.diaSemana));
-        return celulaFolga(folgaRec,p.id,tid,diasOcupadosPelosOutros,p.data);
+        return celulaFolga(folgaRec,p.id,tid,todasFolgasParaSeletor,p.data);
       });
       let extraTecCell='',extraFolgaCell='';
       if(temExtra){
@@ -3683,8 +3687,7 @@ async function renderTabelaEscala(){
           const opts=await tecnicosAtivosOptions(tid,excluir,p.data);
           extraTecCell=`<td><select class="tec-select" data-plantao="${p.id}" data-idx="${i}" data-old="${tid||''}"><option value="">(vaga em aberto)</option>${opts}</select></td>`;
           const folgaRecExtra=tid?folgasP.find(f=>f.tecnicoId===tid):null;
-          const diasOcupadosExtra=new Set(folgasP.filter(f=>f.tecnicoId!==tid).map(f=>f.diaSemana));
-          extraFolgaCell=celulaFolga(folgaRecExtra,p.id,tid,diasOcupadosExtra,p.data);
+          extraFolgaCell=celulaFolga(folgaRecExtra,p.id,tid,todasFolgasParaSeletor,p.data);
         } else {
           extraTecCell=`<td><button type="button" class="btn-extra-add" data-extra-plantao="${p.id}">${icon('plus',12)} Extra</button></td>`;
           extraFolgaCell=`<td class="folga-cell"><span class="form-hint">—</span></td>`;
@@ -3996,10 +3999,6 @@ async function renderLancamentosManuais(){
 /* ===== 3. Edição de folgas (integrada à tabela de escala) ===== */
 async function salvarDiaFolgaSelecionado(plantaoId,tecnicoId,folgaId,diaSemana){
   const plantao=await dbGet('plantoes',plantaoId);
-  if(!diaFolgaValidoParaPlantao(plantao.data,diaSemana)){
-    toast('Esse dia é antes (ou é o mesmo) do plantão trabalhado — escolha um dia depois dele','erro');
-    return false;
-  }
   const novaData=dataDoDiaFolga(plantao.data,diaSemana);
   const monday=toISO(segundaDaSemanaFolga(plantao.data));
   const saturday=toISO(addDays(segundaDaSemanaFolga(plantao.data),5));
@@ -5703,8 +5702,6 @@ async function initApp(){
   document.getElementById('btnGerarEscala').addEventListener('click',gerarEscalaSelecionada);
   document.getElementById('btnGerarFolgas').innerHTML=icon('coffee',15)+' Gerar folgas';
   document.getElementById('btnGerarFolgas').addEventListener('click',gerarFolgasAutomaticasMesSelecionado);
-  document.getElementById('btnLancamentoManual').innerHTML=icon('plus',15)+' Lançar manual';
-  document.getElementById('btnLancamentoManual').addEventListener('click',abrirModalLancamentoManual);
   document.getElementById('btnBaixarEscalaImagem').innerHTML=icon('download',15)+' Baixar imagem';
   document.getElementById('btnBaixarEscalaImagem').addEventListener('click',gerarImagemPlantoes);
   document.getElementById('btnLimparEscala').innerHTML=icon('trash',15)+' Limpar escala';
